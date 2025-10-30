@@ -1,35 +1,35 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
+import { Routes, Route, Navigate } from "react-router-dom";
+import Layout from "./app/layout/Layout";
+import AuthPage from "./pages/auth/AuthPage";
+import IncomePage from "./pages/income/IncomePage";
+import ExpensesPage from "./pages/expences/ExpensesPage";
+import GoalsPage from "./pages/goals/GoalsPage";
+import DocsPage from "./pages/docs/DocsPage";
+import { useEffect } from 'react';
+import { useTheme } from './shared/store/theme';
 
 function App() {
-  const [count, setCount] = useState(0)
-
+  const init = useTheme(s => s.init);
+  useEffect(() => { init(); }, [init]);
   return (
-    <>
-      <div className='bg-red-500'>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1 className='text-3xl text-blue-500 font-bold underline'>Vite + React + My Budget</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Routes>
+      {/* Без лейаута */}
+      <Route path="/auth" element={<AuthPage />} />
+
+      {/* Всё под общим лейаутом */}
+      <Route element={<Layout />}>
+        <Route index element={<Navigate to="/goals" replace />} />
+        <Route path="/income" element={<IncomePage />} />
+        <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/goals" element={<GoalsPage />} />
+        <Route path="/docs" element={<DocsPage />} />
+      </Route>
+
+      {/* 404 / редирект */}
+      <Route path="*" element={<Navigate to="/goals" replace />} />
+    </Routes>
+  );
 }
 
 export default App
