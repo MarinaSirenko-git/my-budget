@@ -15,8 +15,8 @@ export default function ProfileMenu({ onLogout }: Props) {
       <MenuButton className="cursor-pointer">
         <div className="w-9 rounded-full overflow-hidden">
           {avatar
-            ? <img src={avatar} alt='You' />
-            : <div className="grid place-items-center w-full h-full bg-base-200 text-xs">You</div>}
+            ? <img src={avatar} alt='Вы' />
+            : <div className="grid place-items-center w-full h-full bg-base-200 text-xs">Вы</div>}
         </div>
       </MenuButton>
 
@@ -33,14 +33,14 @@ export default function ProfileMenu({ onLogout }: Props) {
         <MenuItems className="absolute right-0 w-56 top-16 mt-1 rounded-xl bg-base-100 dark:bg-gray-800 dark:text-gray-300 shadow ring-1 ring-black/5 focus:outline-none z-50">
           <div className="p-2">
             <MenuItem as={Link} to="/settings" className="block rounded-lg px-3 py-2 data-[focus]:bg-base-200">
-              Profile Settings
+              Настройки профиля
             </MenuItem>
             <MenuItem as={Link} to="/avatars" className="block rounded-lg px-3 py-2 data-[focus]:bg-base-200">
-              Bill History
+              История счетов
             </MenuItem>
             <div className="my-2 h-px bg-base-200" />
             <MenuItem as="button" onClick={onLogout} className="w-full text-left rounded-lg px-3 py-2 text-error data-[focus]:bg-base-200">
-              Logout
+              Выйти
             </MenuItem>
           </div>
         </MenuItems>

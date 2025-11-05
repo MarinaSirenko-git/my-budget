@@ -68,25 +68,25 @@ export default function MobileMenu() {
                       <li>
                         <NavLink className={navLinkClass} to="/goals" onClick={() => setOpen(false)}>
                           <SparklesIcon className="w-6 h-6" />
-                          Financial goals
+                          Мои финансовые цели
                         </NavLink>
                       </li>
                       <li>
                         <NavLink className={navLinkClass} to="/income" onClick={() => setOpen(false)}>
                           <ArrowRightEndOnRectangleIcon className="w-6 h-6" />
-                          Profit
+                          Мои доходы
                         </NavLink>
                       </li>
                       <li>
                         <NavLink className={navLinkClass} to="/expenses" onClick={() => setOpen(false)}>
                           <ArrowRightStartOnRectangleIcon className="w-6 h-6" />
-                          Expenses
+                          Мои расходы
                         </NavLink>
                       </li>
                       <li>
                         <NavLink className={navLinkClass} to="/docs" onClick={() => setOpen(false)}>
                           <DocumentMagnifyingGlassIcon className="w-6 h-6" />
-                          Documentation
+                          Документация
                         </NavLink>
                       </li>
                     </ul>
