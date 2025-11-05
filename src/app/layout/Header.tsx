@@ -1,7 +1,7 @@
 import ThemeSwitch from '@/shared/ui/ThemeSwitch';
-import ProfileMenu from '@/shared/ui/ProfileMenu';
 import ScenarioSwitch from '@/shared/ui/ScenarioSwitch';
 import MobileMenu from '@/shared/ui/MobileMenu';
+import FinancialSummary from '@/shared/ui/FinancialSummary';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 
 function Header(){
@@ -11,22 +11,18 @@ function Header(){
                 <div className="flex items-center gap-4">
                     <MobileMenu />
                     <div className="flex items-center gap-4">
-                        <h1 className="text-md font-normal text-[#1E293B] dark:text-white flex items-center gap-2">
+                        <h1 className="text-sm font-normal text-[#1E293B] dark:text-white flex items-center gap-2">
                             <MapPinIcon className="w-5 h-5" />
                             Phuket
                         </h1>
-                        
+                        <ScenarioSwitch />
+                        <div className="flex items-center justify-center gap-1">
+                            <ThemeSwitch />
+                        </div>
                     </div>
                 </div>
                 <div className='flex items-center justify-center'>
-                    <ThemeSwitch />
-                </div>
-                <div className="flex items-center gap-6">
-                    <div className="hidden lg:block">
-                        <ScenarioSwitch />
-                    </div>
-                    
-                    {/* <ProfileMenu /> */}
+                    <FinancialSummary totalIncome={1000} totalExpenses={500} totalGoals={200} />
                 </div>
             </div>
         </>

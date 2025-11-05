@@ -9,10 +9,10 @@ export default function ScenarioSwitch() {
   return (
     <button
       onClick={handleAddScenario}
-      className="text-md font-base text-[#1E293B] dark:text-[#F8FAFC] flex items-center gap-2"
+      className="text-sm font-base text-[#1E293B] dark:text-[#F8FAFC] flex items-center gap-2"
     >
       <CurrencyDollarIcon className="w-5 h-5" />
-      Recalculate for another city
+      Пересчитать для другого города
     </button>
   );
 }

@@ -1,4 +1,4 @@
 export default function DocsPage() {
-  return <div>Docs Page</div>;
+  return <div>Страница документации</div>;
 }
 

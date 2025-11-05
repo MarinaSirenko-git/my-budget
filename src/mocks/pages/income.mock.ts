@@ -1,0 +1,170 @@
+export interface IncomeType {
+  id: string;
+  label: string;
+  value: string;
+  isCustom?: boolean;
+}
+
+export const incomeTypes: IncomeType[] = [
+  {
+    id: 'salary',
+    label: 'Зарплата',
+    value: 'salary',
+    isCustom: false,
+  },
+  {
+    id: 'bonuses',
+    label: 'Бонусы',
+    value: 'bonuses',
+    isCustom: false,
+  },
+  {
+    id: 'rental-income',
+    label: 'Арендный доход',
+    value: 'rental-income',
+    isCustom: false,
+  },
+  {
+    id: 'dividends',
+    label: 'Дивиденды',
+    value: 'dividends',
+    isCustom: false,
+  },
+  {
+    id: 'royalties',
+    label: 'Роялти',
+    value: 'royalties',
+    isCustom: false,
+  },
+  {
+    id: 'small-business-profit',
+    label: 'Прибыль малого бизнеса',
+    value: 'small-business-profit',
+    isCustom: false,
+  },
+  {
+    id: 'digital-product-sales',
+    label: 'Продажа цифровых продуктов',
+    value: 'digital-product-sales',
+    isCustom: false,
+  },
+  {
+    id: 'tax-refunds',
+    label: 'Налоговые возвраты',
+    value: 'tax-refunds',
+    isCustom: false,
+  },
+  {
+    id: 'government-benefits',
+    label: 'Государственные пособия',
+    value: 'government-benefits',
+    isCustom: false,
+  },
+  {
+    id: 'asset-sales',
+    label: 'Продажа активов',
+    value: 'asset-sales',
+    isCustom: false,
+  },
+  {
+    id: 'custom',
+    label: 'Прочий доход',
+    value: 'Custom',
+    isCustom: true,
+  },
+];
+
+export interface Income {
+  id: string;
+  type: string;
+  title: string;
+  amount: number;
+  currency: string;
+  frequency: 'monthly' | 'annual';
+  date: string; // YYYY-MM-DD
+  createdAt?: string;
+}
+
+export const mockIncomes: Income[] = [
+  {
+    id: '1',
+    type: 'salary',
+    title: 'Зарплата разработчика',
+    amount: 7500,
+    currency: 'USD',
+    frequency: 'monthly',
+    date: '2025-01-15',
+    createdAt: '2025-01-10',
+  },
+  {
+    id: '2',
+    type: 'bonuses',
+    title: 'Бонус за Q4',
+    amount: 2500,
+    currency: 'USD',
+    frequency: 'annual',
+    date: '2024-12-31',
+    createdAt: '2025-01-05',
+  },
+  {
+    id: '3',
+    type: 'rental-income',
+    title: 'Аренда квартиры',
+    amount: 1200,
+    currency: 'USD',
+    frequency: 'monthly',
+    date: '2025-01-01',
+    createdAt: '2024-12-28',
+  },
+  {
+    id: '4',
+    type: 'dividends',
+    title: 'Дивиденды по акциям',
+    amount: 450,
+    currency: 'USD',
+    frequency: 'annual',
+    date: '2025-01-10',
+    createdAt: '2025-01-08',
+  },
+  {
+    id: '5',
+    type: 'small-business-profit',
+    title: 'Фриланс консалтинг',
+    amount: 3200,
+    currency: 'USD',
+    frequency: 'monthly',
+    date: '2025-01-20',
+    createdAt: '2025-01-18',
+  },
+  {
+    id: '6',
+    type: 'digital-product-sales',
+    title: 'Продажа онлайн курсов',
+    amount: 850,
+    currency: 'USD',
+    frequency: 'monthly',
+    date: '2025-01-15',
+    createdAt: '2025-01-12',
+  },
+  {
+    id: '7',
+    type: 'tax-refunds',
+    title: 'Налоговый возврат 2024',
+    amount: 1200,
+    currency: 'USD',
+    frequency: 'annual',
+    date: '2025-01-05',
+    createdAt: '2025-01-03',
+  },
+  {
+    id: '8',
+    type: 'royalties',
+    title: 'Роялти за книгу',
+    amount: 600,
+    currency: 'USD',
+    frequency: 'annual',
+    date: '2025-01-01',
+    createdAt: '2024-12-30',
+  },
+];
+
