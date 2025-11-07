@@ -1,10 +1,11 @@
 import { Fragment, useState } from 'react';
 import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
 import { XMarkIcon, Bars3Icon } from '@heroicons/react/24/outline';
-import { SparklesIcon, ArrowRightEndOnRectangleIcon, ArrowRightStartOnRectangleIcon, DocumentMagnifyingGlassIcon, CreditCardIcon } from '@heroicons/react/24/solid';
-import { NavLink, Link } from 'react-router-dom';
+import { SparklesIcon, ArrowRightEndOnRectangleIcon, ArrowRightStartOnRectangleIcon, DocumentMagnifyingGlassIcon } from '@heroicons/react/24/solid';
+import { NavLink } from 'react-router-dom';
 import ThemeSwitch from './ThemeSwitch';
 import ProfileMenu from './ProfileMenu';
+import Logo from './Logo';
 
 export default function MobileMenu() {
   const [open, setOpen] = useState(false);
@@ -50,10 +51,7 @@ export default function MobileMenu() {
                 <DialogPanel className="relative flex flex-col w-full max-w-xs bg-gray-900 text-white shadow-xl pointer-events-auto">
                   {/* Header with Logo and Close Button */}
                   <div className="flex items-center justify-between p-4 border-b border-gray-700">
-                    <Link to="/" className="flex items-center gap-2 font-bold">
-                      <CreditCardIcon className="w-8 h-8 text-primary" />
-                      Budgetaizer
-                    </Link>
+                    <Logo iconSize="lg" textColor="text-white" />
                     <button
                       onClick={() => setOpen(false)}
                       className="p-2 rounded-md hover:bg-gray-800"
