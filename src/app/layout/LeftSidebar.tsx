@@ -13,16 +13,16 @@ function LeftSidebar(){
                 <Logo />
             </div>
             <ul className="w-full px-2 font-base bg-base-100 text-[#1E293B] dark:text-[#F8FAFC] text-md leading-loose">
+            <li className="pb-2 rounded-md"> 
+                    <NavLink className={navLinkClass} to="/income">
+                    {/* <ArrowRightEndOnRectangleIcon className='w-6 h-6'/> */}
+                    Мои доходы
+                    </NavLink>
+                </li>
                 <li className="pb-2 rounded-md"> 
                     <NavLink className={navLinkClass} to="/goals">
                     {/* <SparklesIcon className='w-6 h-6'/>  */}
                     Мои финансовые цели
-                    </NavLink>
-                </li>
-                <li className="pb-2 rounded-md"> 
-                    <NavLink className={navLinkClass} to="/income">
-                    {/* <ArrowRightEndOnRectangleIcon className='w-6 h-6'/> */}
-                    Мои доходы
                     </NavLink>
                 </li>
                 <li className="pb-2 rounded-md"> 
