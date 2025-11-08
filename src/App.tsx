@@ -7,6 +7,7 @@ import IncomePage from "./pages/income/IncomePage";
 import ExpensesPage from "./pages/expences/ExpensesPage";
 import GoalsPage from "./pages/goals/GoalsPage";
 import DocsPage from "./pages/docs/DocsPage";
+import SettingsPage from "./pages/settings/SettingsPage";
 import { useEffect } from 'react';
 import { useTheme } from './shared/store/theme';
 import { useAuth } from '@/shared/store/auth'
@@ -33,6 +34,7 @@ function App() {
           <Route path="/expenses" element={<ExpensesPage />} />
           <Route path="/goals" element={<GoalsPage />} />
           <Route path="/docs" element={<DocsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
       </Route>
       {/* 404 / редирект */}

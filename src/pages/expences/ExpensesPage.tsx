@@ -1,9 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import type { FormEvent } from 'react';
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import { ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import Tag from '@/shared/ui/atoms/Tag';
-import { expenseCategories, mockExpenses } from '@/mocks/pages/expenses.mock';
+import { expenseCategories } from '@/mocks/pages/expenses.mock';
 import type { ExpenseCategory, Expense } from '@/mocks/pages/expenses.mock';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/shared/store/auth';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import TextInput from '@/shared/ui/form/TextInput';
@@ -15,12 +18,7 @@ import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
 import IconButton from '@/shared/ui/atoms/IconButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-
-const currencyOptions = [
-  { label: 'USD', value: 'USD' },
-  { label: 'EUR', value: 'EUR' },
-  { label: 'RUB', value: 'RUB' },
-];
+import { currencyOptions } from '@/shared/constants/currencies';
 
 const frequencyOptions = [
   { label: 'Ежемесячно', value: 'monthly' },
@@ -35,51 +33,193 @@ const expenseCategoryOptions = expenseCategories.map(category => ({
 }));
 
 export default function ExpensesPage() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [categoryId, setCategoryId] = useState(expenseCategories[0]?.id || '');
+  const [title, setTitle] = useState('');
+  const [amount, setAmount] = useState<string | undefined>(undefined);
   const [currency, setCurrency] = useState(currencyOptions[0].value);
   const [frequency, setFrequency] = useState(frequencyOptions[0].value);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   function handleTagClick(category: ExpenseCategory) {
     setCategoryId(category.id);
+    setTitle(category.label);
+    setFormError(null);
     setOpen(true);
   }
 
   function handleAddExpenseClick() {
     setCategoryId(expenseCategories[0]?.id || '');
+    setTitle('');
+    setFormError(null);
     setOpen(true);
   }
 
   function handleModalClose() {
     setOpen(false);
     setCategoryId(expenseCategories[0]?.id || '');
+    setTitle('');
+    setAmount(undefined);
+    setCurrency(currencyOptions[0].value);
+    setFrequency(frequencyOptions[0].value);
+    setFormError(null);
+  }
+
+  // Check if form is valid
+  const isFormValid = useMemo(() => {
+    return !!(
+      categoryId &&
+      title.trim() &&
+      amount &&
+      parseFloat(amount) > 0 &&
+      currency
+    );
+  }, [categoryId, title, amount, currency]);
+
+  // Handle form submission
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    
+    if (!user || !isFormValid) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setFormError(null);
+      
+      const selectedCategory = expenseCategories.find(c => c.id === categoryId);
+      const categoryName = selectedCategory?.label || categoryId;
+      
+      const { error: insertError } = await supabase
+        .from('expenses')
+        .insert({
+          user_id: user.id,
+          category_name: categoryName,
+          category: categoryId,
+          name: title.trim(),
+          planned_amount: parseFloat(amount!),
+          amount: parseFloat(amount!),
+          currency: currency,
+          frequency: frequency || 'monthly',
+          date: new Date().toISOString().split('T')[0],
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Refresh expenses list
+      const { data, error: fetchError } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (data) {
+        const mappedExpenses: Expense[] = data.map((item: any) => ({
+          id: item.id,
+          category: item.category || item.category_name,
+          title: item.name || item.title,
+          amount: item.planned_amount || item.amount,
+          currency: item.currency,
+          frequency: item.frequency || 'monthly',
+          date: item.date || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+          createdAt: item.created_at,
+        }));
+        setExpenses(mappedExpenses);
+      }
+
+      handleModalClose();
+    } catch (err) {
+      console.error('Error adding expense:', err);
+      setFormError(err instanceof Error ? err.message : 'Ошибка добавления расхода');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // Get the selected category object
   const selectedCategory = expenseCategories.find(c => c.id === categoryId);
 
+  // Fetch expenses from Supabase
+  useEffect(() => {
+    async function fetchExpenses() {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const { data, error: fetchError } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        if (data) {
+          // Map Supabase data to Expense interface
+          const mappedExpenses: Expense[] = data.map((item: any) => ({
+            id: item.id,
+            category: item.category || item.category_name,
+            title: item.name || item.title,
+            amount: item.planned_amount || item.amount,
+            currency: item.currency,
+            frequency: item.frequency || 'monthly',
+            date: item.date || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+            createdAt: item.created_at,
+          }));
+          setExpenses(mappedExpenses);
+        }
+      } catch (err) {
+        console.error('Error fetching expenses:', err);
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки расходов');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchExpenses();
+  }, [user]);
+
   // Calculate totals
   const monthlyTotal = useMemo(() => {
-    return mockExpenses
+    return expenses
       .filter(expense => expense.frequency === 'monthly')
       .reduce((sum, expense) => sum + expense.amount, 0);
-  }, []);
+  }, [expenses]);
 
   const annualTotal = useMemo(() => {
-    return mockExpenses
+    return expenses
       .filter(expense => expense.frequency === 'annual')
       .reduce((sum, expense) => sum + expense.amount, 0);
-  }, []);
+  }, [expenses]);
 
   const oneTimeTotal = useMemo(() => {
-    return mockExpenses
+    return expenses
       .filter(expense => expense.frequency === 'one-time')
       .reduce((sum, expense) => sum + expense.amount, 0);
-  }, []);
+  }, [expenses]);
 
   // Transform data for pie chart (group by category, sum amounts)
   const pieChartData = useMemo(() => {
-    const grouped = mockExpenses.reduce((acc, expense) => {
+    const grouped = expenses.reduce((acc, expense) => {
       const category = expenseCategories.find(c => c.id === expense.category);
       const label = category?.label || expense.category;
       
@@ -94,7 +234,7 @@ export default function ExpensesPage() {
       name,
       value,
     }));
-  }, []);
+  }, [expenses]);
 
   // Table columns
   const tableColumns = [
@@ -132,7 +272,23 @@ export default function ExpensesPage() {
     }
   ];
 
-  if (!mockExpenses || mockExpenses.length === 0) {
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
+        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
+        <div className="text-red-600 dark:text-red-400">Ошибка: {error}</div>
+      </div>
+    );
+  }
+
+  if (!expenses || expenses.length === 0) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
         <div className="flex flex-col items-center justify-center gap-6">
@@ -150,7 +306,12 @@ export default function ExpensesPage() {
             ))}
           </div>
           <ModalWindow open={open} onClose={handleModalClose} title="Добавить расход">
-            <Form>
+            <Form onSubmit={handleSubmit}>
+              {formError && (
+                <div className="text-red-600 dark:text-red-400 text-sm">
+                  {formError}
+                </div>
+              )}
               <SelectInput 
                 value={categoryId} 
                 options={expenseCategoryOptions} 
@@ -158,10 +319,15 @@ export default function ExpensesPage() {
                 label="Категория расхода" 
               />
               <TextInput 
-                defaultValue={selectedCategory?.label || ''} 
+                value={title || selectedCategory?.label || ''}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Название расхода" 
               />
-              <MoneyInput placeholder="Сумма" />
+              <MoneyInput 
+                value={amount}
+                onValueChange={setAmount}
+                placeholder="Сумма" 
+              />
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
@@ -175,11 +341,13 @@ export default function ExpensesPage() {
                 label="Частота" 
               />
               <TextButton 
-                className="bg-blue-600 text-white mt-4" 
-                disabled
+                type="submit"
+                disabled={!isFormValid || submitting}
                 aria-label="Добавить расход"
+                variant="primary"
+                className="mt-4"
               >
-                Добавить
+                {submitting ? 'Добавление...' : 'Добавить'}
               </TextButton>
             </Form>
           </ModalWindow>
@@ -212,7 +380,7 @@ export default function ExpensesPage() {
                   <span>Годовой итог: <strong className="text-gray-900 dark:text-gray-100">{annualTotal.toLocaleString()} USD</strong></span>
                   <span>Разовая сумма: <strong className="text-gray-900 dark:text-gray-100">{oneTimeTotal.toLocaleString()} USD</strong></span>
                 </div>
-                <Table columns={tableColumns} data={mockExpenses} />
+                <Table columns={tableColumns} data={expenses} />
               </div>
             )
           },
@@ -235,40 +403,52 @@ export default function ExpensesPage() {
         ]}
       />
 
-      <ModalWindow open={open} onClose={handleModalClose} title="Добавить расход">
-        <Form>
-          <SelectInput 
-            value={categoryId} 
-            options={expenseCategoryOptions} 
-            onChange={setCategoryId} 
-            label="Категория расхода" 
-          />
-          <TextInput 
-            defaultValue={selectedCategory?.label || ''} 
-            placeholder="Название расхода" 
-          />
-          <MoneyInput placeholder="Сумма" />
-          <SelectInput 
-            value={currency} 
-            options={currencyOptions} 
-            onChange={setCurrency} 
-            label="Валюта" 
-          />
-          <SelectInput 
-            value={frequency} 
-            options={frequencyOptions} 
-            onChange={setFrequency} 
-            label="Частота" 
-          />
-          <TextButton 
-            className="bg-blue-600 text-white mt-4" 
-            disabled
-            aria-label="Добавить расход"
-          >
-            Добавить
-          </TextButton>
-        </Form>
-      </ModalWindow>
+          <ModalWindow open={open} onClose={handleModalClose} title="Добавить расход">
+            <Form onSubmit={handleSubmit}>
+              {formError && (
+                <div className="text-red-600 dark:text-red-400 text-sm">
+                  {formError}
+                </div>
+              )}
+              <SelectInput 
+                value={categoryId} 
+                options={expenseCategoryOptions} 
+                onChange={setCategoryId} 
+                label="Категория расхода" 
+              />
+              <TextInput 
+                value={title || selectedCategory?.label || ''}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Название расхода" 
+              />
+              <MoneyInput 
+                value={amount}
+                onValueChange={setAmount}
+                placeholder="Сумма" 
+              />
+              <SelectInput 
+                value={currency} 
+                options={currencyOptions} 
+                onChange={setCurrency} 
+                label="Валюта" 
+              />
+              <SelectInput 
+                value={frequency} 
+                options={frequencyOptions} 
+                onChange={setFrequency} 
+                label="Частота" 
+              />
+              <TextButton 
+                type="submit"
+                disabled={!isFormValid || submitting}
+                aria-label="Добавить расход"
+                variant="primary"
+                className="mt-4"
+              >
+                {submitting ? 'Добавление...' : 'Добавить'}
+              </TextButton>
+            </Form>
+          </ModalWindow>
     </div>
   );
 }

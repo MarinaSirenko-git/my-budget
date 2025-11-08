@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import { ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 import Tag from '@/shared/ui/atoms/Tag';
-import { incomeTypes, mockIncomes } from '@/mocks/pages/income.mock';
+import { incomeTypes } from '@/mocks/pages/income.mock';
 import type { IncomeType, Income } from '@/mocks/pages/income.mock';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/shared/store/auth';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import TextInput from '@/shared/ui/form/TextInput';
@@ -15,12 +17,7 @@ import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
 import IconButton from '@/shared/ui/atoms/IconButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-
-const currencyOptions = [
-  { label: 'USD', value: 'USD' },
-  { label: 'EUR', value: 'EUR' },
-  { label: 'RUB', value: 'RUB' },
-];
+import { currencyOptions } from '@/shared/constants/currencies';
 
 const frequencyOptions = [
   { label: 'Ежемесячно', value: 'monthly' },
@@ -34,45 +31,181 @@ const incomeTypeOptions = incomeTypes.map(type => ({
 }));
 
 export default function IncomePage() {
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [incomeTypeId, setIncomeTypeId] = useState(incomeTypes[0]?.id || '');
+  const [title, setTitle] = useState('');
+  const [amount, setAmount] = useState<string | undefined>(undefined);
   const [currency, setCurrency] = useState(currencyOptions[0].value);
   const [frequency, setFrequency] = useState(frequencyOptions[0].value);
+  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   function handleTagClick(type: IncomeType) {
     setIncomeTypeId(type.id);
+    setTitle(type.label);
+    setFormError(null);
     setOpen(true);
   }
 
   function handleAddIncomeClick() {
     setIncomeTypeId(incomeTypes[0]?.id || '');
+    setTitle('');
+    setFormError(null);
     setOpen(true);
   }
 
   function handleModalClose() {
     setOpen(false);
     setIncomeTypeId(incomeTypes[0]?.id || '');
+    setTitle('');
+    setAmount(undefined);
+    setCurrency(currencyOptions[0].value);
+    setFrequency(frequencyOptions[0].value);
+    setFormError(null);
+  }
+
+  // Check if form is valid
+  const isFormValid = useMemo(() => {
+    return !!(
+      incomeTypeId &&
+      title.trim() &&
+      amount &&
+      parseFloat(amount) > 0 &&
+      currency &&
+      frequency
+    );
+  }, [incomeTypeId, title, amount, currency, frequency]);
+
+  // Handle form submission
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    
+    if (!user || !isFormValid) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      
+      const { error: insertError } = await supabase
+        .from('incomes')
+        .insert({
+          user_id: user.id,
+          type: incomeTypeId,
+          name: title.trim(),
+          amount: parseFloat(amount!),
+          currency: currency,
+          frequency: frequency,
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Refresh incomes list
+      const { data, error: fetchError } = await supabase
+        .from('incomes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (data) {
+        const mappedIncomes: Income[] = data.map((item: any) => ({
+          id: item.id,
+          type: item.type,
+          title: item.name || item.title,
+          amount: item.amount,
+          currency: item.currency,
+          frequency: item.frequency || 'monthly',
+          date: item.date || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+          createdAt: item.created_at,
+        }));
+        setIncomes(mappedIncomes);
+      }
+
+      handleModalClose();
+    } catch (err) {
+      console.error('Error adding income:', err);
+      setFormError(err instanceof Error ? err.message : 'Ошибка добавления дохода');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // Get the selected income type object
   const selectedIncomeType = incomeTypes.find(t => t.id === incomeTypeId);
 
+  // Fetch incomes from Supabase
+  useEffect(() => {
+    async function fetchIncomes() {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const { data, error: fetchError } = await supabase
+          .from('incomes')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        if (data) {
+          // Map Supabase data to Income interface
+          const mappedIncomes: Income[] = data.map((item: any) => ({
+            id: item.id,
+            type: item.type,
+            title: item.name || item.title,
+            amount: item.amount,
+            currency: item.currency,
+            frequency: item.frequency || 'monthly',
+            date: item.date || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+            createdAt: item.created_at,
+          }));
+          setIncomes(mappedIncomes);
+        }
+      } catch (err) {
+          console.error('Error fetching incomes:', err);
+          setError(err instanceof Error ? err.message : 'Ошибка загрузки доходов');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchIncomes();
+  }, [user]);
+
   // Calculate totals
   const monthlyTotal = useMemo(() => {
-    return mockIncomes
+    return incomes
       .filter(income => income.frequency === 'monthly')
       .reduce((sum, income) => sum + income.amount, 0);
-  }, []);
+  }, [incomes]);
 
   const annualTotal = useMemo(() => {
-    return mockIncomes
+    return incomes
       .filter(income => income.frequency === 'annual')
       .reduce((sum, income) => sum + income.amount, 0);
-  }, []);
+  }, [incomes]);
 
   // Transform data for pie chart (group by type, sum amounts)
   const pieChartData = useMemo(() => {
-    const grouped = mockIncomes.reduce((acc, income) => {
+    const grouped = incomes.reduce((acc, income) => {
       const type = incomeTypes.find(t => t.id === income.type);
       const label = type?.label || income.type;
       
@@ -87,7 +220,7 @@ export default function IncomePage() {
       name,
       value,
     }));
-  }, []);
+  }, [incomes]);
 
   // Table columns
   const tableColumns = [
@@ -125,7 +258,23 @@ export default function IncomePage() {
     }
   ];
 
-  if (!mockIncomes || mockIncomes.length === 0) {
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
+        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
+        <div className="text-red-600 dark:text-red-400">Ошибка: {error}</div>
+      </div>
+    );
+  }
+
+  if (!incomes || incomes.length === 0) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
         <div className="flex flex-col items-center justify-center gap-6">
@@ -143,7 +292,12 @@ export default function IncomePage() {
             ))}
           </div>
           <ModalWindow open={open} onClose={handleModalClose} title="Добавить доход">
-            <Form>
+            <Form onSubmit={handleSubmit}>
+              {formError && (
+                <div className="text-red-600 dark:text-red-400 text-sm">
+                  {formError}
+                </div>
+              )}
               <SelectInput 
                 value={incomeTypeId} 
                 options={incomeTypeOptions} 
@@ -151,10 +305,15 @@ export default function IncomePage() {
                 label="Категория дохода" 
               />
               <TextInput 
-                defaultValue={selectedIncomeType?.label || ''} 
+                value={title || selectedIncomeType?.label || ''}
+                onChange={(e) => setTitle(e.target.value)}
                 placeholder="Название дохода" 
               />
-              <MoneyInput placeholder="Сумма" />
+              <MoneyInput 
+                value={amount}
+                onValueChange={setAmount}
+                placeholder="Сумма" 
+              />
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
@@ -168,11 +327,13 @@ export default function IncomePage() {
                 label="Частота" 
               />
               <TextButton 
-                className="bg-blue-600 text-white mt-4" 
-                disabled
+                type="submit"
+                disabled={!isFormValid || submitting}
                 aria-label="Добавить доход"
+                variant="primary"
+                className="mt-4"
               >
-                Добавить
+                {submitting ? 'Добавление...' : 'Добавить'}
               </TextButton>
             </Form>
           </ModalWindow>
@@ -204,7 +365,7 @@ export default function IncomePage() {
                   <span>Ежемесячный итог: <strong className="text-gray-900 dark:text-gray-100">{monthlyTotal.toLocaleString()} USD</strong></span>
                   <span>Годовой итог: <strong className="text-gray-900 dark:text-gray-100">{annualTotal.toLocaleString()} USD</strong></span>
                 </div>
-                <Table columns={tableColumns} data={mockIncomes} />
+                <Table columns={tableColumns} data={incomes} />
               </div>
             )
           },
@@ -228,7 +389,12 @@ export default function IncomePage() {
       />
 
       <ModalWindow open={open} onClose={handleModalClose} title="Добавить доход">
-        <Form>
+        <Form onSubmit={handleSubmit}>
+          {formError && (
+            <div className="text-red-600 dark:text-red-400 text-sm">
+              {formError}
+            </div>
+          )}
           <SelectInput 
             value={incomeTypeId} 
             options={incomeTypeOptions} 
@@ -236,10 +402,15 @@ export default function IncomePage() {
             label="Категория дохода" 
           />
           <TextInput 
-            defaultValue={selectedIncomeType?.label || ''} 
+            value={title || selectedIncomeType?.label || ''}
+            onChange={(e) => setTitle(e.target.value)}
             placeholder="Название дохода" 
           />
-          <MoneyInput placeholder="Сумма" />
+          <MoneyInput 
+            value={amount}
+            onValueChange={setAmount}
+            placeholder="Сумма" 
+          />
           <SelectInput 
             value={currency} 
             options={currencyOptions} 
@@ -253,11 +424,13 @@ export default function IncomePage() {
             label="Частота" 
           />
           <TextButton 
-            className="bg-blue-600 text-white mt-4" 
-            disabled
+            type="submit"
+            disabled={!isFormValid || submitting}
             aria-label="Добавить доход"
+            variant="primary"
+            className="mt-4"
           >
-            Добавить
+            {submitting ? 'Добавление...' : 'Добавить'}
           </TextButton>
         </Form>
       </ModalWindow>

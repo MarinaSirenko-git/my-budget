@@ -2,54 +2,225 @@ import EmptyState from '@/shared/ui/atoms/EmptyState';
 import { SparklesIcon } from '@heroicons/react/24/outline';
 import TextButton from '@/shared/ui/atoms/TextButton';
 import GoalCard from '@/shared/ui/molecules/GoalCard';
-import { mockGoals } from '@/mocks/pages/goals.mock';
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/shared/store/auth';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import TextInput from '@/shared/ui/form/TextInput';
 import MoneyInput from '@/shared/ui/form/MoneyInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import DateInput from '@/shared/ui/form/DateInput';
+import { currencyOptions } from '@/shared/constants/currencies';
 
-const currencyOptions = [
-  { label: 'USD', value: 'USD' },
-  { label: 'EUR', value: 'EUR' },
-  { label: 'RUB', value: 'RUB' },
-];
+interface Goal {
+  id: string;
+  name: string;
+  amount: number;
+  currency: string;
+  targetDate: string;
+  saved?: number;
+  monthsLeft?: number;
+}
 
 export default function GoalsPage() {
+  const { user } = useAuth();
   // State to control modal open/close and editing target
   const [open, setOpen] = useState(false);
-  const [editingGoal, setEditingGoal] = useState<any | null>(null);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Form state
+  const [name, setName] = useState('');
+  const [amount, setAmount] = useState<string | undefined>(undefined);
+  const [currency, setCurrency] = useState(currencyOptions[0].value);
+  const [targetDate, setTargetDate] = useState<string | undefined>(undefined);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   function handleCreateGoal() {
     setEditingGoal(null);
+    setName('');
+    setAmount(undefined);
+    setCurrency(currencyOptions[0].value);
+    setTargetDate(undefined);
+    setFormError(null);
     setOpen(true);
   }
 
-  function handleEditGoal(goal: any) {
+  function handleEditGoal(goal: Goal) {
     setEditingGoal(goal);
+    setName(goal.name);
+    setAmount(goal.amount.toString());
+    setCurrency(goal.currency);
+    setTargetDate(goal.targetDate);
+    setFormError(null);
     setOpen(true);
   }
 
   function handleModalClose() {
     setOpen(false);
     setEditingGoal(null);
+    setName('');
+    setAmount(undefined);
+    setCurrency(currencyOptions[0].value);
+    setTargetDate(undefined);
+    setFormError(null);
   }
 
-  // Example of prefilled values
-  const formInitial = editingGoal
-    ? {
-        title: editingGoal.name,
-        amount: editingGoal.amount,
-        currency: editingGoal.currency,
-        date: editingGoal.targetDate,
+  // Check if form is valid
+  const isFormValid = useMemo(() => {
+    return !!(
+      name.trim() &&
+      amount &&
+      parseFloat(amount) > 0 &&
+      currency &&
+      targetDate
+    );
+  }, [name, amount, currency, targetDate]);
+
+  // Handle form submission
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    
+    if (!user || !isFormValid) {
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      setFormError(null);
+      
+      const goalData = {
+        user_id: user.id,
+        name: name.trim(),
+        target_amount: parseFloat(amount!),
+        current_amount: editingGoal?.saved || 0,
+        target_date: targetDate!,
+        currency: currency,
+      };
+
+      if (editingGoal) {
+        // Update existing goal
+        const { error: updateError } = await supabase
+          .from('goals')
+          .update(goalData)
+          .eq('id', editingGoal.id)
+          .eq('user_id', user.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        // Create new goal
+        const { error: insertError } = await supabase
+          .from('goals')
+          .insert(goalData);
+
+        if (insertError) {
+          throw insertError;
+        }
       }
-    : { title: '', amount: '', currency: currencyOptions[0].value, date: '' };
 
-  // Form state will be handled/enhanced in next steps; use initial values for now
+      // Refresh goals list
+      const { data, error: fetchError } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
 
-  if (!mockGoals || mockGoals.length === 0) {
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (data) {
+        const mappedGoals: Goal[] = data.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          amount: item.target_amount || item.amount,
+          currency: item.currency,
+          targetDate: item.target_date || item.targetDate,
+          saved: item.current_amount || item.saved || 0,
+          monthsLeft: item.months_left || undefined,
+        }));
+        setGoals(mappedGoals);
+      }
+
+      handleModalClose();
+    } catch (err) {
+      console.error('Error saving goal:', err);
+      setFormError(err instanceof Error ? err.message : 'Ошибка сохранения цели');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  // Fetch goals from Supabase
+  useEffect(() => {
+    async function fetchGoals() {
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const { data, error: fetchError } = await supabase
+          .from('goals')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (fetchError) {
+          throw fetchError;
+        }
+
+        if (data) {
+          // Map Supabase data to Goal interface
+          const mappedGoals: Goal[] = data.map((item: any) => ({
+            id: item.id,
+            name: item.name,
+            amount: item.target_amount || item.amount,
+            currency: item.currency,
+            targetDate: item.target_date || item.targetDate,
+            saved: item.current_amount || item.saved || 0,
+            monthsLeft: item.months_left || undefined,
+          }));
+          setGoals(mappedGoals);
+        }
+      } catch (err) {
+        console.error('Error fetching goals:', err);
+        setError(err instanceof Error ? err.message : 'Ошибка загрузки целей');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchGoals();
+  }, [user]);
+
+
+  if (loading) {
+    return (
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
+        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
+        <div className="text-red-600 dark:text-red-400">Ошибка: {error}</div>
+      </div>
+    );
+  }
+
+  if (!goals || goals.length === 0) {
     return (
       <div className="flex flex-1 h-full items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-6">
@@ -65,12 +236,42 @@ export default function GoalsPage() {
             Создать цель
           </TextButton>
           <ModalWindow open={open} onClose={handleModalClose} title={editingGoal ? "Редактировать цель" : "Создать цель"}>
-            <Form>
-              <TextInput defaultValue={formInitial.title} placeholder="Название цели" />
-              <MoneyInput defaultValue={formInitial.amount} placeholder="Целевая сумма" />
-              <SelectInput value={formInitial.currency} options={currencyOptions} onChange={()=>{}} label="Валюта" />
-              <DateInput value={formInitial.date} placeholder="Дата достижения" />
-              <TextButton variant="primary" className="mt-4" disabled>{editingGoal ? "Сохранить" : "Создать"}</TextButton>
+            <Form onSubmit={handleSubmit}>
+              {formError && (
+                <div className="text-red-600 dark:text-red-400 text-sm">
+                  {formError}
+                </div>
+              )}
+              <TextInput 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Название цели" 
+              />
+              <MoneyInput 
+                value={amount}
+                onValueChange={setAmount}
+                placeholder="Целевая сумма" 
+              />
+              <SelectInput 
+                value={currency} 
+                options={currencyOptions} 
+                onChange={setCurrency} 
+                label="Валюта" 
+              />
+              <DateInput 
+                value={targetDate}
+                onChange={setTargetDate}
+                placeholder="Дата достижения" 
+              />
+              <TextButton 
+                type="submit"
+                disabled={!isFormValid || submitting}
+                variant="primary" 
+                className="mt-4"
+                aria-label={editingGoal ? "Сохранить цель" : "Создать цель"}
+              >
+                {submitting ? (editingGoal ? 'Сохранение...' : 'Создание...') : (editingGoal ? 'Сохранить' : 'Создать')}
+              </TextButton>
             </Form>
           </ModalWindow>
         </div>
@@ -79,14 +280,44 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 min-h-[calc(100vh-100px)]">
+    <div className="flex flex-col p-6 gap-6 min-h-[calc(100vh-100px)]">
       <ModalWindow open={open} onClose={handleModalClose} title={editingGoal ? "Редактировать цель" : "Создать цель"}>
-        <Form>
-          <TextInput defaultValue={formInitial.title} placeholder="Название цели" />
-          <MoneyInput defaultValue={formInitial.amount} placeholder="Целевая сумма" />
-          <SelectInput value={formInitial.currency} options={currencyOptions} onChange={()=>{}} label="Валюта" />
-          <DateInput value={formInitial.date} placeholder="Дата достижения" />
-          <TextButton variant="primary" className="mt-4" disabled>{editingGoal ? "Сохранить" : "Создать"}</TextButton>
+        <Form onSubmit={handleSubmit}>
+          {formError && (
+            <div className="text-red-600 dark:text-red-400 text-sm">
+              {formError}
+            </div>
+          )}
+          <TextInput 
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Название цели" 
+          />
+          <MoneyInput 
+            value={amount}
+            onValueChange={setAmount}
+            placeholder="Целевая сумма" 
+          />
+          <SelectInput 
+            value={currency} 
+            options={currencyOptions} 
+            onChange={setCurrency} 
+            label="Валюта" 
+          />
+          <DateInput 
+            value={targetDate}
+            onChange={setTargetDate}
+            placeholder="Дата достижения" 
+          />
+          <TextButton 
+            type="submit"
+            disabled={!isFormValid || submitting}
+            variant="primary" 
+            className="mt-4"
+            aria-label={editingGoal ? "Сохранить цель" : "Создать цель"}
+          >
+            {submitting ? (editingGoal ? 'Сохранение...' : 'Создание...') : (editingGoal ? 'Сохранить' : 'Создать')}
+          </TextButton>
         </Form>
       </ModalWindow>
       <div className="flex w-full justify-end">
@@ -99,17 +330,31 @@ export default function GoalsPage() {
         </TextButton>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
-        {mockGoals.map((goal) => (
-          <GoalCard
-            key={goal.name}
-            title={goal.name}
-            saved={Math.floor(goal.amount * 0.3 + Math.random() * goal.amount * 0.3)}
-            target={goal.amount}
-            currency={goal.currency}
-            monthsLeft={Math.floor(Math.random() * 12 + 1)}
-            onEdit={() => handleEditGoal(goal)}
-          />
-        ))}
+        {goals.map((goal) => {
+          // Calculate months left if not provided
+          const monthsLeft = goal.monthsLeft || (() => {
+            const targetDate = new Date(goal.targetDate);
+            const today = new Date();
+            const diffTime = targetDate.getTime() - today.getTime();
+            const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
+            return Math.max(0, diffMonths);
+          })();
+          
+          // Use saved amount from DB or calculate a default
+          const saved = goal.saved ?? Math.floor(goal.amount * 0.3);
+          
+          return (
+            <GoalCard
+              key={goal.id}
+              title={goal.name}
+              saved={saved}
+              target={goal.amount}
+              currency={goal.currency}
+              monthsLeft={monthsLeft}
+              onEdit={() => handleEditGoal(goal)}
+            />
+          );
+        })}
       </div>
     </div>
   );
