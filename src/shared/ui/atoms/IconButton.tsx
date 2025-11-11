@@ -26,11 +26,11 @@ const IconButton = React.forwardRef<HTMLButtonElement, IconButtonProps>(
         className={`
           inline-flex items-center justify-center rounded-full p-2
           transition-all
-          bg-white dark:bg-gray-800
-          text-gray-700 dark:text-gray-200
-          hover:bg-gray-100 dark:hover:bg-gray-700
+          bg-cardColor dark:bg-cardColor
+          text-mainTextColor dark:text-mainTextColor
+          hover:bg-contentBg dark:hover:bg-contentBg
           focus-visible:ring-2 focus-visible:ring-primary focus-visible:z-10
-          active:bg-gray-200 dark:active:bg-gray-600
+          active:bg-contentBg dark:active:bg-contentBg
           disabled:opacity-50 disabled:pointer-events-none
           ${className}
         `}

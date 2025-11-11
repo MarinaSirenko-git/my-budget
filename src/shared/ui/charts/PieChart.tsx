@@ -72,11 +72,11 @@ const PieChart: React.FC<PieChartProps> = ({
     if (active && payload && payload.length) {
       const data = payload[0];
       return (
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-3">
-          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+        <div className="bg-cardColor dark:bg-cardColor border border-borderColor dark:border-borderColor rounded-lg shadow-lg p-3">
+          <p className="text-sm font-medium text-mainTextColor dark:text-mainTextColor">
             {data.name}
           </p>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-textColor dark:text-textColor">
             {typeof data.value === 'number' 
               ? data.value.toLocaleString() 
               : data.value}
@@ -90,7 +90,7 @@ const PieChart: React.FC<PieChartProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {title && (
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4 text-center">
+        <h3 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor mb-4 text-center">
           {title}
         </h3>
       )}
@@ -117,7 +117,7 @@ const PieChart: React.FC<PieChartProps> = ({
               verticalAlign="bottom"
               height={36}
               formatter={(value, entry: any) => (
-                <span className="text-gray-700 dark:text-gray-300 text-sm">
+                <span className="text-mainTextColor dark:text-mainTextColor text-sm">
                   {value}
                 </span>
               )}

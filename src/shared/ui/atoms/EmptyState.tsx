@@ -7,11 +7,11 @@ interface EmptyStateProps {
 }
 
 const EmptyState = ({ icon, children, className = '' }: EmptyStateProps) => (
-  <div className={`flex flex-col items-center justify-center gap-4 ${className}`}>
-    <div className="text-5xl opacity-30 text-gray-500 dark:text-gray-400">
+  <div className={`flex flex-col gap-6 items-center text-textColor dark:text-white justify-center ${className}`}>
+    <div className="text-5xl">
       {icon}
     </div>
-    <div className="text-xl text-center opacity-60 font-semibold">
+    <div className="text-xl text-center font-semibold">
       {children}
     </div>
   </div>

@@ -8,7 +8,7 @@ export interface ExpenseCategory {
 export const expenseCategories: ExpenseCategory[] = [
   {
     id: 'kids-school-receipt',
-    label: 'Школа детей',
+    label: 'Обучение детей',
     value: 'kids-school-receipt',
     isCustom: false,
   },
@@ -32,7 +32,7 @@ export const expenseCategories: ExpenseCategory[] = [
   },
   {
     id: 'parties',
-    label: 'Праздники',
+    label: 'Развлечения',
     value: 'parties',
     isCustom: false,
   },
@@ -56,14 +56,20 @@ export const expenseCategories: ExpenseCategory[] = [
   },
   {
     id: 'kids-hobbies',
-    label: 'Хобби детей',
+    label: 'Детские кружки',
     value: 'kids-hobbies',
     isCustom: false,
   },
   {
     id: 'fix-repair',
-    label: 'Ремонт',
+    label: 'Ремонт и обслуживание',
     value: 'fix-repair',
+    isCustom: false,
+  },
+  {
+    id: 'credit',
+    label: 'Кредиты',
+    value: 'credit',
     isCustom: false,
   },
   {

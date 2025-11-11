@@ -4,10 +4,10 @@ import { Outlet } from "react-router-dom";
 
 function PageContent(){
     return(
-        <div className="bg-base-200 flex flex-col">
+        <div className="bg-base-200 flex flex-col min-h-screen">
             <Header/>
-            <main className="flex-1 overflow-y-auto z-10 bg-base-200 h-full bg-gray-100 dark:bg-[#0F172A]">
-                <div className="bg-white dark:bg-[#1E293B] h-full w-full p-4 bg-base-100 shadow-xl mt-1 min-h-screen">
+            <main className="flex-1 overflow-y-auto z-10 bg-base-200 h-full bg-contentBg dark:bg-contentBg">
+                <div className="bg-contentBg dark:bg-contentBg h-full w-full p-4 bg-base-100 mt-1 h-full">
                     <Outlet />
                 </div>
             </main>

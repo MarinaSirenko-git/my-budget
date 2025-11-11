@@ -20,7 +20,7 @@ export const incomeTypes: IncomeType[] = [
   },
   {
     id: 'rental-income',
-    label: 'Арендный доход',
+    label: 'Доход от сдачи в аренду',
     value: 'rental-income',
     isCustom: false,
   },
@@ -31,20 +31,8 @@ export const incomeTypes: IncomeType[] = [
     isCustom: false,
   },
   {
-    id: 'royalties',
-    label: 'Роялти',
-    value: 'royalties',
-    isCustom: false,
-  },
-  {
-    id: 'small-business-profit',
-    label: 'Прибыль малого бизнеса',
-    value: 'small-business-profit',
-    isCustom: false,
-  },
-  {
     id: 'digital-product-sales',
-    label: 'Продажа цифровых продуктов',
+    label: 'Продажа товаров',
     value: 'digital-product-sales',
     isCustom: false,
   },
@@ -61,14 +49,8 @@ export const incomeTypes: IncomeType[] = [
     isCustom: false,
   },
   {
-    id: 'asset-sales',
-    label: 'Продажа активов',
-    value: 'asset-sales',
-    isCustom: false,
-  },
-  {
     id: 'custom',
-    label: 'Прочий доход',
+    label: 'Твой вариант',
     value: 'Custom',
     isCustom: true,
   },

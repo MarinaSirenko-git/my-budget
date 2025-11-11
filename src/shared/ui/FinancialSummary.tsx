@@ -2,41 +2,41 @@ export default function FinancialSummary({ totalIncome = 0, totalExpenses = 0, t
 
   const remainder = totalIncome - totalExpenses - totalGoals;
 
-  let remainderColor = 'text-gray-800 dark:text-gray-200';
+  let remainderColor = 'text-mainTextColor dark:text-mainTextColor';
   if (remainder > 0) {
-    remainderColor = 'text-green-700 dark:text-green-500';
+    remainderColor = 'text-success dark:text-success';
   } else if (remainder < 0) {
-    remainderColor = 'text-red-700 dark:text-red-500';
+    remainderColor = 'text-accentRed dark:text-accentRed';
   }
 
-  const itemStyle = "flex-1 min-w-[120px] px-1 bg-transparent dark:bg-gray-800 rounded-md shadow-sm border border-[#1E293B] dark:border-gray-700";
-  const labelStyle = "text-xs text-[#1E293B] dark:text-gray-400 tracking-wider";
-  const valueStyle = "text-sm font-semibold";
+  const itemStyle = "flex-1 min-w-[120px] px-1 dark:bg-cardColor rounded-md shadow-sm dark:border-borderColor";
+  const labelStyle = "text-sm font-semibold text-white dark:text-textColor tracking-wider";
+  const valueStyle = "text-sm font-semibold text-white dark:text-white";
 
   return (
-    <div className="flex flex-wrap items-center gap-4 bg-gray-100 dark:bg-gray-900 rounded-lg">
-      <div className={itemStyle}>
-        <div className={labelStyle}>Доходы</div>
-        <div className={`${valueStyle} text-green-600 dark:text-green-500`}>
+    <div className="flex flex-wrap items-center gap-4 bg-contentBg dark:bg-sidebarBg rounded-lg">
+      <div className={`${itemStyle} bg-success`}>
+        <div className={`${labelStyle}`}>Доходы</div>
+        <div className={`${valueStyle} text-success dark:text-success`}>
           {totalIncome}
         </div>
       </div>
 
-      <div className={itemStyle}>
-        <div className={labelStyle}>Расходы</div>
-        <div className={`${valueStyle} text-red-600 dark:text-red-500`}>
+      <div className={`${itemStyle} bg-accentRed`}>
+        <div className={`${labelStyle}`}>Расходы</div>
+        <div className={`${valueStyle} text-accentRed dark:text-accentRed`}>
           {totalExpenses}
         </div>
       </div>
       
-      <div className={itemStyle}>
-        <div className={labelStyle}>Цели</div>
-        <div className={`${valueStyle} text-blue-600 dark:text-blue-500`}>
+      <div className={`${itemStyle} bg-accentYellow`}>
+        <div className={`${labelStyle}`}>Цели</div>
+        <div className={`${valueStyle} text-primary dark:text-primary`}>
           {totalGoals}
         </div>
       </div>
 
-      <div className={itemStyle}>
+      <div className={`${itemStyle} bg-presenting`}>
         <div className={labelStyle}>Остаток</div>
         <div className={`${valueStyle} ${remainderColor}`}>
           {remainder}

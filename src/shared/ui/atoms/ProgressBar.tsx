@@ -18,8 +18,8 @@ const ProgressBar = React.forwardRef<HTMLProgressElement, ProgressBarProps>(
         value={isIndeterminate ? undefined : value}
         max={max}
         className={`
-          w-full h-3 rounded bg-gray-200 dark:bg-gray-800
-          [&::-webkit-progress-bar]:rounded [&::-webkit-progress-bar]:bg-gray-200 dark:[&::-webkit-progress-bar]:bg-gray-800
+          w-full h-3 rounded bg-contentBg dark:bg-cardColor
+          [&::-webkit-progress-bar]:rounded [&::-webkit-progress-bar]:bg-contentBg dark:[&::-webkit-progress-bar]:bg-cardColor
           [&::-webkit-progress-value]:rounded [&::-webkit-progress-value]:bg-primary
           [&::-moz-progress-bar]:rounded [&::-moz-progress-bar]:bg-primary
           ${isIndeterminate ? 'animate-pulse' : ''} ${className}

@@ -1,5 +1,4 @@
 import EmptyState from '@/shared/ui/atoms/EmptyState';
-import { SparklesIcon } from '@heroicons/react/24/outline';
 import TextButton from '@/shared/ui/atoms/TextButton';
 import GoalCard from '@/shared/ui/molecules/GoalCard';
 import { useState, useEffect, useMemo } from 'react';
@@ -40,6 +39,14 @@ export default function GoalsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Wrapper function to handle currency change with validation
+  const handleCurrencyChange = (newCurrency: string) => {
+    const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
+    if (validCurrency) {
+      setCurrency(validCurrency.value);
+    }
+  };
+
   function handleCreateGoal() {
     setEditingGoal(null);
     setName('');
@@ -54,7 +61,12 @@ export default function GoalsPage() {
     setEditingGoal(goal);
     setName(goal.name);
     setAmount(goal.amount.toString());
-    setCurrency(goal.currency);
+    const validCurrency = currencyOptions.find(opt => opt.value === goal.currency);
+    if (validCurrency) {
+      setCurrency(validCurrency.value);
+    } else {
+      setCurrency(currencyOptions[0].value);
+    }
     setTargetDate(goal.targetDate);
     setFormError(null);
     setOpen(true);
@@ -207,7 +219,7 @@ export default function GoalsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
+        <div className="text-textColor dark:text-textColor">Загрузка...</div>
       </div>
     );
   }
@@ -215,53 +227,55 @@ export default function GoalsPage() {
   if (error) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-red-600 dark:text-red-400">Ошибка: {error}</div>
+        <div className="text-accentRed dark:text-accentRed">Ошибка: {error}</div>
       </div>
     );
   }
 
   if (!goals || goals.length === 0) {
     return (
-      <div className="flex flex-1 h-full items-center justify-center">
-        <div className="flex flex-col items-center justify-center gap-6">
-          <EmptyState icon={<SparklesIcon className="w-16 h-16" />}>
-            У вас еще нет целей. Добавьте свою первую финансовую цель.
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
+        <div className="flex flex-col items-center justify-center gap-8 text-mainTextColor dark:text-mainTextColor">
+          <EmptyState icon={<img src="/src/assets/goal-page-mouse.webp" alt="Empty State" className="max-h-[200px] max-w-[200px]" />}>
+            На что копим и когда? <br /> Добавь свою первую финансовую цель.
           </EmptyState>
           <TextButton 
             onClick={handleCreateGoal} 
             aria-label="Создать цель" 
             variant="primary"
-            className="mt-2"
+            className="mt-3"
           >
             Создать цель
           </TextButton>
           <ModalWindow open={open} onClose={handleModalClose} title={editingGoal ? "Редактировать цель" : "Создать цель"}>
             <Form onSubmit={handleSubmit}>
               {formError && (
-                <div className="text-red-600 dark:text-red-400 text-sm">
+                <div className="text-accentRed dark:text-accentRed text-sm">
                   {formError}
                 </div>
               )}
               <TextInput 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Название цели" 
+                label="Название цели"
+                placeholder='Покупка машины'
               />
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}
-                placeholder="Целевая сумма" 
+                placeholder="10,000"
+                label="Cумма"
               />
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
-                onChange={setCurrency} 
+                onChange={handleCurrencyChange} 
                 label="Валюта" 
               />
               <DateInput 
                 value={targetDate}
                 onChange={setTargetDate}
-                placeholder="Дата достижения" 
+                label="Когда планируется покупка"
               />
               <TextButton 
                 type="submit"
@@ -284,24 +298,25 @@ export default function GoalsPage() {
       <ModalWindow open={open} onClose={handleModalClose} title={editingGoal ? "Редактировать цель" : "Создать цель"}>
         <Form onSubmit={handleSubmit}>
           {formError && (
-            <div className="text-red-600 dark:text-red-400 text-sm">
+            <div className="text-accentRed dark:text-accentRed text-sm">
               {formError}
             </div>
           )}
           <TextInput 
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Название цели" 
+            label='Название цели'
           />
           <MoneyInput 
             value={amount}
             onValueChange={setAmount}
-            placeholder="Целевая сумма" 
+            placeholder="10,000" 
+            label="Cумма"
           />
           <SelectInput 
             value={currency} 
             options={currencyOptions} 
-            onChange={setCurrency} 
+            onChange={handleCurrencyChange} 
             label="Валюта" 
           />
           <DateInput 

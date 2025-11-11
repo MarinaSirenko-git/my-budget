@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import EmptyState from '@/shared/ui/atoms/EmptyState';
-import { ArrowTrendingUpIcon } from '@heroicons/react/24/outline';
 import Tag from '@/shared/ui/atoms/Tag';
 import { incomeTypes } from '@/mocks/pages/income.mock';
 import type { IncomeType, Income } from '@/mocks/pages/income.mock';
@@ -38,6 +37,14 @@ export default function IncomePage() {
   const [amount, setAmount] = useState<string | undefined>(undefined);
   const [currency, setCurrency] = useState(currencyOptions[0].value);
   const [frequency, setFrequency] = useState(frequencyOptions[0].value);
+
+  // Wrapper function to handle currency change with validation
+  const handleCurrencyChange = (newCurrency: string) => {
+    const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
+    if (validCurrency) {
+      setCurrency(validCurrency.value);
+    }
+  };
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -261,7 +268,7 @@ export default function IncomePage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
+        <div className="text-textColor dark:text-textColor">Загрузка...</div>
       </div>
     );
   }
@@ -269,19 +276,19 @@ export default function IncomePage() {
   if (error) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-red-600 dark:text-red-400">Ошибка: {error}</div>
+        <div className="text-accentRed dark:text-accentRed">Ошибка: {error}</div>
       </div>
     );
   }
 
   if (!incomes || incomes.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="flex flex-col items-center justify-center gap-6">
-          <EmptyState icon={<ArrowTrendingUpIcon className="w-16 h-16" />}>
-            Вы еще не добавили доходы.
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
+        <div className="flex flex-col items-center justify-center gap-6 text-mainTextColor dark:text-mainTextColor">
+          <EmptyState icon={<img src="/src/assets/income-page-mouse.webp" alt="Empty State" className="max-h-[110px] max-w-[110px]" />}>
+            Без доходов не посчитаем — вноси за месяц и за год!
           </EmptyState>
-          <div className="flex flex-wrap gap-2 justify-center max-w-2xl px-4">
+          <div className="flex flex-wrap gap-2 justify-center max-w-2xl px-4 mt-4">
             {incomeTypes.map((type) => (
               <Tag 
                 key={type.id} 
@@ -294,7 +301,7 @@ export default function IncomePage() {
           <ModalWindow open={open} onClose={handleModalClose} title="Добавить доход">
             <Form onSubmit={handleSubmit}>
               {formError && (
-                <div className="text-red-600 dark:text-red-400 text-sm">
+                <div className="text-accentRed dark:text-accentRed text-sm">
                   {formError}
                 </div>
               )}
@@ -302,22 +309,19 @@ export default function IncomePage() {
                 value={incomeTypeId} 
                 options={incomeTypeOptions} 
                 onChange={setIncomeTypeId} 
-                label="Категория дохода" 
-              />
-              <TextInput 
-                value={title || selectedIncomeType?.label || ''}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Название дохода" 
+                label="Категория дохода"
+                creatable={true}
               />
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}
-                placeholder="Сумма" 
+                placeholder="1,000"
+                label="Сумма (в любой валюте)"
               />
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
-                onChange={setCurrency} 
+                onChange={handleCurrencyChange} 
                 label="Валюта" 
               />
               <SelectInput 
@@ -361,9 +365,9 @@ export default function IncomePage() {
             label: 'Таблица',
             content: (
               <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
-                  <span>Ежемесячный итог: <strong className="text-gray-900 dark:text-gray-100">{monthlyTotal.toLocaleString()} USD</strong></span>
-                  <span>Годовой итог: <strong className="text-gray-900 dark:text-gray-100">{annualTotal.toLocaleString()} USD</strong></span>
+                <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
+                  <span>Ежемесячный итог: <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong></span>
+                  <span>Годовой итог: <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString()} USD</strong></span>
                 </div>
                 <Table columns={tableColumns} data={incomes} />
               </div>
@@ -374,8 +378,8 @@ export default function IncomePage() {
             label: 'График',
             content: (
               <div className="space-y-4">
-                <div className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                  Ежемесячный итог: <strong className="text-gray-900 dark:text-gray-100">{monthlyTotal.toLocaleString()} USD</strong>
+                <div className="text-sm text-textColor dark:text-textColor text-center">
+                  Ежемесячный итог: <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong>
                 </div>
                 <PieChart 
                   title="Доходы по типам" 
@@ -391,7 +395,7 @@ export default function IncomePage() {
       <ModalWindow open={open} onClose={handleModalClose} title="Добавить доход">
         <Form onSubmit={handleSubmit}>
           {formError && (
-            <div className="text-red-600 dark:text-red-400 text-sm">
+            <div className="text-accentRed dark:text-accentRed text-sm">
               {formError}
             </div>
           )}
@@ -400,21 +404,17 @@ export default function IncomePage() {
             options={incomeTypeOptions} 
             onChange={setIncomeTypeId} 
             label="Категория дохода" 
-          />
-          <TextInput 
-            value={title || selectedIncomeType?.label || ''}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Название дохода" 
+            creatable={true}
           />
           <MoneyInput 
             value={amount}
             onValueChange={setAmount}
-            placeholder="Сумма" 
+            placeholder="Сумма"
           />
           <SelectInput 
             value={currency} 
             options={currencyOptions} 
-            onChange={setCurrency} 
+            onChange={handleCurrencyChange} 
             label="Валюта" 
           />
           <SelectInput 

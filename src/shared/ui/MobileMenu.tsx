@@ -11,7 +11,7 @@ export default function MobileMenu() {
   const [open, setOpen] = useState(false);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) => 
-    `flex items-center font-normal gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${isActive ? 'bg-gray-100 dark:bg-gray-700' : ''}`;
+    `flex items-center font-normal gap-2 hover:bg-contentBg dark:hover:bg-cardColor ${isActive ? 'bg-contentBg dark:bg-cardColor' : ''}`;
 
   return (
     <>
@@ -48,13 +48,13 @@ export default function MobileMenu() {
                 leaveFrom="translate-x-0"
                 leaveTo="-translate-x-full"
               >
-                <DialogPanel className="relative flex flex-col w-full max-w-xs bg-gray-900 text-white shadow-xl pointer-events-auto">
+                <DialogPanel className="relative flex flex-col w-full max-w-xs bg-sidebarBg text-mainTextColor shadow-xl pointer-events-auto">
                   {/* Header with Logo and Close Button */}
-                  <div className="flex items-center justify-between p-4 border-b border-gray-700">
+                  <div className="flex items-center justify-between p-4 border-b border-borderColor">
                     <Logo iconSize="lg" textColor="text-white" />
                     <button
                       onClick={() => setOpen(false)}
-                      className="p-2 rounded-md hover:bg-gray-800"
+                      className="p-2 rounded-md hover:bg-cardColor"
                     >
                       <XMarkIcon className="h-6 w-6" />
                     </button>
@@ -91,7 +91,7 @@ export default function MobileMenu() {
                   </nav>
 
                   {/* Footer with Theme Switch and Profile */}
-                  <div className="border-t border-gray-700 p-4 flex items-center justify-between gap-4">
+                  <div className="border-t border-borderColor p-4 flex items-center justify-between gap-4">
                     <ThemeSwitch />
                     <ProfileMenu />
                   </div>

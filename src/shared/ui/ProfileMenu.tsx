@@ -2,7 +2,6 @@
 import { Menu, Transition, MenuButton, MenuItems, MenuItem } from '@headlessui/react'
 import { Fragment } from 'react'
 import { Link } from 'react-router-dom'
-import avatar from '@/assets/avatars/scrooge.jpg'
 
 type Props = {
   onLogout?: () => void;
@@ -14,9 +13,6 @@ export default function ProfileMenu({ onLogout }: Props) {
       {/* Кнопка = аватар */}
       <MenuButton className="cursor-pointer">
         <div className="w-9 rounded-full overflow-hidden">
-          {avatar
-            ? <img src={avatar} alt='Вы' />
-            : <div className="grid place-items-center w-full h-full bg-base-200 text-xs">Вы</div>}
         </div>
       </MenuButton>
 
@@ -30,7 +26,7 @@ export default function ProfileMenu({ onLogout }: Props) {
         leaveFrom="opacity-100 scale-100"
         leaveTo="opacity-0 scale-95"
       >
-        <MenuItems className="absolute right-0 w-56 top-16 mt-1 rounded-xl bg-base-100 dark:bg-gray-800 dark:text-gray-300 shadow ring-1 ring-black/5 focus:outline-none z-50">
+        <MenuItems className="absolute right-0 w-56 top-16 mt-1 rounded-xl bg-base-100 dark:bg-cardColor dark:text-textColor shadow ring-1 ring-black/5 focus:outline-none z-50">
           <div className="p-2">
             <MenuItem as={Link} to="/settings" className="block rounded-lg px-3 py-2 data-[focus]:bg-base-200">
               Настройки профиля

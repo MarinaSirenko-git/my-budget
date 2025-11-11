@@ -15,19 +15,18 @@ interface TextButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElem
 
 const TextButton = React.forwardRef<HTMLButtonElement, TextButtonProps>(
   ({ children, className = '', disabled, variant, 'aria-label': ariaLabel, title, onClick, ...props }, ref) => {
-    debugger
     const buttonTitle = title ?? ariaLabel;
     
     const variantStyles = {
       default: `
-        bg-gray-300 text-primary
-        hover:bg-gray-100 dark:hover:bg-gray-800
-        active:bg-gray-200 dark:active:bg-gray-700
+        bg-cardColor text-primary
+        hover:bg-contentBg dark:hover:bg-cardColor
+        active:bg-contentBg dark:active:bg-cardColor
       `,
       primary: `
-        bg-blue-600 text-white
-        hover:bg-blue-700 dark:hover:bg-blue-700
-        active:bg-blue-800 dark:active:bg-blue-800
+        bg-primary text-white
+        hover:bg-primary/80 dark:hover:bg-primary/80
+        active:bg-primary/90 dark:active:bg-primary/90
       `,
     };
 
@@ -41,7 +40,7 @@ const TextButton = React.forwardRef<HTMLButtonElement, TextButtonProps>(
         disabled={disabled}
         onClick={onClick}
         className={`
-          inline-flex items-center justify-center font-medium rounded-md px-4 py-2 transition-all text-base
+          inline-flex items-center justify-center font-medium rounded-full px-4 py-3 transition-all text-base
           ${variantStyles[variant ? variant : 'default']}
           focus-visible:ring-2 focus-visible:ring-primary focus-visible:z-10
           disabled:opacity-50 disabled:pointer-events-none

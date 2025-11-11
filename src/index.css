@@ -2,6 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* layout */
+  --sidebar-bg:        245 245 245;   /* #FFFFFF */
+  --content-bg:        255 255 255;   /* #F5F5F5 */
+  --card-color:        255 255 255;   /* #FFFFFF */
+  --border-color:      224 224 224;   /* #E0E0E0 */
+
+  /* text */
+  --main-text-color:   32 33 36;      /* #202124 */
+  --text-color:        95 99 104;     /* #5F6368 */
+
+  /* brand / accents */
+  --primary:           94 159 247;    /* #5E9FF7 (Mausee Blue) */
+  --accent-blue:       94 159 247;    /* #5E9FF7 (при необходимости м.б. оттенок/hover) */
+  --accent-yellow:     251 192 45;    /* #FBC02D */
+  --accent-red:        239 83 80;     /* #EF5350 */
+
+  /* statuses */
+  --success:           139 195 74;    /* #8BC34A */
+  --warning:           255 152 0;     /* #FF9800 */
+  --presenting:        126 87 194;    /* #7E57C2 (Purple) */
+}
+
+.dark {
+  /* layout */
+  --sidebar-bg:        32 33 36;      /* #202124 (Dark Mausee Blue, sidebar/bg) */
+  --content-bg:        33 33 33;      /* #212121 */
+  --card-color:        66 66 66;      /* #424242 */
+  --border-color:      66 66 66;      /* #424242 (тонкая граница на тёмном) */
+
+  /* text */
+  --main-text-color:   224 224 224;   /* #E0E0E0 (основной текст) */
+  --text-color:        189 189 189;   /* #BDBDBD (вторичный/подписи) */
+
+  /* brand / accents */
+  --primary:           94 159 247;    /* #5E9FF7 */
+  --accent-blue:       94 159 247;    /* #5E9FF7 */
+  --accent-yellow:     251 192 45;    /* #FBC02D */
+  --accent-red:        239 83 80;     /* #EF5350 */
+
+  /* statuses */
+  --success:           139 195 74;    /* #8BC34A */
+  --warning:           255 152 0;     /* #FF9800 */
+  --presenting:        126 87 194;    /* #7E57C2 */
+}
+
+html, body {
+  height: 100%;
+  background-color: rgb(var(--content-bg));
+  color: rgb(var(--main-text-color));
+  color-scheme: light dark;
+}
+
+#root {
+  min-height: 100%;
+  background-color: rgb(var(--content-bg));
+}
+
+html, body {
+  overscroll-behavior: none;
+}
+
+html {
+  scrollbar-gutter: stable both-edges;
+}
+
+html.dark, .dark body, .dark #root {
+  background-color: rgb(var(--content-bg));
+}
+
 @media (min-width: 1024px) {
   .lg\:drawer-open > .drawer-toggle ~ .drawer-side {
     display: block;
@@ -43,47 +113,4 @@
   animation: spin 2s linear infinite;
 }
 
-.menu {
-  display:flex;
-  flex-direction:column;
-  flex-wrap:wrap;
-  font-size:.875rem;
-  line-height:1.25rem;
-  padding:.5rem
-}
-.menu :where(li ul) {
-  -webkit-margin-start:1rem;
-  -webkit-padding-start:.5rem;
-  margin-inline-start:1rem;
-  padding-inline-start:.5rem;
-  position:relative;
-  white-space:nowrap
-}
-.menu :where(li:not(.menu-title)>:not(ul):not(details):not(.menu-title)),
-.menu :where(li:not(.menu-title)>details>summary:not(.menu-title)) {
-  grid-gap:.5rem;
-  align-content:flex-start;
-  align-items:center;
-  display:grid;
-  gap:.5rem;
-  grid-auto-columns:minmax(auto,-webkit-max-content) auto -webkit-max-content;
-  grid-auto-columns:minmax(auto,max-content) auto max-content;
-  grid-auto-flow:column;
-  -webkit-user-select:none;
-  user-select:none
-}
 
-.menu :where(li>.menu-dropdown:not(.menu-dropdown-show)) {
-  display:none
-}
-:where(.menu li) {
-  align-items:stretch;
-  display:flex;
-  flex-direction:column;
-  flex-shrink:0;
-  flex-wrap:wrap;
-  position:relative
-}
-:where(.menu li) .badge {
-  justify-self:end
-}

@@ -54,9 +54,9 @@ function Table<T extends Record<string, any>>({
   };
 
   return (
-    <div className={`overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 ${className}`}>
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-800">
+    <div className={`overflow-x-auto rounded-lg border border-borderColor dark:border-borderColor ${className}`}>
+      <table className="min-w-full divide-y divide-borderColor dark:divide-borderColor">
+        <thead className="bg-contentBg dark:bg-cardColor">
           <tr>
             {columns.map((column) => (
               <th
@@ -64,7 +64,7 @@ function Table<T extends Record<string, any>>({
                 scope="col"
                 className={`
                   px-6 py-3 text-xs font-medium uppercase tracking-wider
-                  text-gray-500 dark:text-gray-400
+                  text-textColor dark:text-textColor
                   ${getAlignClass(column.align)}
                   ${column.width || ''}
                 `}
@@ -74,10 +74,10 @@ function Table<T extends Record<string, any>>({
             ))}
           </tr>
         </thead>
-        <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className="bg-cardColor dark:bg-sidebarBg divide-y divide-borderColor dark:divide-borderColor">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+              <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-textColor dark:text-textColor">
                 {emptyMessage}
               </td>
             </tr>
@@ -88,7 +88,7 @@ function Table<T extends Record<string, any>>({
                 onClick={() => onRowClick?.(row, rowIndex)}
                 className={`
                   transition-colors
-                  ${onRowClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : ''}
+                  ${onRowClick ? 'cursor-pointer hover:bg-contentBg dark:hover:bg-cardColor' : ''}
                 `}
               >
                 {columns.map((column) => (
@@ -96,7 +96,7 @@ function Table<T extends Record<string, any>>({
                     key={column.key}
                     className={`
                       px-6 py-4 whitespace-nowrap text-sm
-                      text-gray-900 dark:text-gray-100
+                      text-mainTextColor dark:text-mainTextColor
                       ${getAlignClass(column.align)}
                     `}
                   >

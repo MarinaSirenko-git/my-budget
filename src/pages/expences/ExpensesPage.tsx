@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import EmptyState from '@/shared/ui/atoms/EmptyState';
-import { ArrowTrendingDownIcon } from '@heroicons/react/24/outline';
 import Tag from '@/shared/ui/atoms/Tag';
 import { expenseCategories } from '@/mocks/pages/expenses.mock';
 import type { ExpenseCategory, Expense } from '@/mocks/pages/expenses.mock';
@@ -45,6 +44,14 @@ export default function ExpensesPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Wrapper function to handle currency change with validation
+  const handleCurrencyChange = (newCurrency: string) => {
+    const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
+    if (validCurrency) {
+      setCurrency(validCurrency.value);
+    }
+  };
 
   function handleTagClick(category: ExpenseCategory) {
     setCategoryId(category.id);
@@ -275,7 +282,7 @@ export default function ExpensesPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-gray-600 dark:text-gray-400">Загрузка...</div>
+        <div className="text-textColor dark:text-textColor">Загрузка...</div>
       </div>
     );
   }
@@ -283,18 +290,19 @@ export default function ExpensesPage() {
   if (error) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-red-600 dark:text-red-400">Ошибка: {error}</div>
+        <div className="text-accentRed dark:text-accentRed">Ошибка: {error}</div>
       </div>
     );
   }
 
   if (!expenses || expenses.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
+      <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6">
-          <EmptyState icon={<ArrowTrendingDownIcon className="w-16 h-16" />}>
-            Вы еще не добавили расходы.
+          <EmptyState icon={<img src="/src/assets/expenses-page-mouse.webp" alt="Empty State" className="max-h-[200px] max-w-[200px]" />}>
+            Теперь самое важное - добавляй планируемые расходы.
           </EmptyState>
+           <p className="max-w-[600px] text-center text-textColor dark:text-mainTextColor">Сформируй бюджет по категориям с фиксированными лимитами. Используй метод «конвертов» или отдельные накопительные счета/цели в приложении банка. При систематическом превышении пересмотри лимиты; повторяй корректировку, пока бюджет не станет управляемым.</p>
           <div className="flex flex-wrap gap-2 justify-center max-w-2xl px-4">
             {expenseCategories.map((category) => (
               <Tag 
@@ -308,7 +316,7 @@ export default function ExpensesPage() {
           <ModalWindow open={open} onClose={handleModalClose} title="Добавить расход">
             <Form onSubmit={handleSubmit}>
               {formError && (
-                <div className="text-red-600 dark:text-red-400 text-sm">
+                <div className="text-accentRed dark:text-accentRed text-sm">
                   {formError}
                 </div>
               )}
@@ -317,28 +325,19 @@ export default function ExpensesPage() {
                 options={expenseCategoryOptions} 
                 onChange={setCategoryId} 
                 label="Категория расхода" 
-              />
-              <TextInput 
-                value={title || selectedCategory?.label || ''}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Название расхода" 
+                creatable={true}
               />
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}
-                placeholder="Сумма" 
+                placeholder="1,000" 
+                label="Сумма (в любой валюте)"
               />
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
-                onChange={setCurrency} 
+                onChange={handleCurrencyChange} 
                 label="Валюта" 
-              />
-              <SelectInput 
-                value={frequency} 
-                options={frequencyOptions} 
-                onChange={setFrequency} 
-                label="Частота" 
               />
               <TextButton 
                 type="submit"
@@ -375,10 +374,10 @@ export default function ExpensesPage() {
             label: 'Таблица',
             content: (
               <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm text-gray-600 dark:text-gray-400">
-                  <span>Ежемесячный итог: <strong className="text-gray-900 dark:text-gray-100">{monthlyTotal.toLocaleString()} USD</strong></span>
-                  <span>Годовой итог: <strong className="text-gray-900 dark:text-gray-100">{annualTotal.toLocaleString()} USD</strong></span>
-                  <span>Разовая сумма: <strong className="text-gray-900 dark:text-gray-100">{oneTimeTotal.toLocaleString()} USD</strong></span>
+                <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
+                  <span>Ежемесячный итог: <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong></span>
+                  <span>Годовой итог: <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString()} USD</strong></span>
+                  <span>Разовая сумма: <strong className="text-mainTextColor dark:text-mainTextColor">{oneTimeTotal.toLocaleString()} USD</strong></span>
                 </div>
                 <Table columns={tableColumns} data={expenses} />
               </div>
@@ -389,8 +388,8 @@ export default function ExpensesPage() {
             label: 'График',
             content: (
               <div className="space-y-4">
-                <div className="text-sm text-gray-600 dark:text-gray-400 text-center">
-                  Ежемесячный итог: <strong className="text-gray-900 dark:text-gray-100">{monthlyTotal.toLocaleString()} USD</strong>
+                <div className="text-sm text-textColor dark:text-textColor text-center">
+                  Ежемесячный итог: <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong>
                 </div>
                 <PieChart 
                   title="Расходы по категориям" 
@@ -406,7 +405,7 @@ export default function ExpensesPage() {
           <ModalWindow open={open} onClose={handleModalClose} title="Добавить расход">
             <Form onSubmit={handleSubmit}>
               {formError && (
-                <div className="text-red-600 dark:text-red-400 text-sm">
+                <div className="text-accentRed dark:text-accentRed text-sm">
                   {formError}
                 </div>
               )}
@@ -429,7 +428,7 @@ export default function ExpensesPage() {
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
-                onChange={setCurrency} 
+                onChange={handleCurrencyChange} 
                 label="Валюта" 
               />
               <SelectInput 

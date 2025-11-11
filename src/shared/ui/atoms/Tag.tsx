@@ -27,11 +27,11 @@ const Tag: React.FC<TagProps> = ({
   return (
     <button
       className={`
-        inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium
-        transition-colors
+        inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium
+        transition-colors hover:opacity-80
         ${isCustom 
-          ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 hover:bg-blue-200 dark:hover:bg-blue-800' 
-          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'}
+          ? 'bg-primary dark:bg-primary text-white dark:text-mainTextColor hover:bg-primary dark:hover:bg-primary' 
+          : 'bg-sidebarBg dark:bg-cardColor text-mainTextColor dark:text-mainTextColor hover:bg-sidebarBg dark:hover:bg-cardColor'}
         ${onClick && !disabled ? 'cursor-pointer' : ''}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
@@ -48,7 +48,7 @@ const Tag: React.FC<TagProps> = ({
             e.stopPropagation();
             onRemove();
           }}
-          className="ml-1 rounded-full hover:bg-gray-300 dark:hover:bg-gray-500 p-0.5 transition-colors"
+          className="ml-1 rounded-full bg-sidebarBg hover:bg-sidebarBg dark:hover:bg-cardColor p-0.5 transition-colors"
           aria-label={`Remove ${title}`}
           type="button"
         >

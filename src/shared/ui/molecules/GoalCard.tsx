@@ -25,7 +25,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = '�
     alert('Delete goal feature coming soon');
   }
   return (
-    <div className="relative group rounded-xl bg-white dark:bg-gray-800 p-4 shadow flex flex-col gap-3 w-full max-w-md">
+    <div className="relative group rounded-xl bg-cardColor dark:bg-cardColor p-4 shadow flex flex-col gap-3 w-full max-w-md">
       {/* Action buttons - only visible on hover */}
       <div className="absolute top-3 right-3 flex gap-2 z-10 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
         <IconButton aria-label="Edit goal" title="Edit goal" onClick={handleEdit}>
@@ -35,9 +35,9 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = '�
           <TrashIcon className="w-5 h-5" />
         </IconButton>
       </div>
-      <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</div>
+      <div className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{title}</div>
       <ProgressBar value={saved} max={target} />
-      <div className="text-base font-medium text-gray-700 dark:text-gray-300 mt-1">
+      <div className="text-base font-medium text-mainTextColor dark:text-textColor mt-1">
         Накоплено <span className="font-bold">{formatMoney(saved, currency)}</span> из <span className="font-bold">{formatMoney(target, currency)}</span>
       </div>
       {typeof monthsLeft === 'number' && (

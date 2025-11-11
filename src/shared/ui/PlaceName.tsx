@@ -42,7 +42,7 @@ export default function PlaceName() {
   }, []);
 
   return (
-    <h1 className="text-sm font-normal text-[#1E293B] dark:text-white flex items-center gap-2">
+    <h1 className="text-md text-mainTextColor dark:text-white flex items-center gap-1">
       <MapPinIcon className="w-5 h-5" />
       {placeName}
     </h1>

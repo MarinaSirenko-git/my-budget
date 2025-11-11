@@ -24,7 +24,7 @@ const ModalWindow = React.forwardRef<HTMLDivElement, ModalWindowProps>(({ open, 
             as={Fragment}
             enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
             leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-            <Dialog.Panel ref={ref} className={`bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full ${className}`}>
+            <Dialog.Panel ref={ref} className={`bg-cardColor dark:bg-cardColor rounded-xl shadow-xl p-6 max-w-md w-full ${className}`}>
               {title && <Dialog.Title className="text-lg font-medium mb-3">{title}</Dialog.Title>}
               {children}
             </Dialog.Panel>
