@@ -68,7 +68,7 @@ const Tabs: React.FC<TabsProps> = ({
       <div 
         role="tablist" 
         aria-label="Tabs"
-        className="flex space-x-1 rounded-lg bg-contentBg dark:bg-cardColor p-1"
+        className="flex space-x-1 rounded-lg bg-contentBg dark:bg-cardColor p-1 px-12"
       >
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
@@ -89,8 +89,8 @@ const Tabs: React.FC<TabsProps> = ({
                 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
                 ${
                   isActive
-                    ? 'bg-cardColor dark:bg-cardColor text-mainTextColor dark:text-mainTextColor shadow-sm'
-                    : 'text-textColor dark:text-textColor hover:bg-cardColor/50 dark:hover:bg-cardColor/50 hover:text-mainTextColor dark:hover:text-mainTextColor'
+                    ? 'bg-presenting dark:bg-cardColor text-white dark:text-mainTextColor shadow-sm'
+                    : 'bg-sidebarBg text-textColor hover:opacity-80'
                 }
                 ${tab.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               `}

@@ -69,7 +69,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 
     return (
       <div className={`w-full ${className}`}>
-        {label && <span className="block mb-1 text-sm font-medium text-mainTextColor dark:text-textColor">{label}</span>}
+        {label && <span className="block mb-1 text-sm font-medium text-textColor dark:text-textColor">{label}</span>}
         <Listbox value={value} onChange={handleOptionChange} disabled={disabled}>
           {({ open }) => (
             <div className="relative">

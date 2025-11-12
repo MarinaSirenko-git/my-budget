@@ -77,7 +77,7 @@ function Table<T extends Record<string, any>>({
         <tbody className="bg-cardColor dark:bg-sidebarBg divide-y divide-borderColor dark:divide-borderColor">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-12 text-center text-sm text-textColor dark:text-textColor">
+              <td colSpan={columns.length} className="px-6 py-12 text-sm text-textColor dark:text-textColor">
                 {emptyMessage}
               </td>
             </tr>

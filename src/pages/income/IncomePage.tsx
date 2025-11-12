@@ -7,7 +7,6 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/shared/store/auth';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
-import TextInput from '@/shared/ui/form/TextInput';
 import MoneyInput from '@/shared/ui/form/MoneyInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import TextButton from '@/shared/ui/atoms/TextButton';
@@ -79,13 +78,12 @@ export default function IncomePage() {
   const isFormValid = useMemo(() => {
     return !!(
       incomeTypeId &&
-      title.trim() &&
       amount &&
       parseFloat(amount) > 0 &&
       currency &&
       frequency
     );
-  }, [incomeTypeId, title, amount, currency, frequency]);
+  }, [incomeTypeId, amount, currency, frequency]);
 
   // Handle form submission
   async function handleSubmit(e: React.FormEvent) {
@@ -97,18 +95,14 @@ export default function IncomePage() {
 
     try {
       setSubmitting(true);
-      
       const { error: insertError } = await supabase
         .from('incomes')
         .insert({
-          user_id: user.id,
           type: incomeTypeId,
-          name: title.trim(),
           amount: parseFloat(amount!),
           currency: currency,
           frequency: frequency,
         });
-
       if (insertError) {
         throw insertError;
       }
@@ -128,7 +122,6 @@ export default function IncomePage() {
         const mappedIncomes: Income[] = data.map((item: any) => ({
           id: item.id,
           type: item.type,
-          title: item.name || item.title,
           amount: item.amount,
           currency: item.currency,
           frequency: item.frequency || 'monthly',
@@ -177,7 +170,6 @@ export default function IncomePage() {
           const mappedIncomes: Income[] = data.map((item: any) => ({
             id: item.id,
             type: item.type,
-            title: item.name || item.title,
             amount: item.amount,
             currency: item.currency,
             frequency: item.frequency || 'monthly',
@@ -231,10 +223,9 @@ export default function IncomePage() {
 
   // Table columns
   const tableColumns = [
-    { key: 'title', label: 'Название' },
     { 
       key: 'type', 
-      label: 'Тип',
+      label: 'Категория',
       render: (value: string) => {
         const type = incomeTypes.find(t => t.id === value);
         return type?.label || value;
@@ -243,17 +234,17 @@ export default function IncomePage() {
     { 
       key: 'amount', 
       label: 'Сумма',
-      align: 'right' as const,
+      align: 'left' as const,
       render: (value: number, row: Income) => `${value.toLocaleString()} ${row.currency}`
     },
-    { key: 'frequency', label: 'Частота', align: 'center' as const },
+    { key: 'frequency', label: 'Частота', align: 'left' as const },
     { key: 'date', label: 'Дата' },
     {
       key: 'actions',
       label: 'Действия',
-      align: 'center' as const,
+      align: 'left' as const,
       render: () => (
-        <div className="flex gap-2 justify-center">
+        <div className="flex gap-2 items-center justify-start">
           <IconButton aria-label="Редактировать доход" title="Редактировать" onClick={() => {}}>
             <PencilIcon className="w-4 h-4" />
           </IconButton>
@@ -364,7 +355,7 @@ export default function IncomePage() {
             id: 'table',
             label: 'Таблица',
             content: (
-              <div className="space-y-4">
+              <div className="space-y-4 px-12">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
                   <span>Ежемесячный итог: <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong></span>
                   <span>Годовой итог: <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString()} USD</strong></span>
@@ -377,7 +368,7 @@ export default function IncomePage() {
             id: 'chart',
             label: 'График',
             content: (
-              <div className="space-y-4">
+              <div className="space-y-4 px-12">
                 <div className="text-sm text-textColor dark:text-textColor text-center">
                   Ежемесячный итог: <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong>
                 </div>
@@ -409,7 +400,8 @@ export default function IncomePage() {
           <MoneyInput 
             value={amount}
             onValueChange={setAmount}
-            placeholder="Сумма"
+            placeholder="10,000"
+            label="Сумма"
           />
           <SelectInput 
             value={currency} 

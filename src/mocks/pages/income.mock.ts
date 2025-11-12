@@ -59,7 +59,6 @@ export const incomeTypes: IncomeType[] = [
 export interface Income {
   id: string;
   type: string;
-  title: string;
   amount: number;
   currency: string;
   frequency: 'monthly' | 'annual';
@@ -71,7 +70,6 @@ export const mockIncomes: Income[] = [
   {
     id: '1',
     type: 'salary',
-    title: 'Зарплата разработчика',
     amount: 7500,
     currency: 'USD',
     frequency: 'monthly',
@@ -81,7 +79,6 @@ export const mockIncomes: Income[] = [
   {
     id: '2',
     type: 'bonuses',
-    title: 'Бонус за Q4',
     amount: 2500,
     currency: 'USD',
     frequency: 'annual',
@@ -91,7 +88,6 @@ export const mockIncomes: Income[] = [
   {
     id: '3',
     type: 'rental-income',
-    title: 'Аренда квартиры',
     amount: 1200,
     currency: 'USD',
     frequency: 'monthly',
@@ -101,7 +97,6 @@ export const mockIncomes: Income[] = [
   {
     id: '4',
     type: 'dividends',
-    title: 'Дивиденды по акциям',
     amount: 450,
     currency: 'USD',
     frequency: 'annual',
@@ -111,7 +106,6 @@ export const mockIncomes: Income[] = [
   {
     id: '5',
     type: 'small-business-profit',
-    title: 'Фриланс консалтинг',
     amount: 3200,
     currency: 'USD',
     frequency: 'monthly',
@@ -121,7 +115,6 @@ export const mockIncomes: Income[] = [
   {
     id: '6',
     type: 'digital-product-sales',
-    title: 'Продажа онлайн курсов',
     amount: 850,
     currency: 'USD',
     frequency: 'monthly',
@@ -131,7 +124,6 @@ export const mockIncomes: Income[] = [
   {
     id: '7',
     type: 'tax-refunds',
-    title: 'Налоговый возврат 2024',
     amount: 1200,
     currency: 'USD',
     frequency: 'annual',
@@ -141,7 +133,6 @@ export const mockIncomes: Income[] = [
   {
     id: '8',
     type: 'royalties',
-    title: 'Роялти за книгу',
     amount: 600,
     currency: 'USD',
     frequency: 'annual',
