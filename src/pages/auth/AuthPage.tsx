@@ -26,7 +26,7 @@ export default function AuthPage() {
       {/* Right section - Login form */}
       <div className="flex-1 flex items-center justify-center bg-white dark:bg-white">
         <div className="flex flex-col items-center gap-6 p-8">
-          <p className="text-3xl font-bold">Mausee</p>
+          <p className="text-3xl font-bold">Mousie</p>
           <p className="text-md text-textColor text-center max-w-[450px]">
            Добавляйте доходы, планируемые расходы и цели, чтобы управлять семейным бюджетом. Просто и эффективно.
           </p>

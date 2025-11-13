@@ -14,7 +14,7 @@
   --text-color:        95 99 104;     /* #5F6368 */
 
   /* brand / accents */
-  --primary:           94 159 247;    /* #5E9FF7 (Mausee Blue) */
+  --primary:           94 159 247;    /* #5E9FF7 (mousie Blue) */
   --accent-blue:       94 159 247;    /* #5E9FF7 (при необходимости м.б. оттенок/hover) */
   --accent-yellow:     251 192 45;    /* #FBC02D */
   --accent-red:        239 83 80;     /* #EF5350 */
@@ -27,7 +27,7 @@
 
 .dark {
   /* layout */
-  --sidebar-bg:        32 33 36;      /* #202124 (Dark Mausee Blue, sidebar/bg) */
+  --sidebar-bg:        32 33 36;      /* #202124 (Dark mousie Blue, sidebar/bg) */
   --content-bg:        33 33 33;      /* #212121 */
   --card-color:        66 66 66;      /* #424242 */
   --border-color:      66 66 66;      /* #424242 (тонкая граница на тёмном) */

@@ -136,6 +136,12 @@ export default function IncomePage() {
       console.error('Error adding income:', err);
       setFormError(err instanceof Error ? err.message : 'Ошибка добавления дохода');
     } finally {
+      try {
+      await supabase.functions.invoke('send-to-telegram', {
+        body: { message: "Новый фидбек: Приложение отличное!" }
+      })} catch (err) {
+        console.error('Error sending to telegram:', err);
+      }
       setSubmitting(false);
     }
   }

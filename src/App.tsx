@@ -12,6 +12,7 @@ import { useEffect } from 'react';
 import { useTheme } from './shared/store/theme';
 import { useAuth } from '@/shared/store/auth'
 import AuthCallback from './shared/router/AuthCallback';
+import Feedback from './shared/ui/Feedback';
 
 function App() {
   const initTheme = useTheme(s => s.init);
@@ -21,25 +22,28 @@ function App() {
   useEffect(() => { initAuth(); }, [initAuth]);
 
   return (
-    <Routes>
-      {/* Без лейаута */}
-      <Route path="/auth-callback" element={<AuthCallback />} />
-      <Route path="/auth" element={<AuthPage />} />
+    <>
+      <Routes>
+        {/* Без лейаута */}
+        <Route path="/auth-callback" element={<AuthCallback />} />
+        <Route path="/auth" element={<AuthPage />} />
 
-      {/* Всё под общим лейаутом */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<Layout />}>
-          <Route index element={<Navigate to="/goals" replace />} />
-          <Route path="/income" element={<IncomePage />} />
-          <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/goals" element={<GoalsPage />} />
-          <Route path="/docs" element={<DocsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
+        {/* Всё под общим лейаутом */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
+            <Route index element={<Navigate to="/goals" replace />} />
+            <Route path="/income" element={<IncomePage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/docs" element={<DocsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
         </Route>
-      </Route>
-      {/* 404 / редирект */}
-      <Route path="*" element={<Navigate to="/goals" replace />} />
-    </Routes>
+        {/* 404 / редирект */}
+        <Route path="*" element={<Navigate to="/goals" replace />} />
+      </Routes>
+      <Feedback />
+    </>
   );
 }
 
