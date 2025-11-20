@@ -1,15 +1,17 @@
 import { useTheme } from '@/shared/store/theme';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { useTranslation } from '@/shared/i18n';
 
 export default function ThemeSwitch() {
   const { theme, toggle } = useTheme();
+  const { t } = useTranslation('components');
   const isLight = theme === 'light';
 
   return (
     <button
       onClick={toggle}
       className="relative flex items-center w-20 h-10 rounded-full bg-primary dark:bg-cardColor p-1 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
-      aria-label={isLight ? 'Switch to dark mode' : 'Switch to light mode'}
+      aria-label={isLight ? t('header.switchToDarkMode') : t('header.switchToLightMode')}
       role="switch"
       aria-checked={!isLight}
     >

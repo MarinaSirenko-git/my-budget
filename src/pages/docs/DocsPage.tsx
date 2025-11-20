@@ -1,115 +1,119 @@
+import { useTranslation } from '@/shared/i18n';
+
 export default function DocsPage() {
+  const { t } = useTranslation('pages');
+
   return (
     <div className="flex flex-col p-6 max-w-4xl mx-auto">
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-primary mb-4">Как это работает и почему помогает</h1>
-        <p className="text-mainTextColor dark:text-mainTextColor">Метод «<strong>внеси доходы → задай цели → категоризируй траты → используй конверты</strong>» превращает деньги из абстракции в понятный план: вы видите, сколько приходит, на что уходит, какие цели важнее и какие лимиты у каждой категории. Это снижает тревожность, убирает «утечки» и даёт ощущение контроля.</p>
+        <h1 className="text-2xl font-bold text-primary mb-4">{t('docs.header.title')}</h1>
+        <p className="text-mainTextColor dark:text-mainTextColor" dangerouslySetInnerHTML={{ __html: t('docs.header.description') }} />
       </header>
 
       <section className="space-y-2 mb-8">
-        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">1) Внести доходы → понять реальную базу</h2>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Зачем:</strong> без честного учёта доходов любые планы «в воздухе».</p>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Что даёт:</strong> фиксированная рамка (месячная/годовая), от которой считаются лимиты и сроки целей.</p>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Результат:</strong> исчезают иллюзии «кажется, хватит», появляются реальные цифры.</p>
+        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{t('docs.section1.title')}</h2>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.why')}</strong> {t('docs.section1.why')}</p>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.what')}</strong> {t('docs.section1.what')}</p>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.result')}</strong> {t('docs.section1.result')}</p>
         <div className="mt-4">
-          <h3 className="text-lg font-medium text-mainTextColor dark:text-mainTextColor mb-2">В приложении:</h3>
+          <h3 className="text-lg font-medium text-mainTextColor dark:text-mainTextColor mb-2">{t('docs.section1.inAppTitle')}</h3>
           <ul className="list-disc list-inside space-y-2 text-mainTextColor dark:text-mainTextColor">
-            <li>Внесите все источники (зарплата, фриланс, кэшбэк, проценты, аренда и т. п.).</li>
-            <li>Отметьте регулярность (месяц/квартал/год), чтобы расчёты были корректными.</li>
+            <li>{t('docs.section1.inAppItem1')}</li>
+            <li>{t('docs.section1.inAppItem2')}</li>
           </ul>
         </div>
       </section>
 
       <section className="space-y-2 mb-8">
-        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">2) Внести цели → дать деньгам направление</h2>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Зачем:</strong> деньги без цели «растворяются».</p>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Что даёт:</strong> приоритеты (подушка, отпуск, первый взнос), сроки и нужная сумма.</p>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Результат:</strong> появляется мотивация и критерий успеха («идём по плану / отстаём»).</p>
+        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{t('docs.section2.title')}</h2>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.why')}</strong> {t('docs.section2.why')}</p>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.what')}</strong> {t('docs.section2.what')}</p>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.result')}</strong> {t('docs.section2.result')}</p>
         <div className="mt-4">
-          <h3 className="text-lg font-medium text-mainTextColor dark:text-mainTextColor mb-2">В приложении:</h3>
+          <h3 className="text-lg font-medium text-mainTextColor dark:text-mainTextColor mb-2">{t('docs.section2.inAppTitle')}</h3>
           <ul className="list-disc list-inside space-y-2 text-mainTextColor dark:text-mainTextColor">
-            <li>Добавьте цель (сумма + дедлайн + приоритет).</li>
-            <li>Система сравнит цели с остатком после расходов и подскажет, что реально.</li>
+            <li>{t('docs.section2.inAppItem1')}</li>
+            <li>{t('docs.section2.inAppItem2')}</li>
           </ul>
         </div>
       </section>
 
       <section className="space-y-2 mb-8">
-        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">3) Категоризировать траты → найти «чёрные дыры»</h2>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Зачем:</strong> «траты вообще» не режутся; режутся конкретные категории.</p>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Что даёт:</strong> видимость «куда утекает», быстрые победы в нескольких категориях.</p>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Результат:</strong> находите 2–3 зоны для оптимизации без чувства лишений.</p>
+        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{t('docs.section3.title')}</h2>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.why')}</strong> {t('docs.section3.why')}</p>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.what')}</strong> {t('docs.section3.what')}</p>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.result')}</strong> {t('docs.section3.result')}</p>
         <div className="mt-4">
-          <h3 className="text-lg font-medium text-mainTextColor dark:text-mainTextColor mb-2">В приложении:</h3>
+          <h3 className="text-lg font-medium text-mainTextColor dark:text-mainTextColor mb-2">{t('docs.section3.inAppTitle')}</h3>
           <ul className="list-disc list-inside space-y-2 text-mainTextColor dark:text-mainTextColor">
-            <li>Используйте готовые категории (еда, транспорт, жильё, связь и т. д.) или добавьте свои.</li>
-            <li>Включайте автозачёт износа/налогов для доходов типа аренды — расходы пересчитаются автоматически.</li>
+            <li>{t('docs.section3.inAppItem1')}</li>
+            <li>{t('docs.section3.inAppItem2')}</li>
           </ul>
         </div>
       </section>
 
       <section className="space-y-2 mb-8">
-        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">4) Метод конвертов → превратить план в поведение</h2>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Зачем:</strong> «конверт» (лимит на категорию) превращает намерение в действие.</p>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Как работает:</strong> каждой категории назначается жёсткий лимит; тратить сверх нельзя, можно перераспределять между конвертами осознанно.</p>
-        <p className="text-mainTextColor dark:text-mainTextColor"><strong>Результат:</strong> бюджет становится самоограничивающей системой — не нужно всё время «считать в голове».</p>
+        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{t('docs.section4.title')}</h2>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.why')}</strong> {t('docs.section4.why')}</p>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.how')}</strong> {t('docs.section4.how')}</p>
+        <p className="text-mainTextColor dark:text-mainTextColor"><strong>{t('docs.labels.result')}</strong> {t('docs.section4.result')}</p>
         <div className="mt-4">
-          <h3 className="text-lg font-medium text-mainTextColor dark:text-mainTextColor mb-2">В приложении:</h3>
+          <h3 className="text-lg font-medium text-mainTextColor dark:text-mainTextColor mb-2">{t('docs.section4.inAppTitle')}</h3>
           <ul className="list-disc list-inside space-y-2 text-mainTextColor dark:text-mainTextColor">
-            <li>Задайте лимиты по категориям (конверты).</li>
-            <li>Следите за остатком по конверту и общим остатком месяца.</li>
-            <li>Если не укладываетесь — пересмотрите лимит или приоритеты целей (план становится реалистичнее).</li>
+            <li>{t('docs.section4.inAppItem1')}</li>
+            <li>{t('docs.section4.inAppItem2')}</li>
+            <li>{t('docs.section4.inAppItem3')}</li>
           </ul>
         </div>
       </section>
 
       <section className="space-y-2 mb-8">
-        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">Почему это действительно помогает</h2>
+        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{t('docs.whyItHelps.title')}</h2>
         <ul className="list-disc list-inside space-y-2 text-mainTextColor dark:text-mainTextColor">
-          <li><strong>От абстракций к структуре:</strong> доходы → цели → категории → лимиты. Мозг любит понятные шаги.</li>
-          <li><strong>Приоритеты видны:</strong> деньги «работают» на цели, а не «исчезают» случайно.</li>
-          <li><strong>Меньше стресса:</strong> решения принимаются в момент планирования, а не на кассе.</li>
-          <li><strong>Гибкость без самообмана:</strong> лимиты можно менять, но осознанно — виден trade-off.</li>
-          <li><strong>Обратная связь:</strong> прогресс и отставание видны сразу; приложение подсказывает корректировки.</li>
+          <li>{t('docs.whyItHelps.item1')}</li>
+          <li>{t('docs.whyItHelps.item2')}</li>
+          <li>{t('docs.whyItHelps.item3')}</li>
+          <li>{t('docs.whyItHelps.item4')}</li>
+          <li>{t('docs.whyItHelps.item5')}</li>
         </ul>
       </section>
 
       <section className="space-y-2 mb-8">
-        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">Что делает приложение за вас</h2>
+        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{t('docs.whatAppDoes.title')}</h2>
         <ul className="list-disc list-inside space-y-2 text-mainTextColor dark:text-mainTextColor">
-          <li><strong>Конвертирует валюты</strong> и даёт единую картину.</li>
-          <li><strong>Автоматически разносит</strong> часть доходов в расходы (налоги, износ при аренде).</li>
-          <li><strong>Визуализирует</strong> доходы/расходы/цели (диаграммы, прогресс по целям).</li>
-          <li><strong>Предупреждает</strong> о перерасходе и предлагает варианты (сдвинуть лимит, снизить трату, перенести цель).</li>
-          <li><strong>Сохраняет сценарии</strong> (например, другой город/пригород) и позволяет сравнивать их бок о бок.</li>
+          <li>{t('docs.whatAppDoes.item1')}</li>
+          <li>{t('docs.whatAppDoes.item2')}</li>
+          <li>{t('docs.whatAppDoes.item3')}</li>
+          <li>{t('docs.whatAppDoes.item4')}</li>
+          <li>{t('docs.whatAppDoes.item5')}</li>
         </ul>
       </section>
 
       <section className="space-y-2 mb-8">
-        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">Как пользоваться, чтобы сработало</h2>
+        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{t('docs.howToUse.title')}</h2>
         <ol className="list-decimal list-inside space-y-2 text-mainTextColor dark:text-mainTextColor">
-          <li><strong>Запишите все доходы</strong> (месяц + годовые, премии, сезонные).</li>
-          <li><strong>Добавьте 2–3 главные цели</strong> с суммой и сроком.</li>
-          <li><strong>Разбейте траты по категориям</strong> и задайте <strong>лимиты-конверты</strong>.</li>
-          <li><strong>Живите внутри лимитов</strong>: если не хватает — меняйте лимит или цель, а не игнорируйте план.</li>
-          <li><strong>Пересматривайте раз в месяц</strong>: план работает, когда он живой.</li>
+          <li>{t('docs.howToUse.item1')}</li>
+          <li>{t('docs.howToUse.item2')}</li>
+          <li>{t('docs.howToUse.item3')}</li>
+          <li>{t('docs.howToUse.item4')}</li>
+          <li>{t('docs.howToUse.item5')}</li>
         </ol>
       </section>
 
       <section className="space-y-2 mb-8">
-        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">Частые вопросы</h2>
+        <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{t('docs.faq.title')}</h2>
         <div className="space-y-3">
           <details className="text-mainTextColor dark:text-mainTextColor">
-            <summary className="cursor-pointer font-medium">Что если доход нестабилен?</summary>
-            <p className="mt-2 ml-4">Заложите «базовый» сценарий (минимальный доход) и «оптимистичный». Приложение покажет, как учесть оба.</p>
+            <summary className="cursor-pointer font-medium">{t('docs.faq.q1')}</summary>
+            <p className="mt-2 ml-4">{t('docs.faq.a1')}</p>
           </details>
           <details className="text-mainTextColor dark:text-mainTextColor">
-            <summary className="cursor-pointer font-medium">Что если цель «не тянет»?</summary>
-            <p className="mt-2 ml-4">Пересчитайте срок или уменьшите сумму. Лучше реалистичный план, чем идеальный на бумаге.</p>
+            <summary className="cursor-pointer font-medium">{t('docs.faq.q2')}</summary>
+            <p className="mt-2 ml-4">{t('docs.faq.a2')}</p>
           </details>
           <details className="text-mainTextColor dark:text-mainTextColor">
-            <summary className="cursor-pointer font-medium">Можно ли тратить сверх конверта?</summary>
-            <p className="mt-2 ml-4">Да, но только через явное перераспределение из другого конверта — так виден компромисс, и импульсивные траты уменьшаются.</p>
+            <summary className="cursor-pointer font-medium">{t('docs.faq.q3')}</summary>
+            <p className="mt-2 ml-4">{t('docs.faq.a3')}</p>
           </details>
         </div>
       </section>

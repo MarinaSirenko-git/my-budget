@@ -1,0 +1,208 @@
+{
+  "header": {
+    "navigation": "Navigation",
+    "myFinancialGoals": "My Financial Goals",
+    "documentation": "Documentation",
+    "createAlternativeScenario": "Create Alternative Scenario",
+    "switchToDarkMode": "Switch to dark mode",
+    "switchToLightMode": "Switch to light mode"
+  },
+  "sidebar": {
+    "menu": "Menu",
+    "myIncome": "My Income",
+    "myGoals": "My Goals",
+    "myExpenses": "My Expenses",
+    "howWillThisHelp": "How will this help me?",
+    "settings": "Settings",
+    "signOut": "Sign Out"
+  },
+  "summary": {
+    "income": "Income",
+    "expenses": "Expenses",
+    "goals": "Goals",
+    "remainder": "Remainder"
+  },
+  "form": {
+    "required": "Required field",
+    "optional": "Optional field"
+  },
+  "settingsForm": {
+    "title": "Settings",
+    "loading": "Loading settings...",
+    "googleEmailLabel": "Google Email for login",
+    "scenarioNameLabel": "Scenario name",
+    "scenarioNamePlaceholder": "Enter place name",
+    "currencyLabel": "Currency for calculations",
+    "languageLabel": "Interface language",
+    "saveButton": "Save",
+    "savingButton": "Saving...",
+    "saveAriaLabel": "Save settings",
+    "successMessage": "Settings saved successfully",
+    "errorMessage": "Error saving settings",
+    "loginRequired": "You must be logged in",
+    "russian": "Russian (RU)",
+    "english": "English (EN)"
+  },
+  "feedbackForm": {
+    "buttonTitle": "Leave feedback",
+    "buttonAriaLabel": "Leave feedback",
+    "label": "Have questions or suggestions?",
+    "description": "I will receive your message in Telegram and reply to you as soon as possible to the email that was specified during registration",
+    "validationError": "Please enter your feedback",
+    "successMessage": "Thank you for your feedback!",
+    "errorMessage": "Error sending feedback. Please try again later.",
+    "cancelButton": "Cancel",
+    "submitButton": "Send",
+    "submittingButton": "Sending...",
+    "submitAriaLabel": "Send feedback",
+    "telegramMessagePrefix": "New feedback from",
+    "emailNotSpecified": "Not specified"
+  },
+  "incomeForm": {
+    "title": "Add Income",
+    "editTitle": "Edit Income",
+    "categoryLabel": "Income category",
+    "amountLabel": "Amount",
+    "amountLabelFull": "Amount (in any currency)",
+    "currencyLabel": "Currency",
+    "frequencyLabel": "Frequency",
+    "submitButton": "Add",
+    "submittingButton": "Adding...",
+    "submitAriaLabel": "Add income",
+    "saveButton": "Save",
+    "savingButton": "Saving...",
+    "saveAriaLabel": "Save income",
+    "addNewButton": "Add new income",
+    "addNewAriaLabel": "Add new income",
+    "errorMessage": "Error adding income",
+    "updateErrorMessage": "Error updating income",
+    "loadingError": "Error loading incomes",
+    "deleteError": "Error deleting income",
+    "deleteConfirm": "Are you sure you want to delete this income?",
+    "loading": "Loading...",
+    "errorPrefix": "Error:",
+    "emptyStateMessage": "Without income we can't calculate — enter monthly and annual income!",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "tableColumns": {
+      "category": "Category",
+      "amount": "Amount",
+      "amountInSettingsCurrency": "Amount (settings currency)",
+      "frequency": "Frequency",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "editAriaLabel": "Edit income",
+      "delete": "Delete",
+      "deleteAriaLabel": "Delete income"
+    },
+    "tabs": {
+      "table": "Table",
+      "chart": "Chart"
+    },
+    "totals": {
+      "monthly": "Monthly total:",
+      "annual": "Annual total:"
+    },
+    "chartTitle": "Income by type"
+  },
+  "expensesForm": {
+    "title": "Add Expense",
+    "categoryLabel": "Expense category",
+    "titleLabel": "Expense name",
+    "titlePlaceholder": "Expense name",
+    "amountLabel": "Amount",
+    "amountLabelFull": "Amount (in any currency)",
+    "amountPlaceholder": "Amount",
+    "currencyLabel": "Currency",
+    "frequencyLabel": "Frequency",
+    "submitButton": "Add",
+    "submittingButton": "Adding...",
+    "submitAriaLabel": "Add expense",
+    "addNewButton": "Add new expense",
+    "addNewAriaLabel": "Add new expense",
+    "errorMessage": "Error adding expense",
+    "loadingError": "Error loading expenses",
+    "loading": "Loading...",
+    "errorPrefix": "Error:",
+    "emptyStateMessage": "Now the most important thing - add planned expenses.",
+    "emptyStateDescription": "Create a budget by categories with fixed limits. Use the «envelope» method or separate savings accounts/goals in your bank app. If you consistently exceed limits, review them; repeat adjustments until the budget becomes manageable.",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "oneTime": "One-time",
+    "tableColumns": {
+      "title": "Title",
+      "category": "Category",
+      "amount": "Amount",
+      "frequency": "Frequency",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "editAriaLabel": "Edit expense",
+      "delete": "Delete",
+      "deleteAriaLabel": "Delete expense"
+    },
+    "tabs": {
+      "table": "Table",
+      "chart": "Chart"
+    },
+    "totals": {
+      "monthly": "Monthly total:",
+      "annual": "Annual total:",
+      "oneTime": "One-time amount:"
+    },
+    "chartTitle": "Expenses by category"
+  },
+  "goalsForm": {
+    "createTitle": "Create Goal",
+    "editTitle": "Edit Goal",
+    "nameLabel": "Goal name",
+    "namePlaceholder": "Car purchase",
+    "amountLabel": "Amount",
+    "currencyLabel": "Currency",
+    "targetDateLabel": "When is the purchase planned",
+    "targetDatePlaceholder": "Target date",
+    "createButton": "Create",
+    "creatingButton": "Creating...",
+    "saveButton": "Save",
+    "savingButton": "Saving...",
+    "createAriaLabel": "Create goal",
+    "saveAriaLabel": "Save goal",
+    "addNewButton": "Add new goal",
+    "addNewAriaLabel": "Add new goal",
+    "errorMessage": "Error saving goal",
+    "loadingError": "Error loading goals",
+    "loading": "Loading...",
+    "errorPrefix": "Error:",
+    "emptyStateMessage": "What are we saving for and when? <br /> Add your first financial goal."
+  },
+  "incomeCategories": {
+    "salary": "Salary",
+    "bonuses": "Bonuses",
+    "rental-income": "Rental income",
+    "dividends": "Dividends",
+    "digital-product-sales": "Product sales",
+    "tax-refunds": "Tax refunds",
+    "government-benefits": "Government benefits",
+    "custom": "Your option"
+  },
+  "expenseCategories": {
+    "kids-school-receipt": "Children's education",
+    "food-household": "Food and household goods",
+    "car": "Car",
+    "personal-pocket-money": "Personal pocket money",
+    "parties": "Entertainment",
+    "internet": "Internet",
+    "electricity": "Electricity",
+    "water": "Water",
+    "kids-hobbies": "Children's hobbies",
+    "fix-repair": "Repair and maintenance",
+    "credit": "Credit",
+    "custom": "Other expense"
+  }
+}
+

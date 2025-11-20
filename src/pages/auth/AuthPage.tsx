@@ -1,7 +1,9 @@
 import TextButton from '@/shared/ui/atoms/TextButton';
-import { supabase } from '@/lib/supabase'
+import { supabase } from '@/lib/supabase';
+import { useTranslation } from '@/shared/i18n';
 
 export default function AuthPage() {
+  const { t } = useTranslation('pages');
   const handleGoogleLogin = async () => {
 
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -26,17 +28,17 @@ export default function AuthPage() {
       {/* Right section - Login form */}
       <div className="flex-1 flex items-center justify-center bg-white dark:bg-white">
         <div className="flex flex-col items-center gap-6 p-8">
-          <p className="text-3xl font-bold">Mousie</p>
+          <p className="text-3xl font-bold">{t('auth.appName')}</p>
           <p className="text-md text-textColor text-center max-w-[450px]">
-           Добавляйте доходы, планируемые расходы и цели, чтобы управлять семейным бюджетом. Просто и эффективно.
+            {t('auth.description')}
           </p>
           <TextButton
             onClick={handleGoogleLogin}
             variant="primary"
-            aria-label="Войти через Google"
+            aria-label={t('auth.signInWithGoogleAriaLabel')}
             className="min-w-[200px]"
           >
-            Войти через Google
+            {t('auth.signInWithGoogle')}
           </TextButton>
         </div>
       </div>

@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react';
 import type { FormEvent } from 'react';
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import Tag from '@/shared/ui/atoms/Tag';
-import { expenseCategories } from '@/mocks/pages/expenses.mock';
 import type { ExpenseCategory, Expense } from '@/mocks/pages/expenses.mock';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/shared/store/auth';
@@ -18,32 +17,47 @@ import PieChart from '@/shared/ui/molecules/PieChart';
 import IconButton from '@/shared/ui/atoms/IconButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { currencyOptions } from '@/shared/constants/currencies';
-
-const frequencyOptions = [
-  { label: 'Ежемесячно', value: 'monthly' },
-  { label: 'Ежегодно', value: 'annual' },
-  { label: 'Разовая', value: 'one-time' },
-];
-
-// Convert expenseCategories to SelectInput options
-const expenseCategoryOptions = expenseCategories.map(category => ({
-  label: category.label,
-  value: category.id,
-}));
+import { useTranslation } from '@/shared/i18n';
+import { getExpenseCategories } from '@/shared/utils/categories';
 
 export default function ExpensesPage() {
   const { user } = useAuth();
+  const { t } = useTranslation('components');
   const [open, setOpen] = useState(false);
-  const [categoryId, setCategoryId] = useState(expenseCategories[0]?.id || '');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState<string | undefined>(undefined);
   const [currency, setCurrency] = useState(currencyOptions[0].value);
-  const [frequency, setFrequency] = useState(frequencyOptions[0].value);
+  
+  // Генерируем категории расходов с переводами
+  const expenseCategories = useMemo(() => getExpenseCategories(t), [t]);
+  
+  const [categoryId, setCategoryId] = useState('');
+  
+  // Convert expenseCategories to SelectInput options
+  const expenseCategoryOptions = useMemo(() => expenseCategories.map(category => ({
+    label: category.label,
+    value: category.id,
+  })), [expenseCategories]);
+  
+  const frequencyOptions = useMemo(() => [
+    { label: t('expensesForm.monthly'), value: 'monthly' },
+    { label: t('expensesForm.annual'), value: 'annual' },
+    { label: t('expensesForm.oneTime'), value: 'one-time' },
+  ], [t]);
+  
+  const [frequency, setFrequency] = useState('monthly');
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Инициализируем categoryId после создания категорий
+  useEffect(() => {
+    if (expenseCategories.length > 0 && !categoryId) {
+      setCategoryId(expenseCategories[0].id);
+    }
+  }, [expenseCategories, categoryId]);
 
   // Wrapper function to handle currency change with validation
   const handleCurrencyChange = (newCurrency: string) => {
@@ -73,7 +87,7 @@ export default function ExpensesPage() {
     setTitle('');
     setAmount(undefined);
     setCurrency(currencyOptions[0].value);
-    setFrequency(frequencyOptions[0].value);
+    setFrequency('monthly');
     setFormError(null);
   }
 
@@ -149,7 +163,7 @@ export default function ExpensesPage() {
       handleModalClose();
     } catch (err) {
       console.error('Error adding expense:', err);
-      setFormError(err instanceof Error ? err.message : 'Ошибка добавления расхода');
+      setFormError(err instanceof Error ? err.message : t('expensesForm.errorMessage'));
     } finally {
       setSubmitting(false);
     }
@@ -196,7 +210,7 @@ export default function ExpensesPage() {
         }
       } catch (err) {
         console.error('Error fetching expenses:', err);
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки расходов');
+        setError(err instanceof Error ? err.message : t('expensesForm.loadingError'));
       } finally {
         setLoading(false);
       }
@@ -241,48 +255,48 @@ export default function ExpensesPage() {
       name,
       value,
     }));
-  }, [expenses]);
+  }, [expenses, expenseCategories]);
 
   // Table columns
-  const tableColumns = [
-    { key: 'title', label: 'Название' },
+  const tableColumns = useMemo(() => [
+    { key: 'title', label: t('expensesForm.tableColumns.title') },
     { 
       key: 'category', 
-      label: 'Категория',
+      label: t('expensesForm.tableColumns.category'),
       render: (value: string) => {
-        const category = expenseCategories.find(c => c.id === value);
+        const category = expenseCategories.find(cat => cat.id === value);
         return category?.label || value;
       }
     },
     { 
       key: 'amount', 
-      label: 'Сумма',
+      label: t('expensesForm.tableColumns.amount'),
       align: 'right' as const,
       render: (value: number, row: Expense) => `${value.toLocaleString()} ${row.currency}`
     },
-    { key: 'frequency', label: 'Частота', align: 'center' as const },
-    { key: 'date', label: 'Дата' },
+    { key: 'frequency', label: t('expensesForm.tableColumns.frequency'), align: 'center' as const },
+    { key: 'date', label: t('expensesForm.tableColumns.date') },
     {
       key: 'actions',
-      label: 'Действия',
+      label: t('expensesForm.tableColumns.actions'),
       align: 'center' as const,
       render: () => (
         <div className="flex gap-2 justify-center">
-          <IconButton aria-label="Редактировать расход" title="Редактировать" onClick={() => {}}>
+          <IconButton aria-label={t('expensesForm.actions.editAriaLabel')} title={t('expensesForm.actions.edit')} onClick={() => {}}>
             <PencilIcon className="w-4 h-4" />
           </IconButton>
-          <IconButton aria-label="Удалить расход" title="Удалить" onClick={() => {}}>
+          <IconButton aria-label={t('expensesForm.actions.deleteAriaLabel')} title={t('expensesForm.actions.delete')} onClick={() => {}}>
             <TrashIcon className="w-4 h-4" />
           </IconButton>
         </div>
       )
     }
-  ];
+  ], [t, expenseCategories]);
 
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-textColor dark:text-textColor">Загрузка...</div>
+        <div className="text-textColor dark:text-textColor">{t('expensesForm.loading')}</div>
       </div>
     );
   }
@@ -290,7 +304,7 @@ export default function ExpensesPage() {
   if (error) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-accentRed dark:text-accentRed">Ошибка: {error}</div>
+        <div className="text-accentRed dark:text-accentRed">{t('expensesForm.errorPrefix')} {error}</div>
       </div>
     );
   }
@@ -300,9 +314,9 @@ export default function ExpensesPage() {
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6">
           <EmptyState icon={<img src="/src/assets/expenses-page-mouse.webp" alt="Empty State" className="max-h-[200px] max-w-[200px]" />}>
-            Теперь самое важное - добавляй планируемые расходы.
+            {t('expensesForm.emptyStateMessage')}
           </EmptyState>
-           <p className="max-w-[600px] text-center text-textColor dark:text-mainTextColor">Сформируй бюджет по категориям с фиксированными лимитами. Используй метод «конвертов» или отдельные накопительные счета/цели в приложении банка. При систематическом превышении пересмотри лимиты; повторяй корректировку, пока бюджет не станет управляемым.</p>
+           <p className="max-w-[600px] text-center text-textColor dark:text-mainTextColor">{t('expensesForm.emptyStateDescription')}</p>
           <div className="flex flex-wrap gap-2 justify-center max-w-2xl px-4">
             {expenseCategories.map((category) => (
               <Tag 
@@ -313,7 +327,7 @@ export default function ExpensesPage() {
               />
             ))}
           </div>
-          <ModalWindow open={open} onClose={handleModalClose} title="Добавить расход">
+          <ModalWindow open={open} onClose={handleModalClose} title={t('expensesForm.title')}>
             <Form onSubmit={handleSubmit}>
               {formError && (
                 <div className="text-accentRed dark:text-accentRed text-sm">
@@ -324,29 +338,29 @@ export default function ExpensesPage() {
                 value={categoryId} 
                 options={expenseCategoryOptions} 
                 onChange={setCategoryId} 
-                label="Категория расхода" 
+                label={t('expensesForm.categoryLabel')} 
                 creatable={true}
               />
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}
                 placeholder="1,000" 
-                label="Сумма (в любой валюте)"
+                label={t('expensesForm.amountLabelFull')}
               />
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
                 onChange={handleCurrencyChange} 
-                label="Валюта" 
+                label={t('expensesForm.currencyLabel')} 
               />
               <TextButton 
                 type="submit"
                 disabled={!isFormValid || submitting}
-                aria-label="Добавить расход"
+                aria-label={t('expensesForm.submitAriaLabel')}
                 variant="primary"
                 className="mt-4"
               >
-                {submitting ? 'Добавление...' : 'Добавить'}
+                {submitting ? t('expensesForm.submittingButton') : t('expensesForm.submitButton')}
               </TextButton>
             </Form>
           </ModalWindow>
@@ -360,10 +374,10 @@ export default function ExpensesPage() {
       <div className="flex w-full justify-end">
         <TextButton 
           onClick={handleAddExpenseClick} 
-          aria-label="Добавить новый расход" 
+          aria-label={t('expensesForm.addNewAriaLabel')} 
           variant="primary"
         >
-          Добавить новый расход
+          {t('expensesForm.addNewButton')}
         </TextButton>
       </div>
       
@@ -371,13 +385,13 @@ export default function ExpensesPage() {
         tabs={[
           {
             id: 'table',
-            label: 'Таблица',
+            label: t('expensesForm.tabs.table'),
             content: (
               <div className="space-y-4">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
-                  <span>Ежемесячный итог: <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong></span>
-                  <span>Годовой итог: <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString()} USD</strong></span>
-                  <span>Разовая сумма: <strong className="text-mainTextColor dark:text-mainTextColor">{oneTimeTotal.toLocaleString()} USD</strong></span>
+                  <span>{t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong></span>
+                  <span>{t('expensesForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString()} USD</strong></span>
+                  <span>{t('expensesForm.totals.oneTime')} <strong className="text-mainTextColor dark:text-mainTextColor">{oneTimeTotal.toLocaleString()} USD</strong></span>
                 </div>
                 <Table columns={tableColumns} data={expenses} />
               </div>
@@ -385,14 +399,14 @@ export default function ExpensesPage() {
           },
           {
             id: 'chart',
-            label: 'График',
+            label: t('expensesForm.tabs.chart'),
             content: (
               <div className="space-y-4">
                 <div className="text-sm text-textColor dark:text-textColor text-center">
-                  Ежемесячный итог: <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong>
+                  {t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString()} USD</strong>
                 </div>
                 <PieChart 
-                  title="Расходы по категориям" 
+                  title={t('expensesForm.chartTitle')} 
                   data={pieChartData}
                   innerRadius="60%"
                 />
@@ -402,7 +416,7 @@ export default function ExpensesPage() {
         ]}
       />
 
-          <ModalWindow open={open} onClose={handleModalClose} title="Добавить расход">
+          <ModalWindow open={open} onClose={handleModalClose} title={t('expensesForm.title')}>
             <Form onSubmit={handleSubmit}>
               {formError && (
                 <div className="text-accentRed dark:text-accentRed text-sm">
@@ -413,38 +427,38 @@ export default function ExpensesPage() {
                 value={categoryId} 
                 options={expenseCategoryOptions} 
                 onChange={setCategoryId} 
-                label="Категория расхода" 
+                label={t('expensesForm.categoryLabel')} 
               />
               <TextInput 
                 value={title || selectedCategory?.label || ''}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Название расхода" 
+                placeholder={t('expensesForm.titlePlaceholder')} 
               />
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}
-                placeholder="Сумма" 
+                placeholder={t('expensesForm.amountPlaceholder')} 
               />
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
                 onChange={handleCurrencyChange} 
-                label="Валюта" 
+                label={t('expensesForm.currencyLabel')} 
               />
               <SelectInput 
                 value={frequency} 
                 options={frequencyOptions} 
                 onChange={setFrequency} 
-                label="Частота" 
+                label={t('expensesForm.frequencyLabel')} 
               />
               <TextButton 
                 type="submit"
                 disabled={!isFormValid || submitting}
-                aria-label="Добавить расход"
+                aria-label={t('expensesForm.submitAriaLabel')}
                 variant="primary"
                 className="mt-4"
               >
-                {submitting ? 'Добавление...' : 'Добавить'}
+                {submitting ? t('expensesForm.submittingButton') : t('expensesForm.submitButton')}
               </TextButton>
             </Form>
           </ModalWindow>

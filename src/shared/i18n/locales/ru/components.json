@@ -1,0 +1,203 @@
+{
+  "header": {
+    "navigation": "Навигация",
+    "myFinancialGoals": "Мои финансовые цели",
+    "documentation": "Документация",
+    "createAlternativeScenario": "Создать альтернативный сценарий",
+    "switchToDarkMode": "Переключить на темную тему",
+    "switchToLightMode": "Переключить на светлую тему"
+  },
+  "sidebar": {
+    "myIncome": "Мои доходы",
+    "myGoals": "Мои цели",
+    "myExpenses": "Мои расходы",
+    "howWillThisHelp": "Как мне это поможет?",
+    "settings": "Настройки",
+    "signOut": "Выйти"
+  },
+  "summary": {
+    "income": "Доходы",
+    "expenses": "Расходы",
+    "goals": "Цели",
+    "remainder": "Остаток"
+  },
+  "settingsForm": {
+    "title": "Настройки",
+    "loading": "Загрузка настроек...",
+    "googleEmailLabel": "Гугловский Email для входа",
+    "scenarioNameLabel": "Название сценария",
+    "scenarioNamePlaceholder": "Введите название места",
+    "currencyLabel": "В какой валюте делать расчёты",
+    "languageLabel": "Язык интерфейса",
+    "saveButton": "Сохранить",
+    "savingButton": "Сохранение...",
+    "saveAriaLabel": "Сохранить настройки",
+    "successMessage": "Настройки успешно сохранены",
+    "errorMessage": "Ошибка сохранения настроек",
+    "loginRequired": "Необходимо войти в систему",
+    "russian": "Русский (RU)",
+    "english": "English (EN)"
+  },
+  "feedbackForm": {
+    "buttonTitle": "Оставить отзыв",
+    "buttonAriaLabel": "Оставить отзыв",
+    "label": "Есть вопросы или предложения?",
+    "description": "Я получу твое сообщение в Telegram и отвечу тебе как можно скорее на почту которая была указана при регистрации",
+    "validationError": "Пожалуйста, введите ваш отзыв",
+    "successMessage": "Спасибо за ваш отзыв!",
+    "errorMessage": "Ошибка отправки отзыва. Попробуйте позже.",
+    "cancelButton": "Отмена",
+    "submitButton": "Отправить",
+    "submittingButton": "Отправка...",
+    "submitAriaLabel": "Отправить отзыв",
+    "telegramMessagePrefix": "Новый фидбек от",
+    "emailNotSpecified": "Не указан"
+  },
+  "incomeForm": {
+    "title": "Добавить доход",
+    "editTitle": "Редактировать доход",
+    "categoryLabel": "Категория дохода",
+    "amountLabel": "Сумма",
+    "amountLabelFull": "Сумма (в любой валюте)",
+    "currencyLabel": "Валюта",
+    "frequencyLabel": "Частота",
+    "submitButton": "Добавить",
+    "submittingButton": "Добавление...",
+    "submitAriaLabel": "Добавить доход",
+    "saveButton": "Сохранить",
+    "savingButton": "Сохранение...",
+    "saveAriaLabel": "Сохранить доход",
+    "addNewButton": "Добавить новый доход",
+    "addNewAriaLabel": "Добавить новый доход",
+    "errorMessage": "Ошибка добавления дохода",
+    "updateErrorMessage": "Ошибка обновления дохода",
+    "loadingError": "Ошибка загрузки доходов",
+    "deleteError": "Ошибка удаления дохода",
+    "deleteConfirm": "Вы уверены, что хотите удалить этот доход?",
+    "loading": "Загрузка...",
+    "errorPrefix": "Ошибка:",
+    "emptyStateMessage": "Без доходов не посчитаем — вноси за месяц и за год!",
+    "monthly": "Ежемесячно",
+    "annual": "Ежегодно",
+    "tableColumns": {
+      "category": "Категория",
+      "amount": "Сумма",
+      "amountInSettingsCurrency": "Сумма (валюта настроек)",
+      "frequency": "Частота",
+      "date": "Дата",
+      "actions": "Действия"
+    },
+    "actions": {
+      "edit": "Редактировать",
+      "editAriaLabel": "Редактировать доход",
+      "delete": "Удалить",
+      "deleteAriaLabel": "Удалить доход"
+    },
+    "tabs": {
+      "table": "Таблица",
+      "chart": "График"
+    },
+    "totals": {
+      "monthly": "Ежемесячный итог:",
+      "annual": "Годовой итог:"
+    },
+    "chartTitle": "Доходы по типам"
+  },
+  "expensesForm": {
+    "title": "Добавить расход",
+    "categoryLabel": "Категория расхода",
+    "titleLabel": "Название расхода",
+    "titlePlaceholder": "Название расхода",
+    "amountLabel": "Сумма",
+    "amountLabelFull": "Сумма (в любой валюте)",
+    "amountPlaceholder": "Сумма",
+    "currencyLabel": "Валюта",
+    "frequencyLabel": "Частота",
+    "submitButton": "Добавить",
+    "submittingButton": "Добавление...",
+    "submitAriaLabel": "Добавить расход",
+    "addNewButton": "Добавить новый расход",
+    "addNewAriaLabel": "Добавить новый расход",
+    "errorMessage": "Ошибка добавления расхода",
+    "loadingError": "Ошибка загрузки расходов",
+    "loading": "Загрузка...",
+    "errorPrefix": "Ошибка:",
+    "emptyStateMessage": "Теперь самое важное - добавляй планируемые расходы.",
+    "emptyStateDescription": "Сформируй бюджет по категориям с фиксированными лимитами. Используй метод «конвертов» или отдельные накопительные счета/цели в приложении банка. При систематическом превышении пересмотри лимиты; повторяй корректировку, пока бюджет не станет управляемым.",
+    "monthly": "Ежемесячно",
+    "annual": "Ежегодно",
+    "oneTime": "Разовая",
+    "tableColumns": {
+      "title": "Название",
+      "category": "Категория",
+      "amount": "Сумма",
+      "frequency": "Частота",
+      "date": "Дата",
+      "actions": "Действия"
+    },
+    "actions": {
+      "edit": "Редактировать",
+      "editAriaLabel": "Редактировать расход",
+      "delete": "Удалить",
+      "deleteAriaLabel": "Удалить расход"
+    },
+    "tabs": {
+      "table": "Таблица",
+      "chart": "График"
+    },
+    "totals": {
+      "monthly": "Ежемесячный итог:",
+      "annual": "Годовой итог:",
+      "oneTime": "Разовая сумма:"
+    },
+    "chartTitle": "Расходы по категориям"
+  },
+  "goalsForm": {
+    "createTitle": "Создать цель",
+    "editTitle": "Редактировать цель",
+    "nameLabel": "Название цели",
+    "namePlaceholder": "Покупка машины",
+    "amountLabel": "Сумма",
+    "currencyLabel": "Валюта",
+    "targetDateLabel": "Когда планируется покупка",
+    "targetDatePlaceholder": "Дата достижения",
+    "createButton": "Создать",
+    "creatingButton": "Создание...",
+    "saveButton": "Сохранить",
+    "savingButton": "Сохранение...",
+    "createAriaLabel": "Создать цель",
+    "saveAriaLabel": "Сохранить цель",
+    "addNewButton": "Добавить новую цель",
+    "addNewAriaLabel": "Добавить новую цель",
+    "errorMessage": "Ошибка сохранения цели",
+    "loadingError": "Ошибка загрузки целей",
+    "loading": "Загрузка...",
+    "errorPrefix": "Ошибка:",
+    "emptyStateMessage": "На что копим и когда? <br /> Добавь свою первую финансовую цель."
+  },
+  "incomeCategories": {
+    "salary": "Зарплата",
+    "bonuses": "Бонусы",
+    "rental-income": "Доход от сдачи в аренду",
+    "dividends": "Дивиденды",
+    "digital-product-sales": "Продажа товаров",
+    "tax-refunds": "Налоговые возвраты",
+    "government-benefits": "Государственные пособия",
+    "custom": "Твой вариант"
+  },
+  "expenseCategories": {
+    "kids-school-receipt": "Обучение детей",
+    "food-household": "Еда и товары для дома",
+    "car": "Автомобиль",
+    "personal-pocket-money": "Личные карманные деньги",
+    "parties": "Развлечения",
+    "internet": "Интернет",
+    "electricity": "Электричество",
+    "water": "Вода",
+    "kids-hobbies": "Детские кружки",
+    "fix-repair": "Ремонт и обслуживание",
+    "credit": "Кредиты",
+    "custom": "Прочий расход"
+  }
+}
+

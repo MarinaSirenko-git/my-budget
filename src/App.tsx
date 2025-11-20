@@ -13,6 +13,7 @@ import { useTheme } from './shared/store/theme';
 import { useAuth } from '@/shared/store/auth'
 import AuthCallback from './shared/router/AuthCallback';
 import Feedback from './shared/ui/Feedback';
+import NotFoundPage from './pages/404/NotFoundPage';
 
 function App() {
   const initTheme = useTheme(s => s.init);
@@ -39,8 +40,8 @@ function App() {
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
-        {/* 404 / редирект */}
-        <Route path="*" element={<Navigate to="/goals" replace />} />
+        {/* 404 */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
       <Feedback />
     </>

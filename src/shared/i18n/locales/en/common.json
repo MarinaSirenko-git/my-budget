@@ -1,0 +1,30 @@
+{
+  "app": {
+    "name": "My Budget",
+    "description": "Personal budget management application"
+  },
+  "actions": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit"
+  },
+  "validation": {
+    "required": "This field is required",
+    "invalidEmail": "Invalid email",
+    "minLength": "Minimum length: {{min}}",
+    "maxLength": "Maximum length: {{max}}"
+  },
+  "errors": {
+    "generic": "An error occurred",
+    "network": "Network error",
+    "notFound": "Not found"
+  }
+}
+

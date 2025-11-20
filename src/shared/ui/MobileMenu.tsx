@@ -6,9 +6,11 @@ import { NavLink } from 'react-router-dom';
 import ThemeSwitch from './ThemeSwitch';
 import ProfileMenu from './ProfileMenu';
 import Logo from './Logo';
+import { useTranslation } from '@/shared/i18n';
 
 export default function MobileMenu() {
   const [open, setOpen] = useState(false);
+  const { t } = useTranslation('components');
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) => 
     `flex items-center font-normal gap-2 hover:bg-contentBg dark:hover:bg-cardColor ${isActive ? 'bg-contentBg dark:bg-cardColor' : ''}`;
@@ -66,25 +68,25 @@ export default function MobileMenu() {
                       <li>
                         <NavLink className={navLinkClass} to="/goals" onClick={() => setOpen(false)}>
                           <SparklesIcon className="w-6 h-6" />
-                          Мои финансовые цели
+                          {t('header.myFinancialGoals')}
                         </NavLink>
                       </li>
                       <li>
                         <NavLink className={navLinkClass} to="/income" onClick={() => setOpen(false)}>
                           <ArrowRightEndOnRectangleIcon className="w-6 h-6" />
-                          Мои доходы
+                          {t('sidebar.myIncome')}
                         </NavLink>
                       </li>
                       <li>
                         <NavLink className={navLinkClass} to="/expenses" onClick={() => setOpen(false)}>
                           <ArrowRightStartOnRectangleIcon className="w-6 h-6" />
-                          Мои расходы
+                          {t('sidebar.myExpenses')}
                         </NavLink>
                       </li>
                       <li>
                         <NavLink className={navLinkClass} to="/docs" onClick={() => setOpen(false)}>
                           <DocumentMagnifyingGlassIcon className="w-6 h-6" />
-                          Документация
+                          {t('header.documentation')}
                         </NavLink>
                       </li>
                     </ul>

@@ -64,6 +64,7 @@ export interface Income {
   frequency: 'monthly' | 'annual';
   date: string; // YYYY-MM-DD
   createdAt?: string;
+  amountInDefaultCurrency?: number; // Конвертированная сумма в дефолтной валюте
 }
 
 export const mockIncomes: Income[] = [

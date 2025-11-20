@@ -6,6 +6,7 @@ import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import TextareaInput from '@/shared/ui/form/TextareaInput';
 import TextButton from '@/shared/ui/atoms/TextButton';
+import { useTranslation } from '@/shared/i18n';
 
 interface FeedbackProps {
   /** Additional className for the button */
@@ -16,6 +17,7 @@ export default function Feedback({
   className = '' 
 }: FeedbackProps) {
   const { user } = useAuth();
+  const { t } = useTranslation('components');
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -37,7 +39,7 @@ export default function Feedback({
     e.preventDefault();
 
     if (!feedback.trim()) {
-      setMessage('Пожалуйста, введите ваш отзыв');
+      setMessage(t('feedbackForm.validationError'));
       return;
     }
 
@@ -45,8 +47,8 @@ export default function Feedback({
     setMessage(null);
 
     try {
-      const userEmail = user?.email || 'Не указан';
-      const feedbackMessage = `Новый фидбек от ${userEmail}:\n\n${feedback.trim()}`;
+      const userEmail = user?.email || t('feedbackForm.emailNotSpecified');
+      const feedbackMessage = `${t('feedbackForm.telegramMessagePrefix')} ${userEmail}:\n\n${feedback.trim()}`;
       
       const { error } = await supabase.functions.invoke('send-to-telegram', {
         body: { message: feedbackMessage }
@@ -56,13 +58,13 @@ export default function Feedback({
         throw error;
       }
 
-      setMessage('Спасибо за ваш отзыв!');
+      setMessage(t('feedbackForm.successMessage'));
       setTimeout(() => {
         handleClose();
       }, 1500);
     } catch (err) {
       console.error('Error sending feedback:', err);
-      setMessage('Ошибка отправки отзыва. Попробуйте позже.');
+      setMessage(t('feedbackForm.errorMessage'));
     } finally {
       setSubmitting(false);
       setTimeout(() => setMessage(null), 3000);
@@ -74,8 +76,8 @@ export default function Feedback({
       <div className={`fixed bottom-6 right-6 z-50 ${className}`}>
         <button
           onClick={handleOpen}
-          aria-label="Оставить отзыв"
-          title="Оставить отзыв"
+          aria-label={t('feedbackForm.buttonAriaLabel')}
+          title={t('feedbackForm.buttonTitle')}
           className="
             w-14 h-14
             rounded-full
@@ -99,15 +101,15 @@ export default function Feedback({
           <TextareaInput
             value={feedback}
             onChange={(e) => setFeedback(e.target.value)}
-            label="Есть вопросы или предложения?"
+            label={t('feedbackForm.label')}
             required
             disabled={submitting}
             className="w-full"
-            description="Я получу твое сообщение в Telegram и отвечу тебе как можно скорее на почту которая была указана при регистрации"
+            description={t('feedbackForm.description')}
           />
 
           {message && (
-            <div className={`text-sm ${message.includes('Ошибка') ? 'text-accentRed dark:text-accentRed' : 'text-success dark:text-success'}`}>
+            <div className={`text-sm ${message.includes(t('feedbackForm.errorMessage')) ? 'text-accentRed dark:text-accentRed' : 'text-success dark:text-success'}`}>
               {message}
             </div>
           )}
@@ -119,15 +121,15 @@ export default function Feedback({
               variant="default"
               disabled={submitting}
             >
-              Отмена
+              {t('feedbackForm.cancelButton')}
             </TextButton>
             <TextButton
               type="submit"
               variant="primary"
               disabled={!feedback.trim() || submitting}
-              aria-label="Отправить отзыв"
+              aria-label={t('feedbackForm.submitAriaLabel')}
             >
-              {submitting ? 'Отправка...' : 'Отправить'}
+              {submitting ? t('feedbackForm.submittingButton') : t('feedbackForm.submitButton')}
             </TextButton>
           </div>
         </Form>

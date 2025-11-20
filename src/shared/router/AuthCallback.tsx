@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from '@/shared/i18n';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
+  const { t } = useTranslation('pages');
 
   useEffect(() => {
     (async () => {
@@ -25,5 +27,5 @@ export default function AuthCallback() {
     })();
   }, [navigate]);
 
-  return <p>Signing you in…</p>;
+  return <p>{t('auth.signingIn')}</p>;
 }

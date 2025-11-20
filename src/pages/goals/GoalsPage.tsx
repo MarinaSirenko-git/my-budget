@@ -11,6 +11,7 @@ import MoneyInput from '@/shared/ui/form/MoneyInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import DateInput from '@/shared/ui/form/DateInput';
 import { currencyOptions } from '@/shared/constants/currencies';
+import { useTranslation } from '@/shared/i18n';
 
 interface Goal {
   id: string;
@@ -24,6 +25,7 @@ interface Goal {
 
 export default function GoalsPage() {
   const { user } = useAuth();
+  const { t } = useTranslation('components');
   // State to control modal open/close and editing target
   const [open, setOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -163,7 +165,7 @@ export default function GoalsPage() {
       handleModalClose();
     } catch (err) {
       console.error('Error saving goal:', err);
-      setFormError(err instanceof Error ? err.message : 'Ошибка сохранения цели');
+      setFormError(err instanceof Error ? err.message : t('goalsForm.errorMessage'));
     } finally {
       setSubmitting(false);
     }
@@ -206,7 +208,7 @@ export default function GoalsPage() {
         }
       } catch (err) {
         console.error('Error fetching goals:', err);
-        setError(err instanceof Error ? err.message : 'Ошибка загрузки целей');
+        setError(err instanceof Error ? err.message : t('goalsForm.loadingError'));
       } finally {
         setLoading(false);
       }
@@ -219,7 +221,7 @@ export default function GoalsPage() {
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-textColor dark:text-textColor">Загрузка...</div>
+        <div className="text-textColor dark:text-textColor">{t('goalsForm.loading')}</div>
       </div>
     );
   }
@@ -227,7 +229,7 @@ export default function GoalsPage() {
   if (error) {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-accentRed dark:text-accentRed">Ошибка: {error}</div>
+        <div className="text-accentRed dark:text-accentRed">{t('goalsForm.errorPrefix')} {error}</div>
       </div>
     );
   }
@@ -237,17 +239,17 @@ export default function GoalsPage() {
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-8 text-mainTextColor dark:text-mainTextColor">
           <EmptyState icon={<img src="/src/assets/goal-page-mouse.webp" alt="Empty State" className="max-h-[200px] max-w-[200px]" />}>
-            На что копим и когда? <br /> Добавь свою первую финансовую цель.
+            <span dangerouslySetInnerHTML={{ __html: t('goalsForm.emptyStateMessage') }} />
           </EmptyState>
           <TextButton 
             onClick={handleCreateGoal} 
-            aria-label="Создать цель" 
+            aria-label={t('goalsForm.createAriaLabel')} 
             variant="primary"
             className="mt-3"
           >
-            Создать цель
+            {t('goalsForm.createButton')}
           </TextButton>
-          <ModalWindow open={open} onClose={handleModalClose} title={editingGoal ? "Редактировать цель" : "Создать цель"}>
+          <ModalWindow open={open} onClose={handleModalClose} title={editingGoal ? t('goalsForm.editTitle') : t('goalsForm.createTitle')}>
             <Form onSubmit={handleSubmit}>
               {formError && (
                 <div className="text-accentRed dark:text-accentRed text-sm">
@@ -257,34 +259,34 @@ export default function GoalsPage() {
               <TextInput 
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                label="Название цели"
-                placeholder='Покупка машины'
+                label={t('goalsForm.nameLabel')}
+                placeholder={t('goalsForm.namePlaceholder')}
               />
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}
                 placeholder="10,000"
-                label="Cумма"
+                label={t('goalsForm.amountLabel')}
               />
               <SelectInput 
                 value={currency} 
                 options={currencyOptions} 
                 onChange={handleCurrencyChange} 
-                label="Валюта" 
+                label={t('goalsForm.currencyLabel')} 
               />
               <DateInput 
                 value={targetDate}
                 onChange={setTargetDate}
-                label="Когда планируется покупка"
+                label={t('goalsForm.targetDateLabel')}
               />
               <TextButton 
                 type="submit"
                 disabled={!isFormValid || submitting}
                 variant="primary" 
                 className="mt-4"
-                aria-label={editingGoal ? "Сохранить цель" : "Создать цель"}
+                aria-label={editingGoal ? t('goalsForm.saveAriaLabel') : t('goalsForm.createAriaLabel')}
               >
-                {submitting ? (editingGoal ? 'Сохранение...' : 'Создание...') : (editingGoal ? 'Сохранить' : 'Создать')}
+                {submitting ? (editingGoal ? t('goalsForm.savingButton') : t('goalsForm.creatingButton')) : (editingGoal ? t('goalsForm.saveButton') : t('goalsForm.createButton'))}
               </TextButton>
             </Form>
           </ModalWindow>
@@ -295,7 +297,7 @@ export default function GoalsPage() {
 
   return (
     <div className="flex flex-col p-6 gap-6 min-h-[calc(100vh-100px)]">
-      <ModalWindow open={open} onClose={handleModalClose} title={editingGoal ? "Редактировать цель" : "Создать цель"}>
+      <ModalWindow open={open} onClose={handleModalClose} title={editingGoal ? t('goalsForm.editTitle') : t('goalsForm.createTitle')}>
         <Form onSubmit={handleSubmit}>
           {formError && (
             <div className="text-accentRed dark:text-accentRed text-sm">
@@ -305,43 +307,43 @@ export default function GoalsPage() {
           <TextInput 
             value={name}
             onChange={(e) => setName(e.target.value)}
-            label='Название цели'
+            label={t('goalsForm.nameLabel')}
           />
           <MoneyInput 
             value={amount}
             onValueChange={setAmount}
             placeholder="10,000" 
-            label="Cумма"
+            label={t('goalsForm.amountLabel')}
           />
           <SelectInput 
             value={currency} 
             options={currencyOptions} 
             onChange={handleCurrencyChange} 
-            label="Валюта" 
+            label={t('goalsForm.currencyLabel')} 
           />
           <DateInput 
             value={targetDate}
             onChange={setTargetDate}
-            placeholder="Дата достижения" 
+            placeholder={t('goalsForm.targetDatePlaceholder')} 
           />
           <TextButton 
             type="submit"
             disabled={!isFormValid || submitting}
             variant="primary" 
             className="mt-4"
-            aria-label={editingGoal ? "Сохранить цель" : "Создать цель"}
+            aria-label={editingGoal ? t('goalsForm.saveAriaLabel') : t('goalsForm.createAriaLabel')}
           >
-            {submitting ? (editingGoal ? 'Сохранение...' : 'Создание...') : (editingGoal ? 'Сохранить' : 'Создать')}
+            {submitting ? (editingGoal ? t('goalsForm.savingButton') : t('goalsForm.creatingButton')) : (editingGoal ? t('goalsForm.saveButton') : t('goalsForm.createButton'))}
           </TextButton>
         </Form>
       </ModalWindow>
       <div className="flex w-full justify-end">
         <TextButton 
           onClick={handleCreateGoal} 
-          aria-label="Добавить новую цель" 
+          aria-label={t('goalsForm.addNewAriaLabel')} 
           variant="primary"
         >
-          Добавить новую цель
+          {t('goalsForm.addNewButton')}
         </TextButton>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">

@@ -6,6 +6,7 @@ import TextInput from '@/shared/ui/form/TextInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import TextButton from '@/shared/ui/atoms/TextButton';
 import { currencyOptions } from '@/shared/constants/currencies';
+import { useLanguage, useTranslation } from '@/shared/i18n';
 import type { PostgrestError } from '@supabase/supabase-js';
 
 const CURRENCY_STORAGE_KEY = 'user_currency';
@@ -13,19 +14,31 @@ const PLACE_NAME_STORAGE_KEY = 'user_place_name';
 const LANGUAGE_STORAGE_KEY = 'user_language';
 const DEFAULT_PLACE_NAME = 'Сценарий #1';
 
-const languageOptions = [
-  { label: 'Русский (RU)', value: 'RU' },
-  { label: 'English (EN)', value: 'EN' },
-];
+// Функция для нормализации формата языка (RU/EN -> ru/en)
+function normalizeLanguage(lng: string): string {
+  const normalized = lng.toLowerCase();
+  if (normalized === 'ru' || normalized === 'en') {
+    return normalized;
+  }
+  // Если формат не распознан, возвращаем значение по умолчанию
+  return 'ru';
+}
 
 export default function SettingsPage() {
   const { user } = useAuth();
+  const { changeLanguage } = useLanguage();
+  const { t } = useTranslation('components');
   const [currency, setCurrency] = useState(currencyOptions[0].value);
   const [placeName, setPlaceName] = useState(DEFAULT_PLACE_NAME);
-  const [language, setLanguage] = useState(languageOptions[0].value);
+  const [language, setLanguage] = useState('ru');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+
+  const languageOptions = useMemo(() => [
+    { label: t('settingsForm.russian'), value: 'ru' },
+    { label: t('settingsForm.english'), value: 'en' },
+  ], [t]);
 
   // Load saved settings from Supabase profiles table and localStorage fallback
   useEffect(() => {
@@ -63,9 +76,13 @@ export default function SettingsPage() {
             setPlaceName(data.place_name);
           }
           if (data.language) {
-            const validLanguage = languageOptions.find(opt => opt.value === data.language);
+            // Миграция: преобразуем RU/EN в ru/en
+            const normalizedLang = normalizeLanguage(data.language);
+            const validLanguage = languageOptions.find(opt => opt.value === normalizedLang);
             if (validLanguage) {
               setLanguage(validLanguage.value);
+              // Устанавливаем язык в i18n
+              changeLanguage(validLanguage.value);
             }
           }
         } else {
@@ -96,21 +113,26 @@ export default function SettingsPage() {
 
       const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
       if (savedLanguage) {
-        const validLanguage = languageOptions.find(opt => opt.value === savedLanguage);
+        // Миграция: преобразуем RU/EN в ru/en
+        const normalizedLang = normalizeLanguage(savedLanguage);
+        const validLanguage = languageOptions.find(opt => opt.value === normalizedLang);
         if (validLanguage) {
           setLanguage(validLanguage.value);
+          // Устанавливаем язык в i18n
+          changeLanguage(validLanguage.value);
         }
       }
     }
 
     loadSettings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) {
-      console.error('Необходимо войти в систему');
+      console.error(t('settingsForm.loginRequired'));
       return;
     }
   
@@ -126,17 +148,27 @@ export default function SettingsPage() {
   
       if (error) throw error;
   
-      // Обновляем кэш
-      localStorage.setItem(CURRENCY_STORAGE_KEY, data.default_currency);
-      localStorage.setItem(PLACE_NAME_STORAGE_KEY, data.place_name ?? DEFAULT_PLACE_NAME);
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, data.language ?? '');
+             // Обновляем кэш
+             localStorage.setItem(CURRENCY_STORAGE_KEY, data.default_currency);
+             localStorage.setItem(PLACE_NAME_STORAGE_KEY, data.place_name ?? DEFAULT_PLACE_NAME);
+             const savedLang = data.language ?? '';
+             localStorage.setItem(LANGUAGE_STORAGE_KEY, savedLang);
+
+             // Отправляем событие об изменении валюты для обновления таблиц
+             window.dispatchEvent(new Event('currencyChanged'));
+      
+      // Устанавливаем язык в i18n после успешного сохранения
+      if (savedLang) {
+        const normalizedLang = normalizeLanguage(savedLang);
+        changeLanguage(normalizedLang);
+      }
   
       window.dispatchEvent(new Event('placeNameChanged'));
-      setMessage('Настройки успешно сохранены');
+      setMessage(t('settingsForm.successMessage'));
     } catch (err) {
       const e = err as PostgrestError;
       console.error(e);
-      setMessage(e?.message ?? 'Ошибка сохранения настроек');
+      setMessage(e?.message ?? t('settingsForm.errorMessage'));
     } finally {
       setSaving(false);
       setTimeout(() => setMessage(null), 3000);
@@ -172,20 +204,20 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] p-6">
-        <p className="text-textColor dark:text-textColor">Загрузка настроек...</p>
+        <p className="text-textColor dark:text-textColor">{t('settingsForm.loading')}</p>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] p-6 gap-6">
-      <h1 className="text-2xl font-semibold text-mainTextColor dark:text-mainTextColor">Настройки</h1>
+      <h1 className="text-2xl font-semibold text-mainTextColor dark:text-mainTextColor">{t('settingsForm.title')}</h1>
       
       <div className="max-w-md w-full">
         <Form onSubmit={handleSubmit}>
           <div>
             <label className="block mb-1 text-sm font-medium text-textColor dark:text-textColor">
-              Гугловский Email для входа
+              {t('settingsForm.googleEmailLabel')}
             </label>
             <TextInput
               type="email"
@@ -199,11 +231,11 @@ export default function SettingsPage() {
             type="text"
             value={placeName}
             onChange={handlePlaceNameChange}
-            placeholder="Введите название места"
+            placeholder={t('settingsForm.scenarioNamePlaceholder')}
             className="w-full"
             disabled={saving}
             required
-            label="Название сценария"
+            label={t('settingsForm.scenarioNameLabel')}
             id="placeName"
           />
 
@@ -211,7 +243,7 @@ export default function SettingsPage() {
             value={currency}
             options={currencyOptions}
             onChange={handleCurrencyChange}
-            label="В какой валюте делать расчёты"
+            label={t('settingsForm.currencyLabel')}
             disabled={saving}
           />
 
@@ -219,12 +251,12 @@ export default function SettingsPage() {
             value={language}
             options={languageOptions}
             onChange={handleLanguageChange}
-            label="Язык интерфейса"
+            label={t('settingsForm.languageLabel')}
             disabled={saving}
           />
 
           {message && (
-            <div className={`text-sm ${message.includes('Ошибка') ? 'text-accentRed dark:text-accentRed' : 'text-success dark:text-success'}`}>
+            <div className={`text-sm ${message.includes(t('settingsForm.errorMessage')) ? 'text-accentRed dark:text-accentRed' : 'text-success dark:text-success'}`}>
               {message}
             </div>
           )}
@@ -233,11 +265,11 @@ export default function SettingsPage() {
             <TextButton
               type="submit"
               variant="primary"
-              aria-label="Сохранить настройки"
+              aria-label={t('settingsForm.saveAriaLabel')}
               className="w-full"
               disabled={!isFormValid || saving}
             >
-              {saving ? 'Сохранение...' : 'Сохранить'}
+              {saving ? t('settingsForm.savingButton') : t('settingsForm.saveButton')}
             </TextButton>
           </div>
         </Form>

@@ -3,13 +3,16 @@ import Logo from '@/shared/ui/Logo';
 import { useAuth } from '@/shared/store/auth';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useTranslation } from '@/shared/i18n';
 
 function LeftSidebar(){
     const { user } = useAuth();
     const signOut = useAuth(s => s.signOut);
+    const { t } = useTranslation('components');
     const [totalIncome, setTotalIncome] = useState(0);
     const [totalExpenses, setTotalExpenses] = useState(0);
     const [totalGoals, setTotalGoals] = useState(0);
+    const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
 
     const navLinkClass = ({ isActive }: { isActive: boolean }) => 
         `flex items-center gap-2 pb-1 border-b-2 transition-colors ${
@@ -25,6 +28,99 @@ function LeftSidebar(){
                 : 'hover:text-primary'
         }`;
 
+    // Load settings currency
+    useEffect(() => {
+        async function loadSettingsCurrency() {
+            if (!user) {
+                const savedCurrency = localStorage.getItem('user_currency');
+                if (savedCurrency) {
+                    setSettingsCurrency(savedCurrency);
+                }
+                return;
+            }
+
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('default_currency')
+                    .eq('id', user.id)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') {
+                    const savedCurrency = localStorage.getItem('user_currency');
+                    if (savedCurrency) {
+                        setSettingsCurrency(savedCurrency);
+                    }
+                } else if (data?.default_currency) {
+                    setSettingsCurrency(data.default_currency);
+                } else {
+                    const savedCurrency = localStorage.getItem('user_currency');
+                    if (savedCurrency) {
+                        setSettingsCurrency(savedCurrency);
+                    }
+                }
+            } catch (err) {
+                console.error('Error loading settings currency:', err);
+                const savedCurrency = localStorage.getItem('user_currency');
+                if (savedCurrency) {
+                    setSettingsCurrency(savedCurrency);
+                }
+            }
+        }
+
+        loadSettingsCurrency();
+
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'user_currency' && e.newValue) {
+                setSettingsCurrency(e.newValue);
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        
+        const handleCustomStorageChange = () => {
+            const savedCurrency = localStorage.getItem('user_currency');
+            if (savedCurrency) {
+                setSettingsCurrency(savedCurrency);
+            }
+        };
+
+        window.addEventListener('currencyChanged', handleCustomStorageChange);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('currencyChanged', handleCustomStorageChange);
+        };
+    }, [user]);
+
+    // Function to convert amount using RPC
+    const convertAmount = async (amount: number, fromCurrency: string): Promise<number | null> => {
+        if (!settingsCurrency || fromCurrency === settingsCurrency) {
+            return null;
+        }
+
+        try {
+            const { data, error } = await supabase.rpc('convert_amount', {
+                p_amount: amount,
+                p_from_currency: fromCurrency,
+            });
+
+            if (error) {
+                console.error('Error converting amount:', error);
+                return null;
+            }
+
+            if (Array.isArray(data) && data.length > 0 && data[0]?.converted_amount) {
+                return data[0].converted_amount;
+            }
+
+            return null;
+        } catch (err) {
+            console.error('Error calling convert_amount RPC:', err);
+            return null;
+        }
+    };
+
     // Fetch and calculate total income
     useEffect(() => {
         async function fetchTotalIncome() {
@@ -35,7 +131,7 @@ function LeftSidebar(){
             try {
                 const { data, error } = await supabase
                     .from('incomes')
-                    .select('amount, frequency')
+                    .select('amount, currency, frequency')
                     .eq('user_id', user.id);
                 if (error) {
                     console.error('Error fetching incomes:', error);
@@ -43,14 +139,45 @@ function LeftSidebar(){
                     return;
                 }
                 if (data) {
-                    const total = data.reduce((sum, income) => {
-                        if (income.frequency === 'annual') {
-                            return sum + (income.amount / 12);
-                        } else {
-                            return sum + income.amount;
-                        }
-                    }, 0);
-                    setTotalIncome(Math.round(total * 100) / 100);
+                    // Конвертируем суммы и рассчитываем месячный доход
+                    // Сначала обрабатываем месячные доходы
+                    const monthlyIncomesPromises = data
+                        .filter(income => income.frequency === 'monthly')
+                        .map(async (income) => {
+                            // Используем конвертированную сумму если валюта отличается от дефолтной
+                            if (settingsCurrency && income.currency !== settingsCurrency) {
+                                const converted = await convertAmount(income.amount, income.currency);
+                                if (converted !== null) {
+                                    return converted;
+                                }
+                            }
+                            // Используем исходную сумму если валюта совпадает с дефолтной
+                            return income.amount;
+                        });
+
+                    // Затем обрабатываем годовые доходы, разделенные на 12
+                    const annualIncomesPromises = data
+                        .filter(income => income.frequency === 'annual')
+                        .map(async (income) => {
+                            // Используем конвертированную сумму если валюта отличается от дефолтной
+                            if (settingsCurrency && income.currency !== settingsCurrency) {
+                                const converted = await convertAmount(income.amount, income.currency);
+                                if (converted !== null) {
+                                    return converted / 12;
+                                }
+                            }
+                            // Используем исходную сумму если валюта совпадает с дефолтной
+                            return income.amount / 12;
+                        });
+
+                    const [monthlyAmounts, annualAmounts] = await Promise.all([
+                        Promise.all(monthlyIncomesPromises),
+                        Promise.all(annualIncomesPromises)
+                    ]);
+
+                    const total = [...monthlyAmounts, ...annualAmounts].reduce((sum, amount) => sum + amount, 0);
+                    // Сохраняем точное значение, форматирование будет при отображении
+                    setTotalIncome(total);
                 }
             } catch (err) {
                 console.error('Error calculating total income:', err);
@@ -58,7 +185,7 @@ function LeftSidebar(){
             }
         }
         fetchTotalIncome();
-    }, [user]);
+    }, [user, settingsCurrency]);
 
     // Fetch and calculate total expenses
     useEffect(() => {
@@ -141,20 +268,20 @@ function LeftSidebar(){
             {/* Financial Summary - absolutely positioned on the border */}
             <div className="absolute right-[-40px] top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2">
                 <div className="min-w-[100px] px-3 py-2 bg-success rounded-md shadow-sm">
-                    <div className="text-xs text-white tracking-wider">Доходы</div>
-                    <div className="text-sm font-semibold text-white">{totalIncome}</div>
+                    <div className="text-xs text-white tracking-wider">{t('summary.income')}</div>
+                    <div className="text-sm font-semibold text-white">{totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
                 <div className="min-w-[100px] px-3 py-2 bg-accentRed rounded-md shadow-sm">
-                    <div className="text-xs text-white tracking-wider">Расходы</div>
-                    <div className="text-sm font-semibold text-white">{totalExpenses}</div>
+                    <div className="text-xs text-white tracking-wider">{t('summary.expenses')}</div>
+                    <div className="text-sm font-semibold text-white">{totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
                 <div className="min-w-[100px] px-3 py-2 bg-accentYellow rounded-md shadow-sm">
-                    <div className="text-xs text-white tracking-wider">Цели</div>
-                    <div className="text-sm font-semibold text-white">{totalGoals}</div>
+                    <div className="text-xs text-white tracking-wider">{t('summary.goals')}</div>
+                    <div className="text-sm font-semibold text-white">{totalGoals.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
                 <div className="min-w-[100px] px-3 py-2 bg-presenting rounded-md shadow-sm">
-                    <div className="text-xs text-white tracking-wider">Остаток</div>
-                    <div className={`text-sm font-semibold ${remainderColor}`}>{remainder}</div>
+                    <div className="text-xs text-white tracking-wider">{t('summary.remainder')}</div>
+                    <div className={`text-sm font-semibold ${remainderColor}`}>{remainder.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
             </div>
             
@@ -166,34 +293,34 @@ function LeftSidebar(){
             <ul className="w-full px-2 flex flex-col gap-2 font-base bg-base-100 text-mainTextColor dark:text-mainTextColor text-md leading-loose">
                 <li> 
                     <NavLink className={navLinkClass} to="/income">
-                        Мои доходы
+                        {t('sidebar.myIncome')}
                     </NavLink>
                 </li>
                 <li> 
                     <NavLink className={navLinkClass} to="/goals">
-                        Мои цели
+                        {t('sidebar.myGoals')}
                     </NavLink>
                 </li>
                 <li> 
                     <NavLink className={navLinkClass} to="/expenses">
-                        Мои расходы
+                        {t('sidebar.myExpenses')}
                     </NavLink>
                 </li>
             </ul>
             <ul className="pt-2 w-full mt-auto font-base bg-base-100 text-mainTextColor dark:text-mainTextColor text-md leading-loose">
                 <li className="font-semibold rounded-md"> 
                     <NavLink className={bottomNavLinkClass} to="/docs">
-                    Как мне это поможет?
+                        {t('sidebar.howWillThisHelp')}
                     </NavLink>
                 </li>
                 <li className="font-semibold rounded-md"> 
                     <NavLink className={bottomNavLinkClass} to="/settings">
-                        Настройки
+                        {t('sidebar.settings')}
                     </NavLink>
                 </li>
                 <li className="font-semibold rounded-md"> 
                     <button onClick={signOut} className='flex items-center font-normal gap-2 py-1 px-4 hover:text-primary'>
-                        Выйти
+                        {t('sidebar.signOut')}
                     </button>
                 </li>
             </ul>
