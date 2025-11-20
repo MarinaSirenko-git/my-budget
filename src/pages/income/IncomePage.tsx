@@ -65,6 +65,12 @@ export default function IncomePage() {
   const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  // Состояние для выбранной валюты в колонке конвертации (по умолчанию settingsCurrency)
+  const [selectedConversionCurrency, setSelectedConversionCurrency] = useState<string | null>(null);
+  // Кэш конвертированных сумм: ключ = `${incomeId}_${toCurrency}`, значение = конвертированная сумма
+  const [convertedAmountsCache, setConvertedAmountsCache] = useState<Record<string, number>>({});
+  // Состояние для отслеживания загрузки конвертации
+  const [convertingIds, setConvertingIds] = useState<Set<string>>(new Set());
 
   function handleTagClick(type: IncomeType) {
     setIncomeTypeId(type.id);
@@ -96,7 +102,9 @@ export default function IncomePage() {
     setEditingId(null);
     setIncomeTypeId(incomeTypes[0]?.id || '');
     setAmount(undefined);
-    setCurrency(currencyOptions[0].value);
+    const defaultCurrency = settingsCurrency || currencyOptions[0].value;
+    const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrency);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setFrequency('monthly');
     setFormError(null);
   }
@@ -113,8 +121,9 @@ export default function IncomePage() {
   }, [incomeTypeId, amount, currency, frequency]);
 
   // Function to convert amount using RPC
-  const convertAmount = useCallback(async (amount: number, fromCurrency: string): Promise<number | null> => {
-    if (!settingsCurrency || fromCurrency === settingsCurrency) {
+  const convertAmount = useCallback(async (amount: number, fromCurrency: string, toCurrency?: string): Promise<number | null> => {
+    const targetCurrency = toCurrency || settingsCurrency;
+    if (!targetCurrency || fromCurrency === targetCurrency) {
       return null; // Не нужно конвертировать, если валюта совпадает
     }
 
@@ -122,7 +131,8 @@ export default function IncomePage() {
       const { data, error } = await supabase.rpc('convert_amount', {
         p_amount: amount,
         p_from_currency: fromCurrency,
-        // p_to_currency не передаём → берётся profiles.default_currency
+        ...(toCurrency ? { p_to_currency: toCurrency } : {}),
+        // Если p_to_currency не передаём → берётся profiles.default_currency
       });
 
       if (error) {
@@ -141,6 +151,51 @@ export default function IncomePage() {
       return null;
     }
   }, [settingsCurrency]);
+
+  // Function to convert multiple amounts using batch RPC
+  const convertAmountsBulk = useCallback(async (
+    items: Array<{ amount: number; currency: string }>,
+    toCurrency?: string
+  ): Promise<Map<number, number> | null> => {
+    const targetCurrency = toCurrency || settingsCurrency;
+    if (!targetCurrency || items.length === 0) {
+      return null;
+    }
+
+    try {
+      const { data, error } = await supabase.rpc('convert_amount_bulk', {
+        p_items: items,
+        // supabase сам превратит это в JSONB
+        ...(toCurrency ? { p_to_currency: toCurrency } : {}),
+        // p_to_currency не передаём → используется profiles.default_currency
+      });
+
+      if (error) {
+        console.error('Error converting amounts bulk:', error);
+        return null;
+      }
+
+      // RPC возвращает массив результатов
+      // Предполагаем формат: [{amount, currency, converted_amount}, ...]
+      // Порядок результатов должен соответствовать порядку items
+      const resultMap = new Map<number, number>();
+      
+      if (Array.isArray(data)) {
+        data.forEach((item: any, index: number) => {
+          if (item.converted_amount !== undefined && items[index]) {
+            // Используем индекс для сопоставления с исходным items
+            resultMap.set(index, item.converted_amount);
+          }
+        });
+      }
+
+      return resultMap;
+    } catch (err) {
+      console.error('Error calling convert_amount_bulk RPC:', err);
+      return null;
+    }
+  }, [settingsCurrency]);
+
 
   // Handle form submission
   async function handleSubmit(e: React.FormEvent) {
@@ -232,6 +287,9 @@ export default function IncomePage() {
 
         const mappedIncomes = await Promise.all(mappedIncomesPromises);
         setIncomes(mappedIncomes);
+        
+        // Отправляем событие для обновления Summary в сайдбаре
+        window.dispatchEvent(new CustomEvent('incomeUpdated'));
       }
 
       handleModalClose();
@@ -315,6 +373,9 @@ export default function IncomePage() {
 
         const mappedIncomes = await Promise.all(mappedIncomesPromises);
         setIncomes(mappedIncomes);
+        
+        // Отправляем событие для обновления Summary в сайдбаре
+        window.dispatchEvent(new CustomEvent('incomeUpdated'));
       }
     } catch (err) {
       console.error('Error deleting income:', err);
@@ -324,6 +385,88 @@ export default function IncomePage() {
       setDeletingId(null);
     }
   }, [user, t, settingsCurrency, convertAmount]);
+
+  // Инициализируем selectedConversionCurrency при загрузке settingsCurrency
+  useEffect(() => {
+    if (settingsCurrency && !selectedConversionCurrency) {
+      setSelectedConversionCurrency(settingsCurrency);
+    }
+  }, [settingsCurrency, selectedConversionCurrency]);
+
+  // Сбрасываем selectedConversionCurrency при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      // При размонтировании сбрасываем на null
+      // Это произойдет при переходе на другую страницу
+      setSelectedConversionCurrency(null);
+    };
+  }, []);
+
+  // Автоматически конвертируем суммы при изменении selectedConversionCurrency
+  useEffect(() => {
+    if (!selectedConversionCurrency || !incomes.length) {
+      return;
+    }
+
+    const convertAllAmounts = async () => {
+      // Фильтруем доходы, которые нужно конвертировать
+      const incomesToConvert = incomes.filter(income => {
+        const cacheKey = `${income.id}_${selectedConversionCurrency}`;
+        // Пропускаем если валюта совпадает или уже в кэше
+        return income.currency !== selectedConversionCurrency && convertedAmountsCache[cacheKey] === undefined;
+      });
+
+      if (incomesToConvert.length === 0) {
+        return;
+      }
+
+      // Подготавливаем массив items для batch конвертации
+      const items = incomesToConvert.map(income => ({
+        amount: income.amount,
+        currency: income.currency,
+      }));
+
+      // Отмечаем все как конвертируемые
+      const cacheKeys = incomesToConvert.map(income => `${income.id}_${selectedConversionCurrency}`);
+      setConvertingIds(prev => {
+        const newSet = new Set(prev);
+        cacheKeys.forEach(key => newSet.add(key));
+        return newSet;
+      });
+
+      try {
+        // Выполняем batch конвертацию одним запросом
+        const resultMap = await convertAmountsBulk(items, selectedConversionCurrency);
+        
+        if (resultMap) {
+          // Обновляем кэш для всех результатов одновременно
+          const newCache: Record<string, number> = {};
+          
+          incomesToConvert.forEach((income, index) => {
+            const cacheKey = `${income.id}_${selectedConversionCurrency}`;
+            const convertedAmount = resultMap.get(index);
+            
+            if (convertedAmount !== undefined) {
+              newCache[cacheKey] = convertedAmount;
+            }
+          });
+
+          setConvertedAmountsCache(prev => ({ ...prev, ...newCache }));
+        }
+      } catch (err) {
+        console.error('Error converting amounts bulk:', err);
+      } finally {
+        // Убираем из convertingIds
+        setConvertingIds(prev => {
+          const newSet = new Set(prev);
+          cacheKeys.forEach(key => newSet.delete(key));
+          return newSet;
+        });
+      }
+    };
+
+    convertAllAmounts();
+  }, [selectedConversionCurrency, incomes, convertAmountsBulk, convertedAmountsCache]);
 
   // Load settings currency
   useEffect(() => {
@@ -397,6 +540,16 @@ export default function IncomePage() {
     };
   }, [user]);
 
+  // Set default currency from settings when loaded
+  useEffect(() => {
+    if (settingsCurrency) {
+      const validCurrency = currencyOptions.find(opt => opt.value === settingsCurrency);
+      if (validCurrency && currency === currencyOptions[0].value) {
+        setCurrency(validCurrency.value);
+      }
+    }
+  }, [settingsCurrency, currency]);
+
   // Fetch incomes from Supabase
   useEffect(() => {
     async function fetchIncomes() {
@@ -455,19 +608,37 @@ export default function IncomePage() {
     }
 
     fetchIncomes();
-  }, [user, settingsCurrency, convertAmount, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, settingsCurrency, t]);
 
-  // Calculate totals in default currency
+  // Calculate totals in selected conversion currency
   const monthlyTotal = useMemo(() => {
+    const targetCurrency = selectedConversionCurrency || settingsCurrency;
+    if (!targetCurrency) return 0;
+
     // Суммируем месячные доходы
     const monthlyIncomesTotal = incomes
       .filter(income => income.frequency === 'monthly')
       .reduce((sum, income) => {
-        // Используем конвертированную сумму если валюта отличается от дефолтной
-        if (settingsCurrency && income.currency !== settingsCurrency && income.amountInDefaultCurrency !== undefined) {
+        // Если валюта совпадает с целевой, используем исходную сумму
+        if (income.currency === targetCurrency) {
+          return sum + income.amount;
+        }
+        
+        // Ищем конвертированную сумму в кэше
+        const cacheKey = `${income.id}_${targetCurrency}`;
+        const cachedAmount = convertedAmountsCache[cacheKey];
+        
+        if (cachedAmount !== undefined) {
+          return sum + cachedAmount;
+        }
+        
+        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
+        if (targetCurrency === settingsCurrency && income.amountInDefaultCurrency !== undefined) {
           return sum + income.amountInDefaultCurrency;
         }
-        // Используем исходную сумму если валюта совпадает с дефолтной
+        
+        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
         return sum + income.amount;
       }, 0);
 
@@ -475,27 +646,58 @@ export default function IncomePage() {
     const annualIncomesMonthlyTotal = incomes
       .filter(income => income.frequency === 'annual')
       .reduce((sum, income) => {
-        // Используем конвертированную сумму если валюта отличается от дефолтной
-        if (settingsCurrency && income.currency !== settingsCurrency && income.amountInDefaultCurrency !== undefined) {
+        // Если валюта совпадает с целевой, используем исходную сумму
+        if (income.currency === targetCurrency) {
+          return sum + (income.amount / 12);
+        }
+        
+        // Ищем конвертированную сумму в кэше
+        const cacheKey = `${income.id}_${targetCurrency}`;
+        const cachedAmount = convertedAmountsCache[cacheKey];
+        
+        if (cachedAmount !== undefined) {
+          return sum + (cachedAmount / 12);
+        }
+        
+        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
+        if (targetCurrency === settingsCurrency && income.amountInDefaultCurrency !== undefined) {
           return sum + (income.amountInDefaultCurrency / 12);
         }
-        // Используем исходную сумму если валюта совпадает с дефолтной
+        
+        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
         return sum + (income.amount / 12);
       }, 0);
 
     return monthlyIncomesTotal + annualIncomesMonthlyTotal;
-  }, [incomes, settingsCurrency]);
+  }, [incomes, selectedConversionCurrency, settingsCurrency, convertedAmountsCache]);
 
   const annualTotal = useMemo(() => {
+    const targetCurrency = selectedConversionCurrency || settingsCurrency;
+    if (!targetCurrency) return 0;
+
     // Суммируем месячные доходы, умноженные на 12
     const monthlyIncomesTotal = incomes
       .filter(income => income.frequency === 'monthly')
       .reduce((sum, income) => {
-        // Используем конвертированную сумму если валюта отличается от дефолтной
-        if (settingsCurrency && income.currency !== settingsCurrency && income.amountInDefaultCurrency !== undefined) {
+        // Если валюта совпадает с целевой, используем исходную сумму
+        if (income.currency === targetCurrency) {
+          return sum + (income.amount * 12);
+        }
+        
+        // Ищем конвертированную сумму в кэше
+        const cacheKey = `${income.id}_${targetCurrency}`;
+        const cachedAmount = convertedAmountsCache[cacheKey];
+        
+        if (cachedAmount !== undefined) {
+          return sum + (cachedAmount * 12);
+        }
+        
+        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
+        if (targetCurrency === settingsCurrency && income.amountInDefaultCurrency !== undefined) {
           return sum + (income.amountInDefaultCurrency * 12);
         }
-        // Используем исходную сумму если валюта совпадает с дефолтной
+        
+        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
         return sum + (income.amount * 12);
       }, 0);
 
@@ -503,16 +705,30 @@ export default function IncomePage() {
     const annualIncomesTotal = incomes
       .filter(income => income.frequency === 'annual')
       .reduce((sum, income) => {
-        // Используем конвертированную сумму если валюта отличается от дефолтной
-        if (settingsCurrency && income.currency !== settingsCurrency && income.amountInDefaultCurrency !== undefined) {
+        // Если валюта совпадает с целевой, используем исходную сумму
+        if (income.currency === targetCurrency) {
+          return sum + income.amount;
+        }
+        
+        // Ищем конвертированную сумму в кэше
+        const cacheKey = `${income.id}_${targetCurrency}`;
+        const cachedAmount = convertedAmountsCache[cacheKey];
+        
+        if (cachedAmount !== undefined) {
+          return sum + cachedAmount;
+        }
+        
+        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
+        if (targetCurrency === settingsCurrency && income.amountInDefaultCurrency !== undefined) {
           return sum + income.amountInDefaultCurrency;
         }
-        // Используем исходную сумму если валюта совпадает с дефолтной
+        
+        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
         return sum + income.amount;
       }, 0);
 
     return monthlyIncomesTotal + annualIncomesTotal;
-  }, [incomes, settingsCurrency]);
+  }, [incomes, selectedConversionCurrency, settingsCurrency, convertedAmountsCache]);
 
   // Transform data for pie chart (group by type, sum amounts)
   const pieChartData = useMemo(() => {
@@ -532,6 +748,66 @@ export default function IncomePage() {
       value,
     }));
   }, [incomes, incomeTypes]);
+
+  // Обработчик изменения валюты для конвертации
+  const handleConversionCurrencyChange = useCallback(async (newCurrency: string) => {
+    setSelectedConversionCurrency(newCurrency);
+    
+    // Фильтруем доходы, которые нужно конвертировать
+    const incomesToConvert = incomes.filter(income => {
+      const cacheKey = `${income.id}_${newCurrency}`;
+      // Пропускаем если валюта совпадает или уже в кэше
+      return income.currency !== newCurrency && convertedAmountsCache[cacheKey] === undefined;
+    });
+
+    if (incomesToConvert.length === 0) {
+      return;
+    }
+
+    // Подготавливаем массив items для batch конвертации
+    const items = incomesToConvert.map(income => ({
+      amount: income.amount,
+      currency: income.currency,
+    }));
+
+    // Отмечаем все как конвертируемые
+    const cacheKeys = incomesToConvert.map(income => `${income.id}_${newCurrency}`);
+    setConvertingIds(prev => {
+      const newSet = new Set(prev);
+      cacheKeys.forEach(key => newSet.add(key));
+      return newSet;
+    });
+
+    try {
+      // Выполняем batch конвертацию одним запросом
+      const resultMap = await convertAmountsBulk(items, newCurrency);
+      
+      if (resultMap) {
+        // Обновляем кэш для всех результатов одновременно
+        const newCache: Record<string, number> = {};
+        
+        incomesToConvert.forEach((income, index) => {
+          const cacheKey = `${income.id}_${newCurrency}`;
+          const convertedAmount = resultMap.get(index);
+          
+          if (convertedAmount !== undefined) {
+            newCache[cacheKey] = convertedAmount;
+          }
+        });
+
+        setConvertedAmountsCache(prev => ({ ...prev, ...newCache }));
+      }
+    } catch (err) {
+      console.error('Error converting amounts bulk:', err);
+    } finally {
+      // Убираем из convertingIds
+      setConvertingIds(prev => {
+        const newSet = new Set(prev);
+        cacheKeys.forEach(key => newSet.delete(key));
+        return newSet;
+      });
+    }
+  }, [incomes, convertedAmountsCache, convertAmountsBulk]);
 
   // Table columns
   const tableColumns = useMemo(() => {
@@ -556,20 +832,42 @@ export default function IncomePage() {
     if (settingsCurrency) {
       const hasDifferentCurrency = incomes.some(income => income.currency !== settingsCurrency);
       if (hasDifferentCurrency) {
+        const targetCurrency = selectedConversionCurrency || settingsCurrency;
+
         columns.push({
           key: 'amountInSettingsCurrency',
           label: t('incomeForm.tableColumns.amountInSettingsCurrency'),
           align: 'left' as const,
           render: (_value: any, row: Income) => {
-            if (row.currency === settingsCurrency) {
+            if (row.currency === targetCurrency) {
               return '-'; // Не показываем, если валюта совпадает
             }
-            // Показываем конвертированную сумму если она есть
-            if (row.amountInDefaultCurrency !== undefined) {
-              return `${row.amountInDefaultCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${settingsCurrency}`;
+
+            const cacheKey = `${row.id}_${targetCurrency}`;
+            const cachedAmount = convertedAmountsCache[cacheKey];
+            const isConverting = convertingIds.has(cacheKey);
+
+            // Определяем сумму для отображения
+            let displayAmount: number | null = null;
+            if (targetCurrency === row.currency) {
+              displayAmount = row.amount;
+            } else if (cachedAmount !== undefined) {
+              displayAmount = cachedAmount;
+            } else if (targetCurrency === settingsCurrency && row.amountInDefaultCurrency !== undefined) {
+              displayAmount = row.amountInDefaultCurrency;
             }
-            // Если конвертация еще не выполнена, показываем загрузку или исходную сумму
-            return `... ${settingsCurrency}`;
+
+            return (
+              <span className="text-sm">
+                {isConverting ? (
+                  '...'
+                ) : displayAmount !== null ? (
+                  `${displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${targetCurrency}`
+                ) : (
+                  `... ${targetCurrency}`
+                )}
+              </span>
+            );
           }
         });
       }
@@ -605,7 +903,7 @@ export default function IncomePage() {
     );
 
     return columns;
-  }, [t, incomeTypes, settingsCurrency, incomes, deletingId, handleDeleteIncome, handleEditIncome]);
+  }, [t, incomeTypes, settingsCurrency, incomes, deletingId, handleDeleteIncome, handleEditIncome, selectedConversionCurrency, convertedAmountsCache, convertingIds]);
 
   if (loading) {
     return (
@@ -709,10 +1007,23 @@ export default function IncomePage() {
             id: 'table',
             label: t('incomeForm.tabs.table'),
             content: (
-              <div className="space-y-4 px-12">
+              <div className="space-y-2 px-12">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
-                  <span>{t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {settingsCurrency || 'USD'}</strong></span>
-                  <span>{t('incomeForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {settingsCurrency || 'USD'}</strong></span>
+                  <div className="flex gap-3">
+                    <span>{t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
+                    <span>{t('incomeForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
+                  </div>
+                  {settingsCurrency && incomes.some(income => income.currency !== settingsCurrency) && (
+                    <div className="flex items-center gap-2">
+                      <SelectInput
+                        value={selectedConversionCurrency || settingsCurrency}
+                        options={currencyOptions}
+                        onChange={handleConversionCurrencyChange}
+                        className="w-30"
+                      />
+                    </div>
+                  )}
+                 
                 </div>
                 <Table columns={tableColumns} data={incomes} />
               </div>
@@ -722,14 +1033,13 @@ export default function IncomePage() {
             id: 'chart',
             label: t('incomeForm.tabs.chart'),
             content: (
-              <div className="space-y-4 px-12">
-                <div className="text-sm text-textColor dark:text-textColor text-center">
-                  {t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {settingsCurrency || 'USD'}</strong>
+              <div className="space-y-2 px-12">
+                <div className="text-sm text-textColor dark:text-textColor text-right">
+                  {t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong>
                 </div>
                 <PieChart 
-                  title={t('incomeForm.chartTitle')} 
                   data={pieChartData}
-                  innerRadius="60%"
+                  innerRadius="40%"
                 />
               </div>
             )

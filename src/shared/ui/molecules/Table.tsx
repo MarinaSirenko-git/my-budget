@@ -4,7 +4,7 @@ export interface TableColumn<T = any> {
   /** Unique identifier for the column */
   key: string;
   /** Header label */
-  label: string;
+  label: string | React.ReactNode;
   /** Render function for cell content */
   render?: (value: any, row: T, index: number) => React.ReactNode;
   /** Whether column can be sorted */

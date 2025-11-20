@@ -40,6 +40,89 @@ export default function GoalsPage() {
   const [targetDate, setTargetDate] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
+
+  // Load settings currency
+  useEffect(() => {
+    async function loadSettingsCurrency() {
+      if (!user) {
+        // Fallback to localStorage
+        const savedCurrency = localStorage.getItem('user_currency');
+        if (savedCurrency) {
+          setSettingsCurrency(savedCurrency);
+        }
+        return;
+      }
+
+      try {
+        // Try to load from Supabase profiles table
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('default_currency')
+          .eq('id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          // Fallback to localStorage on error
+          const savedCurrency = localStorage.getItem('user_currency');
+          if (savedCurrency) {
+            setSettingsCurrency(savedCurrency);
+          }
+        } else if (data?.default_currency) {
+          setSettingsCurrency(data.default_currency);
+        } else {
+          // Fallback to localStorage
+          const savedCurrency = localStorage.getItem('user_currency');
+          if (savedCurrency) {
+            setSettingsCurrency(savedCurrency);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading settings currency:', err);
+        // Fallback to localStorage
+        const savedCurrency = localStorage.getItem('user_currency');
+        if (savedCurrency) {
+          setSettingsCurrency(savedCurrency);
+        }
+      }
+    }
+
+    loadSettingsCurrency();
+
+    // Listen for currency changes in localStorage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user_currency' && e.newValue) {
+        setSettingsCurrency(e.newValue);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also listen for custom event for same-window updates
+    const handleCustomStorageChange = () => {
+      const savedCurrency = localStorage.getItem('user_currency');
+      if (savedCurrency) {
+        setSettingsCurrency(savedCurrency);
+      }
+    };
+
+    window.addEventListener('currencyChanged', handleCustomStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('currencyChanged', handleCustomStorageChange);
+    };
+  }, [user]);
+
+  // Set default currency from settings when loaded
+  useEffect(() => {
+    if (settingsCurrency) {
+      const validCurrency = currencyOptions.find(opt => opt.value === settingsCurrency);
+      if (validCurrency && currency === currencyOptions[0].value) {
+        setCurrency(settingsCurrency);
+      }
+    }
+  }, [settingsCurrency]);
 
   // Wrapper function to handle currency change with validation
   const handleCurrencyChange = (newCurrency: string) => {
@@ -53,7 +136,9 @@ export default function GoalsPage() {
     setEditingGoal(null);
     setName('');
     setAmount(undefined);
-    setCurrency(currencyOptions[0].value);
+    const defaultCurrency = settingsCurrency || currencyOptions[0].value;
+    const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrency);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setTargetDate(undefined);
     setFormError(null);
     setOpen(true);
@@ -79,7 +164,9 @@ export default function GoalsPage() {
     setEditingGoal(null);
     setName('');
     setAmount(undefined);
-    setCurrency(currencyOptions[0].value);
+    const defaultCurrency = settingsCurrency || currencyOptions[0].value;
+    const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrency);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setTargetDate(undefined);
     setFormError(null);
   }
@@ -153,7 +240,7 @@ export default function GoalsPage() {
         const mappedGoals: Goal[] = data.map((item: any) => ({
           id: item.id,
           name: item.name,
-          amount: item.target_amount || item.amount,
+          amount: item.target_amount,
           currency: item.currency,
           targetDate: item.target_date || item.targetDate,
           saved: item.current_amount || item.saved || 0,
@@ -324,6 +411,7 @@ export default function GoalsPage() {
           <DateInput 
             value={targetDate}
             onChange={setTargetDate}
+            label={t('goalsForm.targetDateLabel')}
             placeholder={t('goalsForm.targetDatePlaceholder')} 
           />
           <TextButton 

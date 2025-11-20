@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import Logo from '@/shared/ui/Logo';
 import { useAuth } from '@/shared/store/auth';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from '@/shared/i18n';
 
@@ -122,138 +122,177 @@ function LeftSidebar(){
     };
 
     // Fetch and calculate total income
-    useEffect(() => {
-        async function fetchTotalIncome() {
-            if (!user) {
+    const fetchTotalIncome = useCallback(async () => {
+        if (!user) {
+            setTotalIncome(0);
+            return;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('incomes')
+                .select('amount, currency, frequency')
+                .eq('user_id', user.id);
+            if (error) {
+                console.error('Error fetching incomes:', error);
                 setTotalIncome(0);
                 return;
             }
-            try {
-                const { data, error } = await supabase
-                    .from('incomes')
-                    .select('amount, currency, frequency')
-                    .eq('user_id', user.id);
-                if (error) {
-                    console.error('Error fetching incomes:', error);
-                    setTotalIncome(0);
-                    return;
-                }
-                if (data) {
-                    // Конвертируем суммы и рассчитываем месячный доход
-                    // Сначала обрабатываем месячные доходы
-                    const monthlyIncomesPromises = data
-                        .filter(income => income.frequency === 'monthly')
-                        .map(async (income) => {
-                            // Используем конвертированную сумму если валюта отличается от дефолтной
-                            if (settingsCurrency && income.currency !== settingsCurrency) {
-                                const converted = await convertAmount(income.amount, income.currency);
-                                if (converted !== null) {
-                                    return converted;
-                                }
+            if (data) {
+                // Конвертируем суммы и рассчитываем месячный доход
+                // Сначала обрабатываем месячные доходы
+                const monthlyIncomesPromises = data
+                    .filter(income => income.frequency === 'monthly')
+                    .map(async (income) => {
+                        // Используем конвертированную сумму если валюта отличается от дефолтной
+                        if (settingsCurrency && income.currency !== settingsCurrency) {
+                            const converted = await convertAmount(income.amount, income.currency);
+                            if (converted !== null) {
+                                return converted;
                             }
-                            // Используем исходную сумму если валюта совпадает с дефолтной
-                            return income.amount;
-                        });
+                        }
+                        // Используем исходную сумму если валюта совпадает с дефолтной
+                        return income.amount;
+                    });
 
-                    // Затем обрабатываем годовые доходы, разделенные на 12
-                    const annualIncomesPromises = data
-                        .filter(income => income.frequency === 'annual')
-                        .map(async (income) => {
-                            // Используем конвертированную сумму если валюта отличается от дефолтной
-                            if (settingsCurrency && income.currency !== settingsCurrency) {
-                                const converted = await convertAmount(income.amount, income.currency);
-                                if (converted !== null) {
-                                    return converted / 12;
-                                }
+                // Затем обрабатываем годовые доходы, разделенные на 12
+                const annualIncomesPromises = data
+                    .filter(income => income.frequency === 'annual')
+                    .map(async (income) => {
+                        // Используем конвертированную сумму если валюта отличается от дефолтной
+                        if (settingsCurrency && income.currency !== settingsCurrency) {
+                            const converted = await convertAmount(income.amount, income.currency);
+                            if (converted !== null) {
+                                return converted / 12;
                             }
-                            // Используем исходную сумму если валюта совпадает с дефолтной
-                            return income.amount / 12;
-                        });
+                        }
+                        // Используем исходную сумму если валюта совпадает с дефолтной
+                        return income.amount / 12;
+                    });
 
-                    const [monthlyAmounts, annualAmounts] = await Promise.all([
-                        Promise.all(monthlyIncomesPromises),
-                        Promise.all(annualIncomesPromises)
-                    ]);
+                const [monthlyAmounts, annualAmounts] = await Promise.all([
+                    Promise.all(monthlyIncomesPromises),
+                    Promise.all(annualIncomesPromises)
+                ]);
 
-                    const total = [...monthlyAmounts, ...annualAmounts].reduce((sum, amount) => sum + amount, 0);
-                    // Сохраняем точное значение, форматирование будет при отображении
-                    setTotalIncome(total);
-                }
-            } catch (err) {
-                console.error('Error calculating total income:', err);
-                setTotalIncome(0);
+                const total = [...monthlyAmounts, ...annualAmounts].reduce((sum, amount) => sum + amount, 0);
+                // Сохраняем точное значение, форматирование будет при отображении
+                setTotalIncome(total);
             }
+        } catch (err) {
+            console.error('Error calculating total income:', err);
+            setTotalIncome(0);
         }
+    }, [user, settingsCurrency, convertAmount]);
+
+    useEffect(() => {
         fetchTotalIncome();
-    }, [user, settingsCurrency]);
+    }, [fetchTotalIncome]);
+
+    // Подписка на события обновления доходов
+    useEffect(() => {
+        const handleIncomeUpdated = () => {
+            fetchTotalIncome();
+        };
+
+        window.addEventListener('incomeUpdated', handleIncomeUpdated);
+        return () => {
+            window.removeEventListener('incomeUpdated', handleIncomeUpdated);
+        };
+    }, [fetchTotalIncome]);
 
     // Fetch and calculate total expenses
-    useEffect(() => {
-        async function fetchTotalExpenses() {
-            if (!user) {
+    const fetchTotalExpenses = useCallback(async () => {
+        if (!user) {
+            setTotalExpenses(0);
+            return;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('expenses')
+                .select('amount, frequency')
+                .eq('user_id', user.id);
+            if (error) {
+                console.error('Error fetching expenses:', error);
                 setTotalExpenses(0);
                 return;
             }
-            try {
-                const { data, error } = await supabase
-                    .from('expenses')
-                    .select('planned_amount, amount, frequency')
-                    .eq('user_id', user.id);
-                if (error) {
-                    console.error('Error fetching expenses:', error);
-                    setTotalExpenses(0);
-                    return;
-                }
-                if (data) {
-                    const total = data.reduce((sum, expense) => {
-                        const amount = expense.planned_amount || expense.amount || 0;
-                        if (expense.frequency === 'annual') {
-                            return sum + (amount / 12);
-                        } else {
-                            return sum + amount;
-                        }
-                    }, 0);
-                    setTotalExpenses(Math.round(total * 100) / 100);
-                }
-            } catch (err) {
-                console.error('Error calculating total expenses:', err);
-                setTotalExpenses(0);
+            if (data) {
+                const total = data.reduce((sum, expense) => {
+                    const amount = expense.amount || 0;
+                    if (expense.frequency === 'annual') {
+                        return sum + (amount / 12);
+                    } else {
+                        return sum + amount;
+                    }
+                }, 0);
+                setTotalExpenses(total);
             }
+        } catch (err) {
+            console.error('Error calculating total expenses:', err);
+            setTotalExpenses(0);
         }
-        fetchTotalExpenses();
     }, [user]);
 
-    // Fetch and calculate total goals
     useEffect(() => {
-        async function fetchTotalGoals() {
-            if (!user) {
+        fetchTotalExpenses();
+    }, [fetchTotalExpenses]);
+
+    // Подписка на события обновления расходов
+    useEffect(() => {
+        const handleExpenseUpdated = () => {
+            fetchTotalExpenses();
+        };
+
+        window.addEventListener('expenseUpdated', handleExpenseUpdated);
+        return () => {
+            window.removeEventListener('expenseUpdated', handleExpenseUpdated);
+        };
+    }, [fetchTotalExpenses]);
+
+    // Fetch and calculate total goals
+    const fetchTotalGoals = useCallback(async () => {
+        if (!user) {
+            setTotalGoals(0);
+            return;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('goals')
+                .select('target_amount')
+                .eq('user_id', user.id);
+            if (error) {
+                console.error('Error fetching goals:', error);
                 setTotalGoals(0);
                 return;
             }
-            try {
-                const { data, error } = await supabase
-                    .from('goals')
-                    .select('target_amount, amount')
-                    .eq('user_id', user.id);
-                if (error) {
-                    console.error('Error fetching goals:', error);
-                    setTotalGoals(0);
-                    return;
-                }
-                if (data) {
-                    const total = data.reduce((sum, goal) => {
-                        const amount = goal.target_amount || goal.amount || 0;
-                        return sum + amount;
-                    }, 0);
-                    setTotalGoals(Math.round(total * 100) / 100);
-                }
-            } catch (err) {
-                console.error('Error calculating total goals:', err);
-                setTotalGoals(0);
+            if (data) {
+                const total = data.reduce((sum, goal) => {
+                    const amount = goal.target_amount || 0;
+                    return sum + amount;
+                }, 0);
+                setTotalGoals(total);
             }
+        } catch (err) {
+            console.error('Error calculating total goals:', err);
+            setTotalGoals(0);
         }
-        fetchTotalGoals();
     }, [user]);
+
+    useEffect(() => {
+        fetchTotalGoals();
+    }, [fetchTotalGoals]);
+
+    // Подписка на события обновления целей
+    useEffect(() => {
+        const handleGoalUpdated = () => {
+            fetchTotalGoals();
+        };
+
+        window.addEventListener('goalUpdated', handleGoalUpdated);
+        return () => {
+            window.removeEventListener('goalUpdated', handleGoalUpdated);
+        };
+    }, [fetchTotalGoals]);
 
     const remainder = totalIncome - totalExpenses - totalGoals;
     let remainderColor = 'text-white';

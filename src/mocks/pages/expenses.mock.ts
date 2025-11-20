@@ -5,95 +5,23 @@ export interface ExpenseCategory {
   isCustom?: boolean;
 }
 
-export const expenseCategories: ExpenseCategory[] = [
-  {
-    id: 'kids-school-receipt',
-    label: 'Обучение детей',
-    value: 'kids-school-receipt',
-    isCustom: false,
-  },
-  {
-    id: 'food-household',
-    label: 'Еда и товары для дома',
-    value: 'food-household',
-    isCustom: false,
-  },
-  {
-    id: 'car',
-    label: 'Автомобиль',
-    value: 'car',
-    isCustom: false,
-  },
-  {
-    id: 'personal-pocket-money',
-    label: 'Личные карманные деньги',
-    value: 'personal-pocket-money',
-    isCustom: false,
-  },
-  {
-    id: 'parties',
-    label: 'Развлечения',
-    value: 'parties',
-    isCustom: false,
-  },
-  {
-    id: 'internet',
-    label: 'Интернет',
-    value: 'internet',
-    isCustom: false,
-  },
-  {
-    id: 'electricity',
-    label: 'Электричество',
-    value: 'electricity',
-    isCustom: false,
-  },
-  {
-    id: 'water',
-    label: 'Вода',
-    value: 'water',
-    isCustom: false,
-  },
-  {
-    id: 'kids-hobbies',
-    label: 'Детские кружки',
-    value: 'kids-hobbies',
-    isCustom: false,
-  },
-  {
-    id: 'fix-repair',
-    label: 'Ремонт и обслуживание',
-    value: 'fix-repair',
-    isCustom: false,
-  },
-  {
-    id: 'credit',
-    label: 'Кредиты',
-    value: 'credit',
-    isCustom: false,
-  },
-  {
-    id: 'custom',
-    label: 'Прочий расход',
-    value: 'Custom',
-    isCustom: true,
-  },
-];
-
 export interface Expense {
   id: string;
-  category: string;
-  title: string;
+  type: string;
+  category?: string;
+  title?: string;
   amount: number;
   currency: string;
   frequency: 'monthly' | 'annual' | 'one-time';
-  date: string; // YYYY-MM-DD
+  date?: string;
   createdAt?: string;
+  amountInDefaultCurrency?: number; // Конвертированная сумма в дефолтной валюте
 }
 
 export const mockExpenses: Expense[] = [
   {
     id: '1',
+    type: 'kids-school-receipt',
     category: 'kids-school-receipt',
     title: 'Школьная плата',
     amount: 500,
@@ -104,6 +32,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '2',
+    type: 'kids-school-receipt',
     category: 'kids-school-receipt',
     title: 'Школьные принадлежности',
     amount: 120,
@@ -114,6 +43,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '3',
+    type: 'food-household',
     category: 'food-household',
     title: 'Еженедельные продукты',
     amount: 200,
@@ -124,6 +54,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '4',
+    type: 'food-household',
     category: 'food-household',
     title: 'Товары для дома',
     amount: 85,
@@ -134,6 +65,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '5',
+    type: 'car',
     category: 'car',
     title: 'Страховка автомобиля',
     amount: 150,
@@ -144,6 +76,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '6',
+    type: 'car',
     category: 'car',
     title: 'Бензин и топливо',
     amount: 300,
@@ -154,6 +87,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '7',
+    type: 'car',
     category: 'car',
     title: 'Обслуживание автомобиля',
     amount: 450,
@@ -164,6 +98,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '8',
+    type: 'personal-pocket-money',
     category: 'personal-pocket-money',
     title: 'Личные карманные деньги',
     amount: 200,
@@ -174,6 +109,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '9',
+    type: 'parties',
     category: 'parties',
     title: 'День рождения',
     amount: 350,
@@ -184,6 +120,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '10',
+    type: 'internet',
     category: 'internet',
     title: 'Интернет',
     amount: 60,
@@ -194,6 +131,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '11',
+    type: 'electricity',
     category: 'electricity',
     title: 'Электричество',
     amount: 120,
@@ -204,6 +142,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '12',
+    type: 'water',
     category: 'water',
     title: 'Вода',
     amount: 45,
@@ -214,6 +153,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '13',
+    type: 'kids-hobbies',
     category: 'kids-hobbies',
     title: 'Уроки фортепиано',
     amount: 180,
@@ -224,6 +164,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '14',
+    type: 'kids-hobbies',
     category: 'kids-hobbies',
     title: 'Футбольная экипировка',
     amount: 95,
@@ -234,6 +175,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '15',
+    type: 'fix-repair',
     category: 'fix-repair',
     title: 'Ремонт кухонной раковины',
     amount: 250,
@@ -244,6 +186,7 @@ export const mockExpenses: Expense[] = [
   },
   {
     id: '16',
+    type: 'fix-repair',
     category: 'fix-repair',
     title: 'Устранение протечки крыши',
     amount: 800,

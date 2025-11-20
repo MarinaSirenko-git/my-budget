@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 export interface PieChartData {
@@ -46,7 +46,7 @@ const PieChart: React.FC<PieChartProps> = ({
   title,
   showLegend = true,
   showTooltip = true,
-  outerRadius = '80%',
+  outerRadius = '100%',
   innerRadius = 0,
   labelLine = false,
   label = false,
@@ -57,6 +57,52 @@ const PieChart: React.FC<PieChartProps> = ({
     ...item,
     color: item.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
   }));
+
+  // Calculate total for percentage calculation
+  const total = useMemo(() => {
+    return dataWithColors.reduce((sum, item) => sum + item.value, 0);
+  }, [dataWithColors]);
+
+  // Calculate rounded percentages that sum to 100% using Largest Remainder Method
+  const percentages = useMemo(() => {
+    if (total === 0 || dataWithColors.length === 0) {
+      return new Map<string, number>();
+    }
+
+    // Calculate exact percentages and floor values
+    const items = dataWithColors.map((item, index) => {
+      const exactPercent = (item.value / total) * 100;
+      const floorPercent = Math.floor(exactPercent);
+      const remainder = exactPercent - floorPercent;
+      return {
+        index,
+        name: item.name,
+        exactPercent,
+        floorPercent,
+        remainder,
+      };
+    });
+
+    // Calculate sum of floor values
+    const floorSum = items.reduce((sum, item) => sum + item.floorPercent, 0);
+    const difference = 100 - floorSum;
+
+    // Sort by remainder in descending order
+    const sortedItems = [...items].sort((a, b) => b.remainder - a.remainder);
+
+    // Add 1 to the items with largest remainders to make sum = 100
+    const result = new Map<string, number>();
+    items.forEach((item) => {
+      const sortedIndex = sortedItems.findIndex((si) => si.index === item.index);
+      if (sortedIndex < difference) {
+        result.set(item.name, item.floorPercent + 1);
+      } else {
+        result.set(item.name, item.floorPercent);
+      }
+    });
+
+    return result;
+  }, [dataWithColors, total]);
 
   const renderLabel = (entry: PieChartData) => {
     if (typeof label === 'function') {
@@ -71,6 +117,7 @@ const PieChart: React.FC<PieChartProps> = ({
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0];
+      const percentage = percentages.get(data.name) ?? 0;
       return (
         <div className="bg-cardColor dark:bg-cardColor border border-borderColor dark:border-borderColor rounded-lg shadow-lg p-3">
           <p className="text-sm font-medium text-mainTextColor dark:text-mainTextColor">
@@ -80,6 +127,9 @@ const PieChart: React.FC<PieChartProps> = ({
             {typeof data.value === 'number' 
               ? data.value.toLocaleString() 
               : data.value}
+          </p>
+          <p className="text-sm text-textColor dark:text-textColor">
+            {percentage}%
           </p>
         </div>
       );
@@ -94,14 +144,14 @@ const PieChart: React.FC<PieChartProps> = ({
           {title}
         </h3>
       )}
-      <ResponsiveContainer width="100%" height={400}>
+      <ResponsiveContainer width="100%" height={300}>
         <RechartsPieChart>
           <Pie
             data={dataWithColors}
             cx="50%"
             cy="50%"
             labelLine={labelLine}
-            label={label ? renderLabel : false}
+            label={label ? (renderLabel as any) : false}
             outerRadius={outerRadius}
             innerRadius={innerRadius}
             fill="#8884d8"
@@ -114,13 +164,16 @@ const PieChart: React.FC<PieChartProps> = ({
           {showTooltip && <Tooltip content={<CustomTooltip />} />}
           {showLegend && (
             <Legend
-              verticalAlign="bottom"
+              verticalAlign="top"
               height={36}
-              formatter={(value, entry: any) => (
-                <span className="text-mainTextColor dark:text-mainTextColor text-sm">
-                  {value}
-                </span>
-              )}
+              formatter={(value, entry: any) => {
+                const percentage = percentages.get(entry.payload.name) ?? 0;
+                return (
+                  <span className="text-mainTextColor dark:text-mainTextColor text-sm">
+                    {value} {percentage}%
+                  </span>
+                );
+              }}
             />
           )}
         </RechartsPieChart>
