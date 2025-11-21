@@ -12,6 +12,7 @@
     "myIncome": "My Income",
     "myGoals": "My Goals",
     "myExpenses": "My Expenses",
+    "mySavings": "My Savings",
     "howWillThisHelp": "How will this help me?",
     "settings": "Settings",
     "signOut": "Sign Out"
@@ -20,6 +21,7 @@
     "income": "Income",
     "expenses": "Expenses",
     "goals": "Goals",
+    "savings": "Savings",
     "remainder": "Remainder"
   },
   "form": {
@@ -136,6 +138,7 @@
       "title": "Title",
       "category": "Category",
       "amount": "Amount",
+      "amountInSettingsCurrency": "Amount (settings currency)",
       "frequency": "Frequency",
       "date": "Date",
       "actions": "Actions"
@@ -179,6 +182,50 @@
     "loading": "Loading...",
     "errorPrefix": "Error:",
     "emptyStateMessage": "What are we saving for and when? <br /> Add your first financial goal."
+  },
+  "savingsForm": {
+    "createTitle": "Add Savings",
+    "editTitle": "Edit Savings",
+    "nameLabel": "Savings name",
+    "namePlaceholder": "Emergency fund",
+    "amountLabel": "Amount",
+    "currencyLabel": "Currency",
+    "dateLabel": "Date",
+    "createButton": "Add",
+    "creatingButton": "Adding...",
+    "saveButton": "Save",
+    "savingButton": "Saving...",
+    "createAriaLabel": "Add savings",
+    "saveAriaLabel": "Save savings",
+    "addNewButton": "Add new savings",
+    "addNewAriaLabel": "Add new savings",
+    "errorMessage": "Error saving savings",
+    "loadingError": "Error loading savings",
+    "deleteError": "Error deleting savings",
+    "deleteConfirm": "Are you sure you want to delete this savings?",
+    "loading": "Loading...",
+    "errorPrefix": "Error:",
+    "emptyStateMessage": "Track your savings and see your progress. <br /> Add your first savings entry.",
+    "tableColumns": {
+      "name": "Name",
+      "amount": "Amount",
+      "amountInSettingsCurrency": "Amount (settings currency)",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "actions": {
+      "edit": "Edit",
+      "editAriaLabel": "Edit savings",
+      "delete": "Delete",
+      "deleteAriaLabel": "Delete savings"
+    },
+    "tabs": {
+      "table": "Table",
+      "chart": "Chart"
+    },
+    "totals": {
+      "total": "Total savings:"
+    }
   },
   "incomeCategories": {
     "salary": "Salary",

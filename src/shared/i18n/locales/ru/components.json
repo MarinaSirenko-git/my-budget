@@ -11,6 +11,7 @@
     "myIncome": "Мои доходы",
     "myGoals": "Мои цели",
     "myExpenses": "Мои расходы",
+    "mySavings": "Мои накопления",
     "howWillThisHelp": "Как мне это поможет?",
     "settings": "Настройки",
     "signOut": "Выйти"
@@ -19,6 +20,7 @@
     "income": "Доходы",
     "expenses": "Расходы",
     "goals": "Цели",
+    "savings": "Накопления",
     "remainder": "Остаток"
   },
   "settingsForm": {
@@ -131,6 +133,7 @@
       "title": "Название",
       "category": "Категория",
       "amount": "Сумма",
+      "amountInSettingsCurrency": "Сумма (валюта настроек)",
       "frequency": "Частота",
       "date": "Дата",
       "actions": "Действия"
@@ -174,6 +177,50 @@
     "loading": "Загрузка...",
     "errorPrefix": "Ошибка:",
     "emptyStateMessage": "На что копим и когда? <br /> Добавь свою первую финансовую цель."
+  },
+  "savingsForm": {
+    "createTitle": "Добавить накопления",
+    "editTitle": "Редактировать накопления",
+    "nameLabel": "Название накоплений",
+    "namePlaceholder": "Резервный фонд",
+    "amountLabel": "Сумма",
+    "currencyLabel": "Валюта",
+    "dateLabel": "Дата",
+    "createButton": "Добавить",
+    "creatingButton": "Добавление...",
+    "saveButton": "Сохранить",
+    "savingButton": "Сохранение...",
+    "createAriaLabel": "Добавить накопления",
+    "saveAriaLabel": "Сохранить накопления",
+    "addNewButton": "Добавить новые накопления",
+    "addNewAriaLabel": "Добавить новые накопления",
+    "errorMessage": "Ошибка сохранения накоплений",
+    "loadingError": "Ошибка загрузки накоплений",
+    "deleteError": "Ошибка удаления накоплений",
+    "deleteConfirm": "Вы уверены, что хотите удалить эти накопления?",
+    "loading": "Загрузка...",
+    "errorPrefix": "Ошибка:",
+    "emptyStateMessage": "Есть накопления? <br/> Добавь, это поможет увидеть полную картину.",
+    "tableColumns": {
+      "name": "Название",
+      "amount": "Сумма",
+      "amountInSettingsCurrency": "Сумма (валюта настроек)",
+      "date": "Дата",
+      "actions": "Действия"
+    },
+    "actions": {
+      "edit": "Редактировать",
+      "editAriaLabel": "Редактировать накопления",
+      "delete": "Удалить",
+      "deleteAriaLabel": "Удалить накопления"
+    },
+    "tabs": {
+      "table": "Таблица",
+      "chart": "График"
+    },
+    "totals": {
+      "total": "Всего накоплений:"
+    }
   },
   "incomeCategories": {
     "salary": "Зарплата",

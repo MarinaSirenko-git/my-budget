@@ -12,6 +12,7 @@ function LeftSidebar(){
     const [totalIncome, setTotalIncome] = useState(0);
     const [totalExpenses, setTotalExpenses] = useState(0);
     const [totalGoals, setTotalGoals] = useState(0);
+    const [totalSavings, setTotalSavings] = useState(0);
     const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
 
     const navLinkClass = ({ isActive }: { isActive: boolean }) => 
@@ -331,6 +332,62 @@ function LeftSidebar(){
         };
     }, [fetchTotalGoals]);
 
+    // Fetch and calculate total savings
+    const fetchTotalSavings = useCallback(async () => {
+        if (!user) {
+            setTotalSavings(0);
+            return;
+        }
+        try {
+            const { data, error } = await supabase
+                .from('savings')
+                .select('amount, currency')
+                .eq('user_id', user.id);
+            if (error) {
+                console.error('Error fetching savings:', error);
+                setTotalSavings(0);
+                return;
+            }
+            if (data) {
+                // Конвертируем суммы и рассчитываем общую сумму накоплений
+                const savingsPromises = data.map(async (saving) => {
+                    // Используем конвертированную сумму если валюта отличается от дефолтной
+                    if (settingsCurrency && saving.currency !== settingsCurrency) {
+                        const converted = await convertAmount(saving.amount, saving.currency);
+                        if (converted !== null) {
+                            return converted;
+                        }
+                    }
+                    // Используем исходную сумму если валюта совпадает с дефолтной
+                    return saving.amount || 0;
+                });
+
+                const amounts = await Promise.all(savingsPromises);
+                const total = amounts.reduce((sum, amount) => sum + amount, 0);
+                setTotalSavings(total);
+            }
+        } catch (err) {
+            console.error('Error calculating total savings:', err);
+            setTotalSavings(0);
+        }
+    }, [user, settingsCurrency, convertAmount]);
+
+    useEffect(() => {
+        fetchTotalSavings();
+    }, [fetchTotalSavings]);
+
+    // Подписка на события обновления накоплений
+    useEffect(() => {
+        const handleSavingUpdated = () => {
+            fetchTotalSavings();
+        };
+
+        window.addEventListener('savingUpdated', handleSavingUpdated);
+        return () => {
+            window.removeEventListener('savingUpdated', handleSavingUpdated);
+        };
+    }, [fetchTotalSavings]);
+
     const remainder = totalIncome - totalExpenses - totalGoals;
     let remainderColor = 'text-white';
     if (remainder > 0) {
@@ -355,6 +412,10 @@ function LeftSidebar(){
                     <div className="text-xs text-white tracking-wider">{t('summary.goals')}</div>
                     <div className="text-sm font-semibold text-white">{totalGoals.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
+                <div className="min-w-[100px] px-3 py-2 bg-blue-500 rounded-md shadow-sm">
+                    <div className="text-xs text-white tracking-wider">{t('summary.savings')}</div>
+                    <div className="text-sm font-semibold text-white">{totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                </div>
                 <div className="min-w-[100px] px-3 py-2 bg-presenting rounded-md shadow-sm">
                     <div className="text-xs text-white tracking-wider">{t('summary.remainder')}</div>
                     <div className={`text-sm font-semibold ${remainderColor}`}>{remainder.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
@@ -373,6 +434,11 @@ function LeftSidebar(){
                     </NavLink>
                 </li>
                 <li> 
+                    <NavLink className={navLinkClass} to="/savings">
+                        {t('sidebar.mySavings')}
+                    </NavLink>
+                </li>
+                <li> 
                     <NavLink className={navLinkClass} to="/goals">
                         {t('sidebar.myGoals')}
                     </NavLink>
@@ -382,6 +448,7 @@ function LeftSidebar(){
                         {t('sidebar.myExpenses')}
                     </NavLink>
                 </li>
+
             </ul>
             <ul className="pt-2 w-full mt-auto font-base bg-base-100 text-mainTextColor dark:text-mainTextColor text-md leading-loose">
                 <li className="font-semibold rounded-md"> 

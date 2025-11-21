@@ -6,6 +6,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import IncomePage from "./pages/income/IncomePage";
 import ExpensesPage from "./pages/expences/ExpensesPage";
 import GoalsPage from "./pages/goals/GoalsPage";
+import SavingsPage from "./pages/savings/SavingsPage";
 import DocsPage from "./pages/docs/DocsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import { useEffect } from 'react';
@@ -36,6 +37,7 @@ function App() {
             <Route path="/income" element={<IncomePage />} />
             <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/savings" element={<SavingsPage />} />
             <Route path="/docs" element={<DocsPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
