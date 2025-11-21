@@ -119,10 +119,10 @@ export default function GoalsPage() {
     if (settingsCurrency) {
       const validCurrency = currencyOptions.find(opt => opt.value === settingsCurrency);
       if (validCurrency && currency === currencyOptions[0].value) {
-        setCurrency(settingsCurrency);
+        setCurrency(validCurrency.value);
       }
     }
-  }, [settingsCurrency]);
+  }, [settingsCurrency, currency]);
 
   // Wrapper function to handle currency change with validation
   const handleCurrencyChange = (newCurrency: string) => {
@@ -157,6 +157,82 @@ export default function GoalsPage() {
     setTargetDate(goal.targetDate);
     setFormError(null);
     setOpen(true);
+  }
+
+  async function handleDeleteGoal(goal: Goal) {
+    if (!user) {
+      return;
+    }
+
+    // Confirm deletion
+    if (!window.confirm(t('goalsForm.deleteConfirm') || `Вы уверены, что хотите удалить цель "${goal.name}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('goals')
+        .delete()
+        .eq('id', goal.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Refresh goals list
+      const { data, error: fetchError } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) {
+        throw fetchError;
+      }
+
+      if (data) {
+        const mappedGoals: Goal[] = data.map((item: any) => {
+          const targetAmount = item.target_amount || 0;
+          const targetDate = item.target_date || item.targetDate;
+          const createdAt = item.created_at;
+          
+          // Calculate saved amount based on months passed
+          const saved = (targetDate && createdAt) 
+            ? calculateSaved(targetAmount, targetDate, createdAt)
+            : 0;
+          
+          // Calculate months left if not provided
+          let monthsLeft = item.months_left;
+          if (!monthsLeft && targetDate) {
+            const today = new Date();
+            const target = new Date(targetDate);
+            const diffTime = target.getTime() - today.getTime();
+            if (diffTime > 0) {
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              monthsLeft = Math.max(1, Math.ceil(diffDays / 30.44));
+            }
+          }
+          
+          return {
+            id: item.id,
+            name: item.name,
+            amount: targetAmount,
+            currency: item.currency,
+            targetDate: targetDate,
+            saved: saved,
+            monthsLeft: monthsLeft,
+          };
+        });
+        setGoals(mappedGoals);
+      }
+
+      // Trigger event to update sidebar
+      window.dispatchEvent(new Event('goalUpdated'));
+    } catch (err) {
+      console.error('Error deleting goal:', err);
+      alert(err instanceof Error ? err.message : t('goalsForm.deleteError') || 'Ошибка при удалении цели');
+    }
   }
 
   function handleModalClose() {
@@ -237,15 +313,38 @@ export default function GoalsPage() {
       }
 
       if (data) {
-        const mappedGoals: Goal[] = data.map((item: any) => ({
-          id: item.id,
-          name: item.name,
-          amount: item.target_amount,
-          currency: item.currency,
-          targetDate: item.target_date || item.targetDate,
-          saved: item.current_amount || item.saved || 0,
-          monthsLeft: item.months_left || undefined,
-        }));
+        const mappedGoals: Goal[] = data.map((item: any) => {
+          const targetAmount = item.target_amount || 0;
+          const targetDate = item.target_date || item.targetDate;
+          const createdAt = item.created_at;
+          
+          // Calculate saved amount based on months passed
+          const saved = (targetDate && createdAt) 
+            ? calculateSaved(targetAmount, targetDate, createdAt)
+            : 0;
+          
+          // Calculate months left if not provided
+          let monthsLeft = item.months_left;
+          if (!monthsLeft && targetDate) {
+            const today = new Date();
+            const target = new Date(targetDate);
+            const diffTime = target.getTime() - today.getTime();
+            if (diffTime > 0) {
+              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+              monthsLeft = Math.max(1, Math.ceil(diffDays / 30.44));
+            }
+          }
+          
+          return {
+            id: item.id,
+            name: item.name,
+            amount: targetAmount,
+            currency: item.currency,
+            targetDate: targetDate,
+            saved: saved,
+            monthsLeft: monthsLeft,
+          };
+        });
         setGoals(mappedGoals);
       }
 
@@ -257,6 +356,40 @@ export default function GoalsPage() {
       setSubmitting(false);
     }
   }
+
+  // Calculate saved amount based on months passed since goal creation
+  const calculateSaved = (targetAmount: number, targetDate: string, createdAt: string): number => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const created = new Date(createdAt);
+    created.setHours(0, 0, 0, 0);
+    
+    const target = new Date(targetDate);
+    target.setHours(0, 0, 0, 0);
+    
+    // Calculate months until target date
+    const diffTime = target.getTime() - today.getTime();
+    if (diffTime <= 0) {
+      // If target date is in the past, return full amount
+      return targetAmount;
+    }
+    
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const monthsLeft = Math.max(1, Math.ceil(diffDays / 30.44)); // 30.44 = average days per month
+    
+    // Calculate monthly contribution
+    const monthlyContribution = targetAmount / monthsLeft;
+    
+    // Calculate months passed since creation
+    const monthsPassed = Math.floor((today.getTime() - created.getTime()) / (1000 * 60 * 60 * 24 * 30.44));
+    
+    // Calculate saved amount: monthly contribution * months passed
+    const saved = monthlyContribution * Math.max(0, monthsPassed);
+    
+    // Don't exceed target amount
+    return Math.min(saved, targetAmount);
+  };
 
   // Fetch goals from Supabase
   useEffect(() => {
@@ -282,15 +415,38 @@ export default function GoalsPage() {
 
         if (data) {
           // Map Supabase data to Goal interface
-          const mappedGoals: Goal[] = data.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            amount: item.target_amount || item.amount,
-            currency: item.currency,
-            targetDate: item.target_date || item.targetDate,
-            saved: item.current_amount || item.saved || 0,
-            monthsLeft: item.months_left || undefined,
-          }));
+          const mappedGoals: Goal[] = data.map((item: any) => {
+            const targetAmount = item.target_amount || item.amount || 0;
+            const targetDate = item.target_date || item.targetDate;
+            const createdAt = item.created_at;
+            
+            // Calculate saved amount based on months passed
+            const saved = (targetDate && createdAt) 
+              ? calculateSaved(targetAmount, targetDate, createdAt)
+              : 0;
+            
+            // Calculate months left if not provided
+            let monthsLeft = item.months_left;
+            if (!monthsLeft && targetDate) {
+              const today = new Date();
+              const target = new Date(targetDate);
+              const diffTime = target.getTime() - today.getTime();
+              if (diffTime > 0) {
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                monthsLeft = Math.max(1, Math.ceil(diffDays / 30.44));
+              }
+            }
+            
+            return {
+              id: item.id,
+              name: item.name,
+              amount: targetAmount,
+              currency: item.currency,
+              targetDate: targetDate,
+              saved: saved,
+              monthsLeft: monthsLeft,
+            };
+          });
           setGoals(mappedGoals);
         }
       } catch (err) {
@@ -436,27 +592,16 @@ export default function GoalsPage() {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
         {goals.map((goal) => {
-          // Calculate months left if not provided
-          const monthsLeft = goal.monthsLeft || (() => {
-            const targetDate = new Date(goal.targetDate);
-            const today = new Date();
-            const diffTime = targetDate.getTime() - today.getTime();
-            const diffMonths = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 30));
-            return Math.max(0, diffMonths);
-          })();
-          
-          // Use saved amount from DB or calculate a default
-          const saved = goal.saved ?? Math.floor(goal.amount * 0.3);
-          
           return (
             <GoalCard
               key={goal.id}
               title={goal.name}
-              saved={saved}
+              saved={goal.saved || 0}
               target={goal.amount}
               currency={goal.currency}
-              monthsLeft={monthsLeft}
+              monthsLeft={goal.monthsLeft}
               onEdit={() => handleEditGoal(goal)}
+              onDelete={() => handleDeleteGoal(goal)}
             />
           );
         })}

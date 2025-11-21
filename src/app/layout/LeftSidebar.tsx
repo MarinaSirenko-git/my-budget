@@ -258,19 +258,56 @@ function LeftSidebar(){
         try {
             const { data, error } = await supabase
                 .from('goals')
-                .select('target_amount')
+                .select('target_amount, target_date, created_at')
                 .eq('user_id', user.id);
             if (error) {
                 console.error('Error fetching goals:', error);
                 setTotalGoals(0);
                 return;
             }
-            if (data) {
+            if (data && data.length > 0) {
                 const total = data.reduce((sum, goal) => {
-                    const amount = goal.target_amount || 0;
-                    return sum + amount;
+                    const targetAmount = goal.target_amount || 0;
+                    const targetDate = goal.target_date;
+                    const createdAt = goal.created_at;
+                    
+                    // Skip goals without target date or creation date
+                    if (!targetDate || !createdAt) {
+                        return sum;
+                    }
+                    
+                    // Skip goals with zero or negative amount
+                    if (targetAmount <= 0) {
+                        return sum;
+                    }
+                    
+                    // Calculate months from creation date to target date
+                    const created = new Date(createdAt);
+                    created.setHours(0, 0, 0, 0);
+                    
+                    const target = new Date(targetDate);
+                    target.setHours(0, 0, 0, 0);
+                    
+                    const diffTime = target.getTime() - created.getTime();
+                    
+                    // If target date is before or equal to creation date, skip
+                    if (diffTime <= 0) {
+                        return sum;
+                    }
+                    
+                    // Calculate total months from creation to target
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    const totalMonths = Math.max(1, Math.ceil(diffDays / 30.44)); // 30.44 = average days per month
+                    
+                    // Calculate monthly contribution: target_amount / total_months
+                    const monthlyContribution = targetAmount / totalMonths;
+                    
+                    return sum + monthlyContribution;
                 }, 0);
-                setTotalGoals(total);
+                
+                setTotalGoals(Math.round(total * 100) / 100); // Round to 2 decimal places
+            } else {
+                setTotalGoals(0);
             }
         } catch (err) {
             console.error('Error calculating total goals:', err);
