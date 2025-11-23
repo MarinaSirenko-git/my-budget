@@ -258,7 +258,7 @@ export default function SavingsPage() {
 
       // Refresh savings list
       const { data, error: fetchError } = await supabase
-        .from('savings')
+        .from('savings_decrypted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -385,7 +385,7 @@ export default function SavingsPage() {
 
       // Refresh savings list
       const { data, error: fetchError } = await supabase
-        .from('savings')
+        .from('savings_decrypted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -442,7 +442,7 @@ export default function SavingsPage() {
         setError(null);
         
         const { data, error: fetchError } = await supabase
-          .from('savings')
+          .from('savings_decrypted')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });

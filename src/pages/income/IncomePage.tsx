@@ -252,7 +252,7 @@ export default function IncomePage() {
 
       // Refresh incomes list
       const { data, error: fetchError } = await supabase
-        .from('incomes')
+        .from('incomes_decrypted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -338,7 +338,7 @@ export default function IncomePage() {
 
       // Refresh incomes list
       const { data, error: fetchError } = await supabase
-        .from('incomes')
+        .from('incomes_decrypted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -563,7 +563,7 @@ export default function IncomePage() {
         setError(null);
         
         const { data, error: fetchError } = await supabase
-          .from('incomes')
+          .from('incomes_decrypted')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });

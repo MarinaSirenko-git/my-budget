@@ -264,7 +264,7 @@ export default function ExpensesPage() {
 
       // Refresh expenses list
       const { data, error: fetchError } = await supabase
-        .from('expenses')
+        .from('expenses_decrypted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -342,7 +342,7 @@ export default function ExpensesPage() {
 
       // Refresh expenses list
       const { data, error: fetchError } = await supabase
-        .from('expenses')
+        .from('expenses_decrypted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -486,7 +486,7 @@ export default function ExpensesPage() {
         setError(null);
         
         const { data, error: fetchError } = await supabase
-          .from('expenses')
+          .from('expenses_decrypted')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });

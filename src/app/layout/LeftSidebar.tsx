@@ -130,7 +130,7 @@ function LeftSidebar(){
         }
         try {
             const { data, error } = await supabase
-                .from('incomes')
+                .from('incomes_decrypted')
                 .select('amount, currency, frequency')
                 .eq('user_id', user.id);
             if (error) {
@@ -209,7 +209,7 @@ function LeftSidebar(){
         }
         try {
             const { data, error } = await supabase
-                .from('expenses')
+                .from('expenses_decrypted')
                 .select('amount, frequency')
                 .eq('user_id', user.id);
             if (error) {
@@ -258,7 +258,7 @@ function LeftSidebar(){
         }
         try {
             const { data, error } = await supabase
-                .from('goals')
+                .from('goals_decrypted')
                 .select('target_amount, target_date, created_at')
                 .eq('user_id', user.id);
             if (error) {
@@ -340,7 +340,7 @@ function LeftSidebar(){
         }
         try {
             const { data, error } = await supabase
-                .from('savings')
+                .from('savings_decrypted')
                 .select('amount, currency')
                 .eq('user_id', user.id);
             if (error) {

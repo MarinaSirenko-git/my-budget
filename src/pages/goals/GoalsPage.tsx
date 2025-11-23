@@ -182,7 +182,7 @@ export default function GoalsPage() {
 
       // Refresh goals list
       const { data, error: fetchError } = await supabase
-        .from('goals')
+        .from('goals_decrypted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -303,7 +303,7 @@ export default function GoalsPage() {
 
       // Refresh goals list
       const { data, error: fetchError } = await supabase
-        .from('goals')
+        .from('goals_decrypted')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -404,7 +404,7 @@ export default function GoalsPage() {
         setError(null);
         
         const { data, error: fetchError } = await supabase
-          .from('goals')
+          .from('goals_decrypted')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', { ascending: false });
