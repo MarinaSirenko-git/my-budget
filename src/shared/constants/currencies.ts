@@ -50,3 +50,21 @@ export function getCurrencyLabel(value: string): string {
   return currency?.label || value;
 }
 
+/**
+ * Валидирует код валюты и возвращает валидный CurrencyCode или null
+ */
+export function validateCurrency(currency: string | null | undefined): CurrencyCode | null {
+  if (!currency || typeof currency !== 'string') {
+    return null;
+  }
+  const validCurrency = currencyOptions.find(opt => opt.value === currency);
+  return validCurrency ? (validCurrency.value as CurrencyCode) : null;
+}
+
+/**
+ * Проверяет, является ли строка валидным кодом валюты
+ */
+export function isValidCurrency(currency: string | null | undefined): currency is CurrencyCode {
+  return validateCurrency(currency) !== null;
+}
+

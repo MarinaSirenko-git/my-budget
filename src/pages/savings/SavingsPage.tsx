@@ -11,6 +11,7 @@ import MoneyInput from '@/shared/ui/form/MoneyInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { useTranslation } from '@/shared/i18n';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
@@ -43,7 +44,7 @@ export default function SavingsPage() {
   const [currency, setCurrency] = useState(currencyOptions[0].value);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
+  const { currency: settingsCurrency } = useCurrency();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   // Состояние для выбранной валюты в колонке конвертации (по умолчанию settingsCurrency)
   const [selectedConversionCurrency, setSelectedConversionCurrency] = useState<string | null>(null);
@@ -52,70 +53,6 @@ export default function SavingsPage() {
   // Состояние для отслеживания загрузки конвертации
   const [convertingIds, setConvertingIds] = useState<Set<string>>(new Set());
 
-  // Load settings currency
-  useEffect(() => {
-    async function loadSettingsCurrency() {
-      if (!user) {
-        const savedCurrency = localStorage.getItem('user_currency');
-        if (savedCurrency) {
-          setSettingsCurrency(savedCurrency);
-        }
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('default_currency')
-          .eq('id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          const savedCurrency = localStorage.getItem('user_currency');
-          if (savedCurrency) {
-            setSettingsCurrency(savedCurrency);
-          }
-        } else if (data?.default_currency) {
-          setSettingsCurrency(data.default_currency);
-        } else {
-          const savedCurrency = localStorage.getItem('user_currency');
-          if (savedCurrency) {
-            setSettingsCurrency(savedCurrency);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading settings currency:', err);
-        const savedCurrency = localStorage.getItem('user_currency');
-        if (savedCurrency) {
-          setSettingsCurrency(savedCurrency);
-        }
-      }
-    }
-
-    loadSettingsCurrency();
-
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user_currency' && e.newValue) {
-        setSettingsCurrency(e.newValue);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    const handleCustomStorageChange = () => {
-      const savedCurrency = localStorage.getItem('user_currency');
-      if (savedCurrency) {
-        setSettingsCurrency(savedCurrency);
-      }
-    };
-
-    window.addEventListener('currencyChanged', handleCustomStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('currencyChanged', handleCustomStorageChange);
-    };
-  }, [user, scenarioId]);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -146,8 +83,7 @@ export default function SavingsPage() {
       const { data, error } = await supabase.rpc('convert_amount', {
         p_amount: amount,
         p_from_currency: fromCurrency,
-        ...(toCurrency ? { p_to_currency: toCurrency } : {}),
-        // Если p_to_currency не передаём → берётся profiles.default_currency
+        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
       });
 
       if (error) {
@@ -181,8 +117,7 @@ export default function SavingsPage() {
       const { data, error } = await supabase.rpc('convert_amount_bulk', {
         p_items: items,
         // supabase сам превратит это в JSONB
-        ...(toCurrency ? { p_to_currency: toCurrency } : {}),
-        // p_to_currency не передаём → используется profiles.default_currency
+        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
       });
 
       if (error) {

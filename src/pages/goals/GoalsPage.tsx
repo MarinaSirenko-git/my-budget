@@ -13,6 +13,7 @@ import SelectInput from '@/shared/ui/form/SelectInput';
 import DateInput from '@/shared/ui/form/DateInput';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { useTranslation } from '@/shared/i18n';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 interface Goal {
   id: string;
@@ -42,79 +43,8 @@ export default function GoalsPage() {
   const [targetDate, setTargetDate] = useState<string | undefined>(undefined);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
+  const { currency: settingsCurrency } = useCurrency();
 
-  // Load settings currency
-  useEffect(() => {
-    async function loadSettingsCurrency() {
-      if (!user) {
-        // Fallback to localStorage
-        const savedCurrency = localStorage.getItem('user_currency');
-        if (savedCurrency) {
-          setSettingsCurrency(savedCurrency);
-        }
-        return;
-      }
-
-      try {
-        // Try to load from Supabase profiles table
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('default_currency')
-          .eq('id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          // Fallback to localStorage on error
-          const savedCurrency = localStorage.getItem('user_currency');
-          if (savedCurrency) {
-            setSettingsCurrency(savedCurrency);
-          }
-        } else if (data?.default_currency) {
-          setSettingsCurrency(data.default_currency);
-        } else {
-          // Fallback to localStorage
-          const savedCurrency = localStorage.getItem('user_currency');
-          if (savedCurrency) {
-            setSettingsCurrency(savedCurrency);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading settings currency:', err);
-        // Fallback to localStorage
-        const savedCurrency = localStorage.getItem('user_currency');
-        if (savedCurrency) {
-          setSettingsCurrency(savedCurrency);
-        }
-      }
-    }
-
-    loadSettingsCurrency();
-
-    // Listen for currency changes in localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user_currency' && e.newValue) {
-        setSettingsCurrency(e.newValue);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom event for same-window updates
-    const handleCustomStorageChange = () => {
-      const savedCurrency = localStorage.getItem('user_currency');
-      if (savedCurrency) {
-        setSettingsCurrency(savedCurrency);
-      }
-    };
-
-    window.addEventListener('currencyChanged', handleCustomStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('currencyChanged', handleCustomStorageChange);
-    };
-  }, [user, scenarioId]);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -616,7 +546,7 @@ export default function GoalsPage() {
           {t('goalsForm.addNewButton')}
         </TextButton>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
+      <div className="grid grid-cols-1 px-6 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
         {goals.map((goal) => {
           return (
             <GoalCard

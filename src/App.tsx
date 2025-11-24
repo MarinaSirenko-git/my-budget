@@ -16,13 +16,24 @@ import { useAuth } from './shared/store/auth'
 import AuthCallback from './shared/router/AuthCallback';
 import Feedback from './shared/ui/Feedback';
 import NotFoundPage from './pages/404/NotFoundPage';
+import { loadLanguageFromProfile } from './shared/i18n';
 
 function App() {
   const initTheme = useTheme(s => s.init);
   const initAuth = useAuth(s => s.init);
+  const { user } = useAuth();
 
   useEffect(() => { initTheme(); }, [initTheme]);
   useEffect(() => { initAuth(); }, [initAuth]);
+  
+  // Загружаем язык из профиля после инициализации auth
+  useEffect(() => {
+    if (user?.id) {
+      loadLanguageFromProfile(user.id).catch(error => {
+        console.warn('Failed to load language from profile:', error);
+      });
+    }
+  }, [user?.id]);
 
   return (
     <>

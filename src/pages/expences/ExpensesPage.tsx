@@ -19,6 +19,7 @@ import IconButton from '@/shared/ui/atoms/IconButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { useTranslation } from '@/shared/i18n';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 import { getExpenseCategories } from '@/shared/utils/categories';
 
 export default function ExpensesPage() {
@@ -34,6 +35,7 @@ export default function ExpensesPage() {
   const expenseCategories = useMemo(() => getExpenseCategories(t), [t]);
   
   const [categoryId, setCategoryId] = useState('');
+  const [isTagSelected, setIsTagSelected] = useState(false); // Флаг для отслеживания, что форма открыта через клик на тэг
   
   // Convert expenseCategories to SelectInput options
   const expenseCategoryOptions = useMemo(() => expenseCategories.map(category => ({
@@ -53,7 +55,7 @@ export default function ExpensesPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
+  const { currency: settingsCurrency } = useCurrency();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   // Состояние для выбранной валюты в колонке конвертации (по умолчанию settingsCurrency)
@@ -79,9 +81,11 @@ export default function ExpensesPage() {
   };
 
   function handleTagClick(category: ExpenseCategory) {
+    // При клике на любой тэг показываем TextInput с предзаполненным значением
     setEditingId(null);
-    setCategoryId(category.id);
-    setTitle(category.label);
+    setCategoryId('custom');
+    setTitle(category.label); // Предзаполняем названием категории из тэга
+    setIsTagSelected(true);
     setFormError(null);
     setOpen(true);
   }
@@ -90,16 +94,17 @@ export default function ExpensesPage() {
     setEditingId(null);
     setCategoryId(expenseCategories[0]?.id || '');
     setTitle('');
+    setIsTagSelected(false);
     setFormError(null);
     setOpen(true);
   }
 
   const handleEditExpense = useCallback((expense: Expense) => {
     setEditingId(expense.id);
-    // Находим категорию по типу расхода
-    const category = expenseCategories.find(c => c.id === expense.category || c.label === expense.type);
-    setCategoryId(category?.id || expenseCategories[0]?.id || '');
+    // Для редактирования всегда показываем TextInput с предзаполненным значением
+    setCategoryId('custom');
     setTitle(expense.type);
+    setIsTagSelected(true);
     setAmount(expense.amount.toString());
     // Validate currency before setting
     const validCurrency = currencyOptions.find(opt => opt.value === expense.currency);
@@ -114,6 +119,7 @@ export default function ExpensesPage() {
     setEditingId(null);
     setCategoryId(expenseCategories[0]?.id || '');
     setTitle('');
+    setIsTagSelected(false);
     setAmount(undefined);
     const defaultCurrency = settingsCurrency || currencyOptions[0].value;
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrency);
@@ -124,14 +130,17 @@ export default function ExpensesPage() {
 
   // Check if form is valid
   const isFormValid = useMemo(() => {
+    const hasValidCategory = (categoryId === 'custom' || isTagSelected)
+      ? title.trim().length > 0
+      : categoryId;
     return !!(
-      categoryId &&
+      hasValidCategory &&
       title.trim() &&
       amount &&
       parseFloat(amount) > 0 &&
       currency
     );
-  }, [categoryId, title, amount, currency]);
+  }, [categoryId, isTagSelected, title, amount, currency]);
 
   // Function to convert amount using RPC
   const convertAmount = useCallback(async (amount: number, fromCurrency: string, toCurrency?: string): Promise<number | null> => {
@@ -144,8 +153,7 @@ export default function ExpensesPage() {
       const { data, error } = await supabase.rpc('convert_amount', {
         p_amount: amount,
         p_from_currency: fromCurrency,
-        ...(toCurrency ? { p_to_currency: toCurrency } : {}),
-        // Если p_to_currency не передаём → берётся profiles.default_currency
+        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
       });
 
       if (error) {
@@ -179,8 +187,7 @@ export default function ExpensesPage() {
       const { data, error } = await supabase.rpc('convert_amount_bulk', {
         p_items: items,
         // supabase сам превратит это в JSONB
-        ...(toCurrency ? { p_to_currency: toCurrency } : {}),
-        // p_to_currency не передаём → используется profiles.default_currency
+        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
       });
 
       if (error) {
@@ -223,12 +230,14 @@ export default function ExpensesPage() {
       
       const expenseAmount = parseFloat(amount!);
       
+      const finalType = (categoryId === 'custom' || isTagSelected) ? title.trim() : categoryId;
+      
       if (editingId) {
         // Update existing expense
         const { error: updateError } = await supabase
           .from('expenses')
           .update({
-            type: title.trim(),
+            type: finalType,
             amount: expenseAmount,
             currency: currency,
             frequency: frequency || 'monthly',
@@ -246,14 +255,14 @@ export default function ExpensesPage() {
           await supabase.rpc('convert_amount', {
             p_amount: expenseAmount,
             p_from_currency: currency,
-            // p_to_currency не передаём → берётся profiles.default_currency
+            p_to_currency: settingsCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
           });
         }
         
         const { error: insertError } = await supabase
           .from('expenses')
           .insert({
-            type: title.trim(),
+            type: finalType,
             amount: expenseAmount,
             currency: currency,
             frequency: frequency || 'monthly',
@@ -394,77 +403,6 @@ export default function ExpensesPage() {
     }
   }, [user, t, settingsCurrency, convertAmount]);
 
-  // Load settings currency
-  useEffect(() => {
-    async function loadSettingsCurrency() {
-      if (!user) {
-        // Fallback to localStorage
-        const savedCurrency = localStorage.getItem('user_currency');
-        if (savedCurrency) {
-          setSettingsCurrency(savedCurrency);
-        }
-        return;
-      }
-
-      try {
-        // Try to load from Supabase profiles table
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('default_currency')
-          .eq('id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          // Fallback to localStorage on error
-          const savedCurrency = localStorage.getItem('user_currency');
-          if (savedCurrency) {
-            setSettingsCurrency(savedCurrency);
-          }
-        } else if (data?.default_currency) {
-          setSettingsCurrency(data.default_currency);
-        } else {
-          // Fallback to localStorage
-          const savedCurrency = localStorage.getItem('user_currency');
-          if (savedCurrency) {
-            setSettingsCurrency(savedCurrency);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading settings currency:', err);
-        // Fallback to localStorage
-        const savedCurrency = localStorage.getItem('user_currency');
-        if (savedCurrency) {
-          setSettingsCurrency(savedCurrency);
-        }
-      }
-    }
-
-    loadSettingsCurrency();
-
-    // Listen for currency changes in localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user_currency' && e.newValue) {
-        setSettingsCurrency(e.newValue);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom event for same-window updates
-    const handleCustomStorageChange = () => {
-      const savedCurrency = localStorage.getItem('user_currency');
-      if (savedCurrency) {
-        setSettingsCurrency(savedCurrency);
-      }
-    };
-
-    window.addEventListener('currencyChanged', handleCustomStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('currencyChanged', handleCustomStorageChange);
-    };
-  }, [user]);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -909,13 +847,22 @@ export default function ExpensesPage() {
                   {formError}
                 </div>
               )}
-              <SelectInput 
-                value={categoryId} 
-                options={expenseCategoryOptions} 
-                onChange={setCategoryId} 
-                label={t('expensesForm.categoryLabel')} 
-                creatable={true}
-              />
+              {categoryId === 'custom' || isTagSelected ? (
+                <TextInput
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  label={t('expensesForm.categoryLabel')}
+                  placeholder={t('expensesForm.titlePlaceholder')}
+                />
+              ) : (
+                <SelectInput 
+                  value={categoryId} 
+                  options={expenseCategoryOptions} 
+                  onChange={setCategoryId} 
+                  label={t('expensesForm.categoryLabel')} 
+                  creatable={true}
+                />
+              )}
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}
@@ -1013,12 +960,22 @@ export default function ExpensesPage() {
                   {formError}
                 </div>
               )}
-              <TextInput 
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder={t('expensesForm.titlePlaceholder')}
-                label={t('expensesForm.titleLabel')}
-              />
+              {categoryId === 'custom' || isTagSelected ? (
+                <TextInput
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  label={t('expensesForm.categoryLabel')}
+                  placeholder={t('expensesForm.titlePlaceholder')}
+                />
+              ) : (
+                <SelectInput 
+                  value={categoryId} 
+                  options={expenseCategoryOptions} 
+                  onChange={setCategoryId} 
+                  label={t('expensesForm.categoryLabel')} 
+                  creatable={true}
+                />
+              )}
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}

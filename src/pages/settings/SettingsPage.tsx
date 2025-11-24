@@ -179,6 +179,8 @@ export default function SettingsPage() {
 
       if (scenarioError) throw scenarioError;
 
+      // Валюта уже обновлена в scenarios.base_currency выше, дополнительная синхронизация не нужна
+
       // Обновляем язык в profiles
       const { error: profileError } = await supabase
         .from('profiles')

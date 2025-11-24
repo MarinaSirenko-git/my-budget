@@ -9,6 +9,7 @@ import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import MoneyInput from '@/shared/ui/form/MoneyInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
+import TextInput from '@/shared/ui/form/TextInput';
 import TextButton from '@/shared/ui/atoms/TextButton';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
@@ -18,6 +19,7 @@ import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { useTranslation } from '@/shared/i18n';
 import { getIncomeCategories } from '@/shared/utils/categories';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 export default function IncomePage() {
   const { user } = useAuth();
@@ -31,6 +33,8 @@ export default function IncomePage() {
   const incomeTypes = useMemo(() => getIncomeCategories(t), [t]);
   
   const [incomeTypeId, setIncomeTypeId] = useState('');
+  const [customCategoryText, setCustomCategoryText] = useState('');
+  const [isTagSelected, setIsTagSelected] = useState(false); // Флаг для отслеживания, что форма открыта через клик на тэг
   
   // Convert incomeTypes to SelectInput options
   const incomeTypeOptions = useMemo(() => incomeTypes.map(type => ({
@@ -52,11 +56,27 @@ export default function IncomePage() {
     }
   }, [incomeTypes, incomeTypeId]);
 
-  // Wrapper function to handle currency change with validation
+  // Handler for currency change
   const handleCurrencyChange = (newCurrency: string) => {
-    const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
-    if (validCurrency) {
-      setCurrency(validCurrency.value);
+    setCurrency(newCurrency);
+  };
+
+  // Handler for income type change
+  const handleIncomeTypeChange = (newTypeId: string) => {
+    setIncomeTypeId(newTypeId);
+    if (newTypeId === 'custom') {
+      // Предзаполняем пустой строкой, чтобы пользователь мог сразу начать ввод
+      setCustomCategoryText('');
+    } else {
+      // При выборе стандартной категории из SelectInput предзаполняем её названием
+      const selectedType = incomeTypes.find(type => type.id === newTypeId);
+      if (selectedType) {
+        setCustomCategoryText(selectedType.label);
+        setIncomeTypeId('custom'); // Переключаем на custom, чтобы показать TextInput
+        setIsTagSelected(true);
+      } else {
+        setCustomCategoryText('');
+      }
     }
   };
   const [incomes, setIncomes] = useState<Income[]>([]);
@@ -64,18 +84,23 @@ export default function IncomePage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
+  const { currency: settingsCurrency } = useCurrency();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   // Состояние для выбранной валюты в колонке конвертации (по умолчанию settingsCurrency)
   const [selectedConversionCurrency, setSelectedConversionCurrency] = useState<string | null>(null);
+  // Флаг для отслеживания, была ли валюта выбрана пользователем вручную
+  const [isCurrencyManuallySelected, setIsCurrencyManuallySelected] = useState(false);
   // Кэш конвертированных сумм: ключ = `${incomeId}_${toCurrency}`, значение = конвертированная сумма
   const [convertedAmountsCache, setConvertedAmountsCache] = useState<Record<string, number>>({});
   // Состояние для отслеживания загрузки конвертации
   const [convertingIds, setConvertingIds] = useState<Set<string>>(new Set());
 
   function handleTagClick(type: IncomeType) {
-    setIncomeTypeId(type.id);
+    // При клике на любой тэг показываем TextInput с предзаполненным значением
+    setIncomeTypeId('custom');
+    setCustomCategoryText(type.label); // Предзаполняем названием категории из тэга
+    setIsTagSelected(true);
     setFormError(null);
     setOpen(true);
   }
@@ -83,13 +108,26 @@ export default function IncomePage() {
   function handleAddIncomeClick() {
     setEditingId(null);
     setIncomeTypeId(incomeTypes[0]?.id || '');
+    setCustomCategoryText('');
+    setIsTagSelected(false);
     setFormError(null);
     setOpen(true);
   }
 
   const handleEditIncome = useCallback((income: Income) => {
     setEditingId(income.id);
-    setIncomeTypeId(income.type);
+    // Проверяем, является ли категория кастомной (не входит в стандартный список)
+    const isCustomCategory = !incomeTypes.some(type => type.id === income.type);
+    if (isCustomCategory) {
+      setIncomeTypeId('custom');
+      setCustomCategoryText(income.type);
+      setIsTagSelected(true);
+    } else {
+      // Для стандартных категорий тоже показываем TextInput с предзаполненным значением
+      setIncomeTypeId('custom');
+      setCustomCategoryText(income.type);
+      setIsTagSelected(true);
+    }
     setAmount(income.amount.toString());
     // Validate currency before setting
     const validCurrency = currencyOptions.find(opt => opt.value === income.currency);
@@ -97,12 +135,14 @@ export default function IncomePage() {
     setFrequency(income.frequency);
     setFormError(null);
     setOpen(true);
-  }, []);
+  }, [incomeTypes]);
 
   function handleModalClose() {
     setOpen(false);
     setEditingId(null);
     setIncomeTypeId(incomeTypes[0]?.id || '');
+    setCustomCategoryText('');
+    setIsTagSelected(false);
     setAmount(undefined);
     const defaultCurrency = settingsCurrency || currencyOptions[0].value;
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrency);
@@ -113,14 +153,17 @@ export default function IncomePage() {
 
   // Check if form is valid
   const isFormValid = useMemo(() => {
+    const hasValidCategory = (incomeTypeId === 'custom' || isTagSelected)
+      ? customCategoryText.trim().length > 0
+      : incomeTypeId;
     return !!(
-      incomeTypeId &&
+      hasValidCategory &&
       amount &&
       parseFloat(amount) > 0 &&
       currency &&
       frequency
     );
-  }, [incomeTypeId, amount, currency, frequency]);
+  }, [incomeTypeId, isTagSelected, customCategoryText, amount, currency, frequency]);
 
   // Function to convert amount using RPC
   const convertAmount = useCallback(async (amount: number, fromCurrency: string, toCurrency?: string): Promise<number | null> => {
@@ -133,8 +176,7 @@ export default function IncomePage() {
       const { data, error } = await supabase.rpc('convert_amount', {
         p_amount: amount,
         p_from_currency: fromCurrency,
-        ...(toCurrency ? { p_to_currency: toCurrency } : {}),
-        // Если p_to_currency не передаём → берётся profiles.default_currency
+        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
       });
 
       if (error) {
@@ -168,8 +210,7 @@ export default function IncomePage() {
       const { data, error } = await supabase.rpc('convert_amount_bulk', {
         p_items: items,
         // supabase сам превратит это в JSONB
-        ...(toCurrency ? { p_to_currency: toCurrency } : {}),
-        // p_to_currency не передаём → используется profiles.default_currency
+        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
       });
 
       if (error) {
@@ -212,10 +253,11 @@ export default function IncomePage() {
       
       if (editingId) {
         // Update existing income
+        const finalType = (incomeTypeId === 'custom' || isTagSelected) ? customCategoryText.trim() : incomeTypeId;
         const { error: updateError } = await supabase
           .from('incomes')
           .update({
-            type: incomeTypeId,
+            type: finalType,
             amount: parseFloat(amount!),
             currency: currency,
             frequency: frequency,
@@ -235,14 +277,15 @@ export default function IncomePage() {
           await supabase.rpc('convert_amount', {
             p_amount: incomeAmount,
             p_from_currency: currency,
-            // p_to_currency не передаём → берётся profiles.default_currency
+            p_to_currency: settingsCurrency, // Явно передаем валюту из настроек
           });
         }
 
+        const finalType = (incomeTypeId === 'custom' || isTagSelected) ? customCategoryText.trim() : incomeTypeId;
         const { error: insertError } = await supabase
           .from('incomes')
           .insert({
-            type: incomeTypeId,
+            type: finalType,
             amount: incomeAmount,
             currency: currency,
             frequency: frequency,
@@ -405,10 +448,11 @@ export default function IncomePage() {
 
   // Инициализируем selectedConversionCurrency при загрузке settingsCurrency
   useEffect(() => {
-    if (settingsCurrency && !selectedConversionCurrency) {
+    if (settingsCurrency && !isCurrencyManuallySelected) {
+      // Устанавливаем валюту из настроек только если пользователь не выбрал валюту вручную
       setSelectedConversionCurrency(settingsCurrency);
     }
-  }, [settingsCurrency, selectedConversionCurrency]);
+  }, [settingsCurrency, isCurrencyManuallySelected]);
 
   // Сбрасываем selectedConversionCurrency при размонтировании компонента
   useEffect(() => {
@@ -485,87 +529,22 @@ export default function IncomePage() {
     convertAllAmounts();
   }, [selectedConversionCurrency, incomes, convertAmountsBulk, convertedAmountsCache]);
 
-  // Load settings currency
-  useEffect(() => {
-    async function loadSettingsCurrency() {
-      if (!user) {
-        // Fallback to localStorage
-        const savedCurrency = localStorage.getItem('user_currency');
-        if (savedCurrency) {
-          setSettingsCurrency(savedCurrency);
-        }
-        return;
-      }
 
-      try {
-        // Try to load from Supabase profiles table
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('default_currency')
-          .eq('id', user.id)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          // Fallback to localStorage on error
-          const savedCurrency = localStorage.getItem('user_currency');
-          if (savedCurrency) {
-            setSettingsCurrency(savedCurrency);
-          }
-        } else if (data?.default_currency) {
-          setSettingsCurrency(data.default_currency);
-        } else {
-          // Fallback to localStorage
-          const savedCurrency = localStorage.getItem('user_currency');
-          if (savedCurrency) {
-            setSettingsCurrency(savedCurrency);
-          }
-        }
-      } catch (err) {
-        console.error('Error loading settings currency:', err);
-        // Fallback to localStorage
-        const savedCurrency = localStorage.getItem('user_currency');
-        if (savedCurrency) {
-          setSettingsCurrency(savedCurrency);
-        }
-      }
-    }
-
-    loadSettingsCurrency();
-
-    // Listen for currency changes in localStorage
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'user_currency' && e.newValue) {
-        setSettingsCurrency(e.newValue);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom event for same-window updates
-    const handleCustomStorageChange = () => {
-      const savedCurrency = localStorage.getItem('user_currency');
-      if (savedCurrency) {
-        setSettingsCurrency(savedCurrency);
-      }
-    };
-
-    window.addEventListener('currencyChanged', handleCustomStorageChange);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('currencyChanged', handleCustomStorageChange);
-    };
-  }, [user, scenarioId]);
-
-  // Set default currency from settings when loaded
+  // Set default currency from settings when loaded (only once, not on every currency change)
   useEffect(() => {
     if (settingsCurrency) {
       const validCurrency = currencyOptions.find(opt => opt.value === settingsCurrency);
-      if (validCurrency && currency === currencyOptions[0].value) {
-        setCurrency(validCurrency.value);
+      if (validCurrency) {
+        // Устанавливаем валюту из настроек только если она еще не была установлена пользователем
+        // Проверяем, что валюта все еще равна дефолтной (первой в списке)
+        // и форма не открыта (чтобы не перезаписывать выбор пользователя)
+        if (currency === currencyOptions[0].value && !open) {
+          setCurrency(validCurrency.value);
+        }
       }
     }
-  }, [settingsCurrency, currency]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settingsCurrency]);
 
   // Fetch incomes from Supabase
   useEffect(() => {
@@ -754,8 +733,11 @@ export default function IncomePage() {
     return monthlyIncomesTotal + annualIncomesTotal;
   }, [incomes, selectedConversionCurrency, settingsCurrency, convertedAmountsCache]);
 
-  // Transform data for pie chart (group by type, sum amounts)
+  // Transform data for pie chart (group by type, sum amounts with conversion)
   const pieChartData = useMemo(() => {
+    const targetCurrency = selectedConversionCurrency || settingsCurrency;
+    if (!targetCurrency) return [];
+
     const grouped = incomes.reduce((acc, income) => {
       const type = incomeTypes.find(t => t.id === income.type);
       const label = type?.label || income.type;
@@ -763,7 +745,33 @@ export default function IncomePage() {
       if (!acc[label]) {
         acc[label] = 0;
       }
-      acc[label] += income.amount;
+
+      // Определяем сумму для использования в диаграмме (месячный эквивалент)
+      let amountToAdd = 0;
+      
+      // Если валюта совпадает с целевой, используем исходную сумму
+      if (income.currency === targetCurrency) {
+        amountToAdd = income.frequency === 'monthly' ? income.amount : income.amount / 12;
+      } else {
+        // Ищем конвертированную сумму в кэше
+        const cacheKey = `${income.id}_${targetCurrency}`;
+        const cachedAmount = convertedAmountsCache[cacheKey];
+        
+        if (cachedAmount !== undefined) {
+          // Используем конвертированную сумму из кэша
+          amountToAdd = income.frequency === 'monthly' ? cachedAmount : cachedAmount / 12;
+        } else if (targetCurrency === settingsCurrency && income.amountInDefaultCurrency !== undefined) {
+          // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
+          amountToAdd = income.frequency === 'monthly' 
+            ? income.amountInDefaultCurrency 
+            : income.amountInDefaultCurrency / 12;
+        } else {
+          // Если конвертация еще не выполнена, используем исходную сумму (будет конвертировано позже)
+          amountToAdd = income.frequency === 'monthly' ? income.amount : income.amount / 12;
+        }
+      }
+
+      acc[label] += amountToAdd;
       return acc;
     }, {} as Record<string, number>);
 
@@ -771,11 +779,12 @@ export default function IncomePage() {
       name,
       value,
     }));
-  }, [incomes, incomeTypes]);
+  }, [incomes, incomeTypes, selectedConversionCurrency, settingsCurrency, convertedAmountsCache]);
 
   // Обработчик изменения валюты для конвертации
   const handleConversionCurrencyChange = useCallback(async (newCurrency: string) => {
     setSelectedConversionCurrency(newCurrency);
+    setIsCurrencyManuallySelected(true); // Отмечаем, что валюта выбрана пользователем вручную
     
     // Фильтруем доходы, которые нужно конвертировать
     const incomesToConvert = incomes.filter(income => {
@@ -969,13 +978,22 @@ export default function IncomePage() {
                   {formError}
                 </div>
               )}
-              <SelectInput 
-                value={incomeTypeId} 
-                options={incomeTypeOptions} 
-                onChange={setIncomeTypeId} 
-                label={t('incomeForm.categoryLabel')}
-                creatable={true}
-              />
+              {incomeTypeId === 'custom' || isTagSelected ? (
+                <TextInput
+                  value={customCategoryText}
+                  onChange={(e) => setCustomCategoryText(e.target.value)}
+                  label={t('incomeForm.categoryLabel')}
+                  placeholder={t('incomeForm.customCategoryPlaceholder')}
+                />
+              ) : (
+                <SelectInput 
+                  value={incomeTypeId} 
+                  options={incomeTypeOptions} 
+                  onChange={handleIncomeTypeChange} 
+                  label={t('incomeForm.categoryLabel')}
+                  creatable={true}
+                />
+              )}
               <MoneyInput 
                 value={amount}
                 onValueChange={setAmount}
@@ -1078,13 +1096,22 @@ export default function IncomePage() {
               {formError}
             </div>
           )}
-          <SelectInput 
-            value={incomeTypeId} 
-            options={incomeTypeOptions} 
-            onChange={setIncomeTypeId} 
-            label={t('incomeForm.categoryLabel')} 
-            creatable={true}
-          />
+          {incomeTypeId === 'custom' || isTagSelected ? (
+            <TextInput
+              value={customCategoryText}
+              onChange={(e) => setCustomCategoryText(e.target.value)}
+              label={t('incomeForm.categoryLabel')}
+              placeholder={t('incomeForm.customCategoryPlaceholder')}
+            />
+          ) : (
+            <SelectInput 
+              value={incomeTypeId} 
+              options={incomeTypeOptions} 
+              onChange={handleIncomeTypeChange} 
+              label={t('incomeForm.categoryLabel')} 
+              creatable={true}
+            />
+          )}
           <MoneyInput 
             value={amount}
             onValueChange={setAmount}

@@ -21,18 +21,23 @@ export default function ExportButton() {
     setLoading(true);
 
     try {
-      // Получаем дефолтную валюту
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('default_currency')
-        .eq('id', user.id)
-        .single();
-
-      if (profileError) {
+      if (!scenarioId) {
         throw new Error(t('export.error'));
       }
 
-      const defaultCurrency = profile?.default_currency || 'USD';
+      // Получаем валюту из текущего сценария
+      const { data: scenario, error: scenarioError } = await supabase
+        .from('scenarios')
+        .select('base_currency')
+        .eq('id', scenarioId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (scenarioError) {
+        throw new Error(t('export.error'));
+      }
+
+      const defaultCurrency = scenario?.base_currency || 'USD';
 
       // Загружаем данные
       const exportData = await loadExportData(user.id, scenarioId, defaultCurrency);
@@ -62,7 +67,7 @@ export default function ExportButton() {
     <button
       onClick={handleExport}
       disabled={loading}
-      className="flex items-center font-normal gap-2 py-1 px-4 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
+      className="flex items-center font-normal gap-2 py-1 px-2 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <ArrowDownTrayIcon className="w-5 h-5" />
       {loading ? t('export.loading') : t('sidebar.exportData')}

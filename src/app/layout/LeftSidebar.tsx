@@ -14,6 +14,7 @@ import { useAuth } from '@/shared/store/auth';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useTranslation } from '@/shared/i18n';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 function LeftSidebar(){
     const { user } = useAuth();
@@ -25,7 +26,7 @@ function LeftSidebar(){
     const [totalExpenses, setTotalExpenses] = useState(0);
     const [totalGoals, setTotalGoals] = useState(0);
     const [totalSavings, setTotalSavings] = useState(0);
-    const [settingsCurrency, setSettingsCurrency] = useState<string | null>(null);
+    const { currency: settingsCurrency } = useCurrency();
 
     const navLinkClass = ({ isActive }: { isActive: boolean }) => 
         `flex items-center gap-2 pb-1 border-b-2 transition-colors ${
@@ -35,76 +36,12 @@ function LeftSidebar(){
         }`;
 
     const bottomNavLinkClass = ({ isActive }: { isActive: boolean }) => 
-        `flex items-center font-normal gap-2 py-1 px-4 transition-colors ${
+        `flex items-center font-normal gap-2 py-1 px-2 transition-colors ${
             isActive 
                 ? 'text-primary' 
                 : 'hover:text-primary'
         }`;
 
-    // Load settings currency
-    useEffect(() => {
-        async function loadSettingsCurrency() {
-            if (!user) {
-                const savedCurrency = localStorage.getItem('user_currency');
-                if (savedCurrency) {
-                    setSettingsCurrency(savedCurrency);
-                }
-                return;
-            }
-
-            try {
-                const { data, error } = await supabase
-                    .from('profiles')
-                    .select('default_currency')
-                    .eq('id', user.id)
-                    .single();
-
-                if (error && error.code !== 'PGRST116') {
-                    const savedCurrency = localStorage.getItem('user_currency');
-                    if (savedCurrency) {
-                        setSettingsCurrency(savedCurrency);
-                    }
-                } else if (data?.default_currency) {
-                    setSettingsCurrency(data.default_currency);
-                } else {
-                    const savedCurrency = localStorage.getItem('user_currency');
-                    if (savedCurrency) {
-                        setSettingsCurrency(savedCurrency);
-                    }
-                }
-            } catch (err) {
-                console.error('Error loading settings currency:', err);
-                const savedCurrency = localStorage.getItem('user_currency');
-                if (savedCurrency) {
-                    setSettingsCurrency(savedCurrency);
-                }
-            }
-        }
-
-        loadSettingsCurrency();
-
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'user_currency' && e.newValue) {
-                setSettingsCurrency(e.newValue);
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-        
-        const handleCustomStorageChange = () => {
-            const savedCurrency = localStorage.getItem('user_currency');
-            if (savedCurrency) {
-                setSettingsCurrency(savedCurrency);
-            }
-        };
-
-        window.addEventListener('currencyChanged', handleCustomStorageChange);
-
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('currencyChanged', handleCustomStorageChange);
-        };
-    }, [user]);
 
     // Function to convert amount using RPC
     const convertAmount = async (amount: number, fromCurrency: string): Promise<number | null> => {
@@ -116,6 +53,7 @@ function LeftSidebar(){
             const { data, error } = await supabase.rpc('convert_amount', {
                 p_amount: amount,
                 p_from_currency: fromCurrency,
+                p_to_currency: settingsCurrency, // Явно передаем валюту из настроек
             });
 
             if (error) {
@@ -416,18 +354,20 @@ function LeftSidebar(){
                     <div className="text-xs text-white tracking-wider">{t('summary.income')}</div>
                     <div className="text-sm font-semibold text-white">{totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
-                <div className="min-w-[100px] px-3 py-2 bg-accentRed rounded-md shadow-sm">
-                    <div className="text-xs text-white tracking-wider">{t('summary.expenses')}</div>
-                    <div className="text-sm font-semibold text-white">{totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div className="min-w-[100px] px-3 py-2 bg-blue-500 rounded-md shadow-sm">
+                    <div className="text-xs text-white tracking-wider">{t('summary.savings')}</div>
+                    <div className="text-sm font-semibold text-white">{totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
                 <div className="min-w-[100px] px-3 py-2 bg-accentYellow rounded-md shadow-sm">
                     <div className="text-xs text-white tracking-wider">{t('summary.goals')}</div>
                     <div className="text-sm font-semibold text-white">{totalGoals.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
-                <div className="min-w-[100px] px-3 py-2 bg-blue-500 rounded-md shadow-sm">
-                    <div className="text-xs text-white tracking-wider">{t('summary.savings')}</div>
-                    <div className="text-sm font-semibold text-white">{totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                <div className="min-w-[100px] px-3 py-2 bg-accentRed rounded-md shadow-sm">
+                    <div className="text-xs text-white tracking-wider">{t('summary.expenses')}</div>
+                    <div className="text-sm font-semibold text-white">{totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
+
+
                 <div className="min-w-[100px] px-3 py-2 bg-presenting rounded-md shadow-sm">
                     <div className="text-xs text-white tracking-wider">{t('summary.remainder')}</div>
                     <div className={`text-sm font-semibold ${remainderColor}`}>{remainder.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
@@ -483,7 +423,7 @@ function LeftSidebar(){
                     <ExportButton />
                 </li>
                 <li className="font-semibold rounded-md"> 
-                    <button onClick={signOut} className='flex items-center font-normal gap-2 py-1 px-4 hover:text-primary'>
+                    <button onClick={signOut} className='flex items-center font-normal gap-2 py-1 px-2 hover:text-primary'>
                         <ArrowRightOnRectangleIcon className="w-5 h-5" />
                         {t('sidebar.signOut')}
                     </button>
