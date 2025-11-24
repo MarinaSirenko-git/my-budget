@@ -4,6 +4,7 @@ import GoalCard from '@/shared/ui/molecules/GoalCard';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/shared/store/auth';
+import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import TextInput from '@/shared/ui/form/TextInput';
@@ -25,6 +26,7 @@ interface Goal {
 
 export default function GoalsPage() {
   const { user } = useAuth();
+  const { scenarioId } = useScenarioRoute();
   const { t } = useTranslation('components');
   // State to control modal open/close and editing target
   const [open, setOpen] = useState(false);
@@ -112,7 +114,7 @@ export default function GoalsPage() {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('currencyChanged', handleCustomStorageChange);
     };
-  }, [user]);
+  }, [user, scenarioId]);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -181,10 +183,17 @@ export default function GoalsPage() {
       }
 
       // Refresh goals list
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('goals_decrypted')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+      
+      // Фильтруем по scenario_id если он установлен
+      if (scenarioId) {
+        query = query.eq('scenario_id', scenarioId);
+      }
+      
+      const { data, error: fetchError } = await query
         .order('created_at', { ascending: false });
 
       if (fetchError) {
@@ -292,9 +301,12 @@ export default function GoalsPage() {
         }
       } else {
         // Create new goal
-        const { error: insertError } = await supabase
+          const { error: insertError } = await supabase
           .from('goals')
-          .insert(goalData);
+          .insert({
+            ...goalData,
+            scenario_id: scenarioId,
+          });
 
         if (insertError) {
           throw insertError;
@@ -302,10 +314,17 @@ export default function GoalsPage() {
       }
 
       // Refresh goals list
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('goals_decrypted')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+      
+      // Фильтруем по scenario_id если он установлен
+      if (scenarioId) {
+        query = query.eq('scenario_id', scenarioId);
+      }
+      
+      const { data, error: fetchError } = await query
         .order('created_at', { ascending: false });
 
       if (fetchError) {
@@ -394,7 +413,7 @@ export default function GoalsPage() {
   // Fetch goals from Supabase
   useEffect(() => {
     async function fetchGoals() {
-      if (!user) {
+      if (!user || !scenarioId) {
         setLoading(false);
         return;
       }
@@ -403,10 +422,17 @@ export default function GoalsPage() {
         setLoading(true);
         setError(null);
         
-        const { data, error: fetchError } = await supabase
+        let query = supabase
           .from('goals_decrypted')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', user.id);
+        
+        // Фильтруем по scenario_id если он установлен
+        if (scenarioId) {
+          query = query.eq('scenario_id', scenarioId);
+        }
+        
+        const { data, error: fetchError } = await query
           .order('created_at', { ascending: false });
 
         if (fetchError) {
@@ -458,7 +484,7 @@ export default function GoalsPage() {
     }
 
     fetchGoals();
-  }, [user]);
+  }, [user, scenarioId]);
 
 
   if (loading) {

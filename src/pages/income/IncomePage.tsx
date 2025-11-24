@@ -4,6 +4,7 @@ import Tag from '@/shared/ui/atoms/Tag';
 import type { IncomeType, Income } from '@/mocks/pages/income.mock';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/shared/store/auth';
+import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import MoneyInput from '@/shared/ui/form/MoneyInput';
@@ -20,6 +21,7 @@ import { getIncomeCategories } from '@/shared/utils/categories';
 
 export default function IncomePage() {
   const { user } = useAuth();
+  const { scenarioId } = useScenarioRoute();
   const { t } = useTranslation('components');
   const [open, setOpen] = useState(false);
   const [amount, setAmount] = useState<string | undefined>(undefined);
@@ -244,6 +246,7 @@ export default function IncomePage() {
             amount: incomeAmount,
             currency: currency,
             frequency: frequency,
+            scenario_id: scenarioId,
           });
         if (insertError) {
           throw insertError;
@@ -251,10 +254,17 @@ export default function IncomePage() {
       }
 
       // Refresh incomes list
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('incomes_decrypted')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+      
+      // Фильтруем по scenario_id если он установлен
+      if (scenarioId) {
+        query = query.eq('scenario_id', scenarioId);
+      }
+      
+      const { data, error: fetchError } = await query
         .order('created_at', { ascending: false });
 
       if (fetchError) {
@@ -337,10 +347,17 @@ export default function IncomePage() {
       }
 
       // Refresh incomes list
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('incomes_decrypted')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+      
+      // Фильтруем по scenario_id если он установлен
+      if (scenarioId) {
+        query = query.eq('scenario_id', scenarioId);
+      }
+      
+      const { data, error: fetchError } = await query
         .order('created_at', { ascending: false });
 
       if (fetchError) {
@@ -384,7 +401,7 @@ export default function IncomePage() {
     } finally {
       setDeletingId(null);
     }
-  }, [user, t, settingsCurrency, convertAmount]);
+  }, [user, scenarioId, t, settingsCurrency, convertAmount]);
 
   // Инициализируем selectedConversionCurrency при загрузке settingsCurrency
   useEffect(() => {
@@ -538,7 +555,7 @@ export default function IncomePage() {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('currencyChanged', handleCustomStorageChange);
     };
-  }, [user]);
+  }, [user, scenarioId]);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -562,10 +579,17 @@ export default function IncomePage() {
         setLoading(true);
         setError(null);
         
-        const { data, error: fetchError } = await supabase
+        let query = supabase
           .from('incomes_decrypted')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', user.id);
+        
+        // Фильтруем по scenario_id если он установлен
+        if (scenarioId) {
+          query = query.eq('scenario_id', scenarioId);
+        }
+        
+        const { data, error: fetchError } = await query
           .order('created_at', { ascending: false });
 
         if (fetchError) {
@@ -609,7 +633,7 @@ export default function IncomePage() {
 
     fetchIncomes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, settingsCurrency, t]);
+  }, [user, scenarioId, settingsCurrency, t]);
 
   // Calculate totals in selected conversion currency
   const monthlyTotal = useMemo(() => {

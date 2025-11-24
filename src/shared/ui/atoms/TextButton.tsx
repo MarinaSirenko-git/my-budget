@@ -10,7 +10,7 @@ interface TextButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElem
   /** Click handler */
   onClick?: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
   /** Button variant style */
-  variant?: 'default' | 'primary';
+  variant?: 'default' | 'primary' | 'yellow';
 }
 
 const TextButton = React.forwardRef<HTMLButtonElement, TextButtonProps>(
@@ -27,6 +27,11 @@ const TextButton = React.forwardRef<HTMLButtonElement, TextButtonProps>(
         bg-primary text-white
         hover:bg-primary/80 dark:hover:bg-primary/80
         active:bg-primary/90 dark:active:bg-primary/90
+      `,
+      yellow: `
+        bg-accentYellow text-gray-900 dark:text-gray-900
+        hover:bg-accentYellow/80 dark:hover:bg-accentYellow/80
+        active:bg-accentYellow/90 dark:active:bg-accentYellow/90
       `,
     };
 

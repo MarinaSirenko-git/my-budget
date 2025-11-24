@@ -1,4 +1,14 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useParams } from "react-router-dom";
+import { 
+    DocumentTextIcon, 
+    Cog6ToothIcon, 
+    ArrowRightOnRectangleIcon,
+    ArrowRightEndOnRectangleIcon,
+    ArrowRightStartOnRectangleIcon,
+    SparklesIcon,
+    BanknotesIcon
+} from '@heroicons/react/24/outline';
+import ExportButton from '@/shared/ui/ExportButton';
 import Logo from '@/shared/ui/Logo';
 import { useAuth } from '@/shared/store/auth';
 import { useEffect, useState, useCallback } from 'react';
@@ -9,6 +19,8 @@ function LeftSidebar(){
     const { user } = useAuth();
     const signOut = useAuth(s => s.signOut);
     const { t } = useTranslation('components');
+    const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
+    const currentSlug = scenarioSlug || 'scenario'; // Fallback для случаев без slug
     const [totalIncome, setTotalIncome] = useState(0);
     const [totalExpenses, setTotalExpenses] = useState(0);
     const [totalGoals, setTotalGoals] = useState(0);
@@ -429,22 +441,26 @@ function LeftSidebar(){
             </div>
             <ul className="w-full px-2 flex flex-col gap-2 font-base bg-base-100 text-mainTextColor dark:text-mainTextColor text-md leading-loose">
                 <li> 
-                    <NavLink className={navLinkClass} to="/income">
+                    <NavLink className={navLinkClass} to={`/${currentSlug}/income`}>
+                        <ArrowRightEndOnRectangleIcon className="w-5 h-5 text-primary" />
                         {t('sidebar.myIncome')}
                     </NavLink>
                 </li>
                 <li> 
-                    <NavLink className={navLinkClass} to="/savings">
+                    <NavLink className={navLinkClass} to={`/${currentSlug}/savings`}>
+                        <BanknotesIcon className="w-5 h-5 text-primary" />
                         {t('sidebar.mySavings')}
                     </NavLink>
                 </li>
                 <li> 
-                    <NavLink className={navLinkClass} to="/goals">
+                    <NavLink className={navLinkClass} to={`/${currentSlug}/goals`}>
+                        <SparklesIcon className="w-5 h-5 text-primary" />
                         {t('sidebar.myGoals')}
                     </NavLink>
                 </li>
                 <li> 
-                    <NavLink className={navLinkClass} to="/expenses">
+                    <NavLink className={navLinkClass} to={`/${currentSlug}/expenses`}>
+                        <ArrowRightStartOnRectangleIcon className="w-5 h-5 text-primary" />
                         {t('sidebar.myExpenses')}
                     </NavLink>
                 </li>
@@ -452,17 +468,23 @@ function LeftSidebar(){
             </ul>
             <ul className="pt-2 w-full mt-auto font-base bg-base-100 text-mainTextColor dark:text-mainTextColor text-md leading-loose">
                 <li className="font-semibold rounded-md"> 
-                    <NavLink className={bottomNavLinkClass} to="/docs">
+                    <NavLink className={bottomNavLinkClass} to={`/${currentSlug}/docs`}>
+                        <DocumentTextIcon className="w-5 h-5" />
                         {t('sidebar.howWillThisHelp')}
                     </NavLink>
                 </li>
                 <li className="font-semibold rounded-md"> 
-                    <NavLink className={bottomNavLinkClass} to="/settings">
+                    <NavLink className={bottomNavLinkClass} to={`/${currentSlug}/settings`}>
+                        <Cog6ToothIcon className="w-5 h-5" />
                         {t('sidebar.settings')}
                     </NavLink>
                 </li>
                 <li className="font-semibold rounded-md"> 
+                    <ExportButton />
+                </li>
+                <li className="font-semibold rounded-md"> 
                     <button onClick={signOut} className='flex items-center font-normal gap-2 py-1 px-4 hover:text-primary'>
+                        <ArrowRightOnRectangleIcon className="w-5 h-5" />
                         {t('sidebar.signOut')}
                     </button>
                 </li>

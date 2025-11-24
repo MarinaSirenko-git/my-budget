@@ -7,6 +7,27 @@
     "switchToDarkMode": "Переключить на темную тему",
     "switchToLightMode": "Переключить на светлую тему"
   },
+  "scenarioForm": {
+    "title": "Создать новый сценарий",
+    "description": "Выберите способ создания нового сценария:",
+    "createFromScratch": "Создать с нуля",
+    "createFromScratchAria": "Создать новый сценарий с нуля",
+    "cloneScenario": "Клонировать",
+    "cloneScenarioAria": "Клонировать текущий сценарий",
+    "creating": "Создание...",
+    "errorMessage": "Ошибка при создании сценария",
+    "loginRequired": "Необходимо войти в систему",
+    "noCurrentScenario": "Нет текущего сценария для клонирования",
+    "defaultName": "Новый сценарий",
+    "copy": "копия",
+    "scenarioNameLabel": "Название сценария",
+    "scenarioNamePlaceholder": "Введите название сценария",
+    "currencyLabel": "Валюта",
+    "createButton": "Создать сценарий",
+    "createButtonAria": "Создать новый сценарий",
+    "back": "Назад",
+    "backAria": "Вернуться к выбору способа создания"
+  },
   "sidebar": {
     "myIncome": "Мои доходы",
     "myGoals": "Мои цели",
@@ -14,6 +35,7 @@
     "mySavings": "Мои накопления",
     "howWillThisHelp": "Как мне это поможет?",
     "settings": "Настройки",
+    "exportData": "Скачать отчет",
     "signOut": "Выйти"
   },
   "summary": {
@@ -245,6 +267,10 @@
     "fix-repair": "Ремонт и обслуживание",
     "credit": "Кредиты",
     "custom": "Прочий расход"
+  },
+  "export": {
+    "error": "Ошибка экспорта данных",
+    "loading": "Экспорт..."
   }
 }
 

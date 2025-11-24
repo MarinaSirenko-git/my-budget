@@ -5,6 +5,7 @@ import Tag from '@/shared/ui/atoms/Tag';
 import type { ExpenseCategory, Expense } from '@/mocks/pages/expenses.mock';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/shared/store/auth';
+import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import TextInput from '@/shared/ui/form/TextInput';
@@ -22,6 +23,7 @@ import { getExpenseCategories } from '@/shared/utils/categories';
 
 export default function ExpensesPage() {
   const { user } = useAuth();
+  const { scenarioId } = useScenarioRoute();
   const { t } = useTranslation('components');
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
@@ -255,6 +257,7 @@ export default function ExpensesPage() {
             amount: expenseAmount,
             currency: currency,
             frequency: frequency || 'monthly',
+            scenario_id: scenarioId,
           });
 
         if (insertError) {
@@ -485,10 +488,17 @@ export default function ExpensesPage() {
         setLoading(true);
         setError(null);
         
-        const { data, error: fetchError } = await supabase
+        let query = supabase
           .from('expenses_decrypted')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', user.id);
+        
+        // Фильтруем по scenario_id если он установлен
+        if (scenarioId) {
+          query = query.eq('scenario_id', scenarioId);
+        }
+        
+        const { data, error: fetchError } = await query
           .order('created_at', { ascending: false });
 
         if (fetchError) {
@@ -533,7 +543,7 @@ export default function ExpensesPage() {
 
     fetchExpenses();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, settingsCurrency]);
+  }, [user, scenarioId, settingsCurrency]);
 
   // Calculate totals in selected conversion currency
   const monthlyTotal = useMemo(() => {

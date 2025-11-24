@@ -7,6 +7,27 @@
     "switchToDarkMode": "Switch to dark mode",
     "switchToLightMode": "Switch to light mode"
   },
+  "scenarioForm": {
+    "title": "Create New Scenario",
+    "description": "Choose how to create a new scenario:",
+    "createFromScratch": "Create from Scratch",
+    "createFromScratchAria": "Create a new scenario from scratch",
+    "cloneScenario": "Clone",
+    "cloneScenarioAria": "Clone the current scenario",
+    "creating": "Creating...",
+    "errorMessage": "Error creating scenario",
+    "loginRequired": "You must be logged in",
+    "noCurrentScenario": "No current scenario to clone",
+    "defaultName": "New Scenario",
+    "copy": "copy",
+    "scenarioNameLabel": "Scenario Name",
+    "scenarioNamePlaceholder": "Enter scenario name",
+    "currencyLabel": "Currency",
+    "createButton": "Create Scenario",
+    "createButtonAria": "Create new scenario",
+    "back": "Back",
+    "backAria": "Back to selection"
+  },
   "sidebar": {
     "menu": "Menu",
     "myIncome": "My Income",
@@ -15,6 +36,7 @@
     "mySavings": "My Savings",
     "howWillThisHelp": "How will this help me?",
     "settings": "Settings",
+    "exportData": "Download Report",
     "signOut": "Sign Out"
   },
   "summary": {
@@ -250,6 +272,10 @@
     "fix-repair": "Repair and maintenance",
     "credit": "Credit",
     "custom": "Other expense"
+  },
+  "export": {
+    "error": "Error exporting data",
+    "loading": "Exporting..."
   }
 }
 

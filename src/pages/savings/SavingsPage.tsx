@@ -3,6 +3,7 @@ import TextButton from '@/shared/ui/atoms/TextButton';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/shared/store/auth';
+import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import Form from '@/shared/ui/form/Form';
 import TextInput from '@/shared/ui/form/TextInput';
@@ -27,6 +28,7 @@ interface Saving {
 
 export default function SavingsPage() {
   const { user } = useAuth();
+  const { scenarioId } = useScenarioRoute();
   const { t } = useTranslation('components');
   // State to control modal open/close and editing target
   const [open, setOpen] = useState(false);
@@ -113,7 +115,7 @@ export default function SavingsPage() {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('currencyChanged', handleCustomStorageChange);
     };
-  }, [user]);
+  }, [user, scenarioId]);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -257,10 +259,17 @@ export default function SavingsPage() {
       }
 
       // Refresh savings list
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('savings_decrypted')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+      
+      // Фильтруем по scenario_id если он установлен
+      if (scenarioId) {
+        query = query.eq('scenario_id', scenarioId);
+      }
+      
+      const { data, error: fetchError } = await query
         .order('created_at', { ascending: false });
 
       if (fetchError) {
@@ -319,7 +328,7 @@ export default function SavingsPage() {
     } finally {
       setDeletingId(null);
     }
-  }, [user, t]);
+  }, [user, scenarioId, t]);
 
   function handleModalClose() {
     setOpen(false);
@@ -374,9 +383,12 @@ export default function SavingsPage() {
         }
       } else {
         // Create new saving
-        const { error: insertError } = await supabase
+          const { error: insertError } = await supabase
           .from('savings')
-          .insert(savingData);
+          .insert({
+            ...savingData,
+            scenario_id: scenarioId,
+          });
 
         if (insertError) {
           throw insertError;
@@ -384,10 +396,17 @@ export default function SavingsPage() {
       }
 
       // Refresh savings list
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('savings_decrypted')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', user.id);
+      
+      // Фильтруем по scenario_id если он установлен
+      if (scenarioId) {
+        query = query.eq('scenario_id', scenarioId);
+      }
+      
+      const { data, error: fetchError } = await query
         .order('created_at', { ascending: false });
 
       if (fetchError) {
@@ -432,7 +451,7 @@ export default function SavingsPage() {
   // Fetch savings from Supabase
   useEffect(() => {
     async function fetchSavings() {
-      if (!user) {
+      if (!user || !scenarioId) {
         setLoading(false);
         return;
       }
@@ -441,10 +460,17 @@ export default function SavingsPage() {
         setLoading(true);
         setError(null);
         
-        const { data, error: fetchError } = await supabase
+        let query = supabase
           .from('savings_decrypted')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', user.id);
+        
+        // Фильтруем по scenario_id если он установлен
+        if (scenarioId) {
+          query = query.eq('scenario_id', scenarioId);
+        }
+        
+        const { data, error: fetchError } = await query
           .order('created_at', { ascending: false });
 
         if (fetchError) {
@@ -508,7 +534,7 @@ export default function SavingsPage() {
 
     fetchSavings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, settingsCurrency]);
+  }, [user, scenarioId, settingsCurrency]);
 
   // Calculate total savings in selected conversion currency
   const totalSavings = useMemo(() => {

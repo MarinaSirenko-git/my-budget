@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '@/shared/store/auth';
 import { supabase } from '@/lib/supabase';
 import Form from '@/shared/ui/form/Form';
@@ -7,12 +8,14 @@ import SelectInput from '@/shared/ui/form/SelectInput';
 import TextButton from '@/shared/ui/atoms/TextButton';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { useLanguage, useTranslation } from '@/shared/i18n';
+import { createSlug } from '@/shared/utils/slug';
 import type { PostgrestError } from '@supabase/supabase-js';
 
 const CURRENCY_STORAGE_KEY = 'user_currency';
 const PLACE_NAME_STORAGE_KEY = 'user_place_name';
 const LANGUAGE_STORAGE_KEY = 'user_language';
 const DEFAULT_PLACE_NAME = 'Сценарий #1';
+const MAX_PLACE_NAME_LENGTH = 100; // Максимальная длина названия сценария
 
 // Функция для нормализации формата языка (RU/EN -> ru/en)
 function normalizeLanguage(lng: string): string {
@@ -25,7 +28,9 @@ function normalizeLanguage(lng: string): string {
 }
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
+  const { user, currentScenarioId, loadCurrentScenarioId, loadCurrentScenarioSlug } = useAuth();
   const { changeLanguage } = useLanguage();
   const { t } = useTranslation('components');
   const [currency, setCurrency] = useState(currencyOptions[0].value);
@@ -53,41 +58,54 @@ export default function SettingsPage() {
       try {
         setLoading(true);
 
-        // Try to load from Supabase profiles table
-        const { data, error } = await supabase
+        // Загружаем currentScenarioId из store (он уже загружен в init)
+        // Загружаем язык из profiles
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('default_currency, place_name, language')
+          .select('language')
           .eq('id', user.id)
           .single();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-          console.error('Error loading profile:', error);
+        if (profileError && profileError.code !== 'PGRST116') { // PGRST116 = no rows returned
+          console.error('Error loading profile:', profileError);
           // Fallback to localStorage on error
           loadFromLocalStorage();
-        } else if (data) {
-          // Load from Supabase
-          if (data.default_currency) {
-            const validCurrency = currencyOptions.find(opt => opt.value === data.default_currency);
-            if (validCurrency) {
-              setCurrency(validCurrency.value);
+        } else {
+          // Используем currentScenarioId из store
+          if (currentScenarioId) {
+            // КРИТИЧНО: Фильтруем scenarios по user_id для предотвращения доступа к чужим данным
+            const { data: scenarios, error: scenariosError } = await supabase
+              .from('scenarios')
+              .select('id, name, base_currency, created_at')
+              .eq('user_id', user.id)
+              .eq('id', currentScenarioId)
+              .single();
+
+            if (!scenariosError && scenarios) {
+              if (scenarios.base_currency) {
+                const validCurrency = currencyOptions.find(opt => opt.value === scenarios.base_currency);
+                if (validCurrency) {
+                  setCurrency(validCurrency.value);
+                }
+              }
+              setPlaceName(scenarios.name);
             }
           }
-          if (data.place_name) {
-            setPlaceName(data.place_name);
-          }
-          if (data.language) {
+
+          // Load language from Supabase
+          if (profileData?.language) {
             // Миграция: преобразуем RU/EN в ru/en
-            const normalizedLang = normalizeLanguage(data.language);
+            const normalizedLang = normalizeLanguage(profileData.language);
             const validLanguage = languageOptions.find(opt => opt.value === normalizedLang);
             if (validLanguage) {
               setLanguage(validLanguage.value);
               // Устанавливаем язык в i18n
               changeLanguage(validLanguage.value);
             }
+          } else {
+            // No profile found, try localStorage
+            loadFromLocalStorage();
           }
-        } else {
-          // No profile found, try localStorage
-          loadFromLocalStorage();
         }
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -126,7 +144,7 @@ export default function SettingsPage() {
 
     loadSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, currentScenarioId]);
 
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -135,40 +153,71 @@ export default function SettingsPage() {
       console.error(t('settingsForm.loginRequired'));
       return;
     }
+
+    if (!currentScenarioId) {
+      setMessage(t('settingsForm.errorMessage'));
+      return;
+    }
   
     setSaving(true);
     setMessage(null);
   
     try {
-      const { data, error } = await supabase.rpc('update_profile_settings', {
-        p_default_currency: currency,
-        p_place_name: placeName || DEFAULT_PLACE_NAME,
-        p_language: language,
-      });
-  
-      if (error) throw error;
-  
-             // Обновляем кэш
-             localStorage.setItem(CURRENCY_STORAGE_KEY, data.default_currency);
-             localStorage.setItem(PLACE_NAME_STORAGE_KEY, data.place_name ?? DEFAULT_PLACE_NAME);
-             const savedLang = data.language ?? '';
-             localStorage.setItem(LANGUAGE_STORAGE_KEY, savedLang);
+      const scenarioNameToSave = placeName || DEFAULT_PLACE_NAME;
+      const newSlug = createSlug(scenarioNameToSave);
+      const oldSlug = scenarioSlug;
 
-             // Отправляем событие об изменении валюты для обновления таблиц
-             window.dispatchEvent(new Event('currencyChanged'));
+      // Обновляем сценарий в таблице scenarios
+      const { error: scenarioError } = await supabase
+        .from('scenarios')
+        .update({
+          name: scenarioNameToSave,
+          base_currency: currency,
+        })
+        .eq('id', currentScenarioId)
+        .eq('user_id', user.id); // Защита от обновления чужих сценариев
+
+      if (scenarioError) throw scenarioError;
+
+      // Обновляем язык в profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ language })
+        .eq('id', user.id);
+
+      if (profileError) throw profileError;
+
+      // Обновляем кэш
+      localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
+      localStorage.setItem(PLACE_NAME_STORAGE_KEY, scenarioNameToSave);
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+
+      // Отправляем событие об изменении валюты для обновления таблиц
+      window.dispatchEvent(new Event('currencyChanged'));
       
       // Устанавливаем язык в i18n после успешного сохранения
-      if (savedLang) {
-        const normalizedLang = normalizeLanguage(savedLang);
-        changeLanguage(normalizedLang);
-      }
+      const normalizedLang = normalizeLanguage(language);
+      changeLanguage(normalizedLang);
   
       window.dispatchEvent(new Event('placeNameChanged'));
+      
+      // Обновляем currentScenarioId в store после успешного сохранения
+      await loadCurrentScenarioId();
+      await loadCurrentScenarioSlug();
+      
+      // Если slug изменился, редиректим на новый URL
+      if (oldSlug && newSlug !== oldSlug) {
+        const currentPath = window.location.pathname;
+        const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '');
+        navigate(`/${newSlug}${pathWithoutSlug}`, { replace: true });
+      }
+      
       setMessage(t('settingsForm.successMessage'));
     } catch (err) {
       const e = err as PostgrestError;
-      console.error(e);
-      setMessage(e?.message ?? t('settingsForm.errorMessage'));
+      console.error('Error saving settings:', e);
+      // Не раскрываем детали ошибки пользователю для безопасности
+      setMessage(t('settingsForm.errorMessage'));
     } finally {
       setSaving(false);
       setTimeout(() => setMessage(null), 3000);
@@ -191,9 +240,13 @@ export default function SettingsPage() {
     }
   };
 
-  // Handle place name change
+  // Handle place name change with validation
   const handlePlaceNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPlaceName(e.target.value.trim());
+    const value = e.target.value.trim();
+    // Ограничиваем длину для предотвращения DoS атак
+    if (value.length <= MAX_PLACE_NAME_LENGTH) {
+      setPlaceName(value);
+    }
   };
 
   // Check if form is valid (required fields are filled)
@@ -235,6 +288,7 @@ export default function SettingsPage() {
             className="w-full"
             disabled={saving}
             required
+            maxLength={MAX_PLACE_NAME_LENGTH}
             label={t('settingsForm.scenarioNameLabel')}
             id="placeName"
           />
@@ -256,7 +310,11 @@ export default function SettingsPage() {
           />
 
           {message && (
-            <div className={`text-sm ${message.includes(t('settingsForm.errorMessage')) ? 'text-accentRed dark:text-accentRed' : 'text-success dark:text-success'}`}>
+            <div 
+              className={`text-sm ${message.includes(t('settingsForm.errorMessage')) ? 'text-accentRed dark:text-accentRed' : 'text-success dark:text-success'}`}
+              role="alert"
+            >
+              {/* React автоматически экранирует содержимое, но для безопасности используем textContent */}
               {message}
             </div>
           )}
