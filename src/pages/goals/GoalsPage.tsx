@@ -1,5 +1,7 @@
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import TextButton from '@/shared/ui/atoms/TextButton';
+import LoadingState from '@/shared/ui/atoms/LoadingState';
+import ErrorState from '@/shared/ui/atoms/ErrorState';
 import GoalCard from '@/shared/ui/molecules/GoalCard';
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -418,19 +420,11 @@ export default function GoalsPage() {
 
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-textColor dark:text-textColor">{t('goalsForm.loading')}</div>
-      </div>
-    );
+    return <LoadingState message={t('goalsForm.loading')} />;
   }
 
   if (error) {
-    return (
-      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-accentRed dark:text-accentRed">{t('goalsForm.errorPrefix')} {error}</div>
-      </div>
-    );
+    return <ErrorState message={`${t('goalsForm.errorPrefix')} ${error}`} />;
   }
 
   if (!goals || goals.length === 0) {

@@ -114,4 +114,3 @@ export const EXPENSE_CATEGORY_IDS: Omit<ExpenseCategory, 'label'>[] = [
     isCustom: true,
   },
 ];
-

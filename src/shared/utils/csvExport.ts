@@ -23,7 +23,7 @@ interface SavingData {
 }
 
 interface GoalData {
-  amount: number;
+  target_amount: number;
   name: string;
   currency: string;
 }
@@ -134,7 +134,7 @@ export async function loadExportData(
     // Загружаем цели
     let goalsQuery = supabase
       .from('goals_decrypted')
-      .select('amount, name, currency')
+      .select('target_amount, name, currency')
       .eq('user_id', userId);
 
     if (scenarioId) {
@@ -225,7 +225,7 @@ async function calculateTotals(
     if (!goalsByCurrency[goal.currency]) {
       goalsByCurrency[goal.currency] = 0;
     }
-    goalsByCurrency[goal.currency] += goal.amount;
+    goalsByCurrency[goal.currency] += goal.target_amount;
   }
 
   // Конвертируем все суммы в дефолтную валюту
@@ -255,8 +255,8 @@ async function calculateTotals(
     savingsTotalConverted += converted || 0;
   }
 
-  for (const [currency, amount] of Object.entries(goalsByCurrency)) {
-    const converted = await convertToDefaultCurrency(amount, currency, data.defaultCurrency);
+  for (const [currency, targetAmount] of Object.entries(goalsByCurrency)) {
+    const converted = await convertToDefaultCurrency(targetAmount, currency, data.defaultCurrency);
     goalsTotalConverted += converted || 0;
   }
 
@@ -347,9 +347,9 @@ export async function generateCSV(
   lines.push('Сумма,Категория,Валюта,Сумма в дефолтной валюте');
 
   for (const goal of data.goals) {
-    const converted = await convertToDefaultCurrency(goal.amount, goal.currency, data.defaultCurrency);
+    const converted = await convertToDefaultCurrency(goal.target_amount, goal.currency, data.defaultCurrency);
     const convertedStr = converted !== null ? converted.toFixed(2) : '';
-    lines.push(`${goal.amount},${goal.name},${goal.currency},${convertedStr}`);
+    lines.push(`${goal.target_amount},${goal.name},${goal.currency},${convertedStr}`);
   }
 
   lines.push(''); // Пустая строка между секциями

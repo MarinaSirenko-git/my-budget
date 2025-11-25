@@ -11,7 +11,7 @@ import MoneyInput from '@/shared/ui/form/MoneyInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { useTranslation } from '@/shared/i18n';
-import { useCurrency } from '@/shared/hooks/useCurrency';
+import { useCurrency, useCurrencyConversion } from '@/shared/hooks';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
@@ -72,79 +72,8 @@ export default function SavingsPage() {
     }
   };
 
-  // Function to convert amount using RPC
-  const convertAmount = useCallback(async (amount: number, fromCurrency: string, toCurrency?: string): Promise<number | null> => {
-    const targetCurrency = toCurrency || settingsCurrency;
-    if (!targetCurrency || fromCurrency === targetCurrency) {
-      return null; // Не нужно конвертировать, если валюта совпадает
-    }
-
-    try {
-      const { data, error } = await supabase.rpc('convert_amount', {
-        p_amount: amount,
-        p_from_currency: fromCurrency,
-        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
-      });
-
-      if (error) {
-        console.error('Error converting amount:', error);
-        return null;
-      }
-
-      // RPC возвращает массив с объектом, извлекаем converted_amount
-      if (Array.isArray(data) && data.length > 0 && data[0]?.converted_amount) {
-        return data[0].converted_amount;
-      }
-
-      return null;
-    } catch (err) {
-      console.error('Error calling convert_amount RPC:', err);
-      return null;
-    }
-  }, [settingsCurrency]);
-
-  // Function to convert multiple amounts using batch RPC
-  const convertAmountsBulk = useCallback(async (
-    items: Array<{ amount: number; currency: string }>,
-    toCurrency?: string
-  ): Promise<Map<number, number> | null> => {
-    const targetCurrency = toCurrency || settingsCurrency;
-    if (!targetCurrency || items.length === 0) {
-      return null;
-    }
-
-    try {
-      const { data, error } = await supabase.rpc('convert_amount_bulk', {
-        p_items: items,
-        // supabase сам превратит это в JSONB
-        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
-      });
-
-      if (error) {
-        console.error('Error converting amounts bulk:', error);
-        return null;
-      }
-
-      // RPC возвращает массив результатов
-      // Предполагаем формат: [{amount, currency, converted_amount}, ...]
-      // Порядок результатов должен соответствовать порядку items
-      const resultMap = new Map<number, number>();
-      
-      if (Array.isArray(data)) {
-        data.forEach((item: any, index: number) => {
-          if (item.converted_amount !== undefined && items[index]) {
-            // Используем индекс для сопоставления с исходным items
-            resultMap.set(index, item.converted_amount);
-          }
-        });
-      }
-
-      return resultMap;
-    } catch (err) {
-      console.error('Error calling convert_amount_bulk RPC:', err);
-      return null;
-    }
-  }, [settingsCurrency]);
+  // запросы к БД
+  const { convertAmount, convertAmountsBulk } = useCurrencyConversion();
 
   function handleCreateSaving() {
     setEditingSaving(null);

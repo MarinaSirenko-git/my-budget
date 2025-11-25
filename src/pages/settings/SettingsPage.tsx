@@ -6,6 +6,7 @@ import Form from '@/shared/ui/form/Form';
 import TextInput from '@/shared/ui/form/TextInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import TextButton from '@/shared/ui/atoms/TextButton';
+import LoadingState from '@/shared/ui/atoms/LoadingState';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { useLanguage, useTranslation } from '@/shared/i18n';
 import { createSlug } from '@/shared/utils/slug';
@@ -257,11 +258,7 @@ export default function SettingsPage() {
   }, [placeName]);
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] p-6">
-        <p className="text-textColor dark:text-textColor">{t('settingsForm.loading')}</p>
-      </div>
-    );
+    return <LoadingState message={t('settingsForm.loading')} className="flex-col p-6" />;
   }
 
   return (

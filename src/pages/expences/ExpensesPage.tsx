@@ -2,6 +2,8 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { FormEvent } from 'react';
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import Tag from '@/shared/ui/atoms/Tag';
+import LoadingState from '@/shared/ui/atoms/LoadingState';
+import ErrorState from '@/shared/ui/atoms/ErrorState';
 import type { ExpenseCategory, Expense } from '@/mocks/pages/expenses.mock';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/shared/store/auth';
@@ -19,7 +21,7 @@ import IconButton from '@/shared/ui/atoms/IconButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { useTranslation } from '@/shared/i18n';
-import { useCurrency } from '@/shared/hooks/useCurrency';
+import { useCurrency, useCurrencyConversion } from '@/shared/hooks';
 import { getExpenseCategories } from '@/shared/utils/categories';
 
 export default function ExpensesPage() {
@@ -142,79 +144,8 @@ export default function ExpensesPage() {
     );
   }, [categoryId, isTagSelected, title, amount, currency]);
 
-  // Function to convert amount using RPC
-  const convertAmount = useCallback(async (amount: number, fromCurrency: string, toCurrency?: string): Promise<number | null> => {
-    const targetCurrency = toCurrency || settingsCurrency;
-    if (!targetCurrency || fromCurrency === targetCurrency) {
-      return null; // Не нужно конвертировать, если валюта совпадает
-    }
-
-    try {
-      const { data, error } = await supabase.rpc('convert_amount', {
-        p_amount: amount,
-        p_from_currency: fromCurrency,
-        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
-      });
-
-      if (error) {
-        console.error('Error converting amount:', error);
-        return null;
-      }
-
-      // RPC возвращает массив с объектом, извлекаем converted_amount
-      if (Array.isArray(data) && data.length > 0 && data[0]?.converted_amount) {
-        return data[0].converted_amount;
-      }
-
-      return null;
-    } catch (err) {
-      console.error('Error calling convert_amount RPC:', err);
-      return null;
-    }
-  }, [settingsCurrency]);
-
-  // Function to convert multiple amounts using batch RPC
-  const convertAmountsBulk = useCallback(async (
-    items: Array<{ amount: number; currency: string }>,
-    toCurrency?: string
-  ): Promise<Map<number, number> | null> => {
-    const targetCurrency = toCurrency || settingsCurrency;
-    if (!targetCurrency || items.length === 0) {
-      return null;
-    }
-
-    try {
-      const { data, error } = await supabase.rpc('convert_amount_bulk', {
-        p_items: items,
-        // supabase сам превратит это в JSONB
-        p_to_currency: targetCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
-      });
-
-      if (error) {
-        console.error('Error converting amounts bulk:', error);
-        return null;
-      }
-
-      // RPC возвращает массив результатов
-      // Предполагаем формат: [{amount, currency, converted_amount}, ...]
-      // Порядок результатов должен соответствовать порядку items
-      const resultMap = new Map<number, number>();
-      
-      if (Array.isArray(data)) {
-        data.forEach((item: any, index: number) => {
-          if (item.converted_amount !== undefined && items[index]) {
-            // Используем индекс для сопоставления с исходным items
-            resultMap.set(index, item.converted_amount);
-          }
-        });
-      }
-
-      return resultMap;
-    } catch (err) {
-      console.error('Error calling convert_amount_bulk RPC:', err);
-      return null;
-    }
-  }, [settingsCurrency]);
+  // запросы к БД
+  const { convertAmount, convertAmountsBulk } = useCurrencyConversion();
 
   // Handle form submission
   async function handleSubmit(e: FormEvent) {
@@ -807,19 +738,11 @@ export default function ExpensesPage() {
   }, [t, expenseCategories, settingsCurrency, expenses, deletingId, handleDeleteExpense, handleEditExpense, selectedConversionCurrency, convertedAmountsCache, convertingIds]);
 
   if (loading) {
-    return (
-      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-textColor dark:text-textColor">{t('expensesForm.loading')}</div>
-      </div>
-    );
+    return <LoadingState message={t('expensesForm.loading')} />;
   }
 
   if (error) {
-    return (
-      <div className="flex h-full items-center justify-center min-h-[calc(100vh-100px)]">
-        <div className="text-accentRed dark:text-accentRed">{t('expensesForm.errorPrefix')} {error}</div>
-      </div>
-    );
+    return <ErrorState message={`${t('expensesForm.errorPrefix')} ${error}`} />;
   }
 
   if (!expenses || expenses.length === 0) {
