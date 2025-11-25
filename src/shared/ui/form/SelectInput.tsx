@@ -67,13 +67,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
     };
 
     const handleOptionChange = (newValue: string) => {
-      // Если есть pendingValue и он отличается от newValue, значит это автоматический выбор от Headless UI при клике
-      // Игнорируем его, выбор произойдет только при нажатии Enter
-      if (pendingValue !== null && pendingValue !== newValue) {
-        return;
-      }
-      
-      // Выбор происходит только если нет pendingValue (т.е. через Enter или программно)
+      // Выбор происходит при клике или программно
       if (onChange) {
         onChange(newValue);
       }
@@ -84,19 +78,10 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
       }, 0);
     };
 
-    const handleOptionClick = (optionValue: string, e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // Не выбираем сразу, только сохраняем как pending
-      setPendingValue(optionValue);
-    };
-
     const handleOptionEnter = (optionValue?: string) => {
       const valueToSelect = optionValue || pendingValue || filteredOptions[0]?.value;
       if (valueToSelect) {
-        // Очищаем pendingValue перед выбором, чтобы onChange сработал
         setPendingValue(null);
-        // Вызываем onChange напрямую
         if (onChange) {
           onChange(valueToSelect);
         }
@@ -191,52 +176,27 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
                     </div>
                   )}
                   {filteredOptions.map((option) => {
-                    const isHighlighted = pendingValue === option.value;
                     const isSelected = option.value === value;
                     return (
                       <Listbox.Option
                         key={option.value}
                         value={option.value}
                         disabled={option.disabled}
-                        as={Fragment}
+                        className={({ active, selected }) => `
+                          relative cursor-pointer select-none py-2 pl-10 pr-4 text-mainTextColor dark:text-mainTextColor
+                          ${selected ? 'bg-primary text-white' : active ? 'bg-contentBg dark:bg-cardColor' : ''}
+                          ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}
+                        `}
                       >
-                        {({ active, selected }) => (
-                          <div
-                            onClick={(e: React.MouseEvent) => {
-                              // Предотвращаем стандартное поведение Headless UI
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (!option.disabled) {
-                                handleOptionClick(option.value, e);
-                              }
-                            }}
-                            onKeyDown={(e: React.KeyboardEvent) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (!option.disabled) {
-                                  // Очищаем pendingValue перед выбором, чтобы onChange сработал
-                                  setPendingValue(null);
-                                  handleOptionEnter(option.value);
-                                }
-                              }
-                            }}
-                            className={`
-                              relative cursor-pointer select-none py-2 pl-10 pr-4 text-mainTextColor dark:text-mainTextColor
-                              ${isSelected ? 'bg-primary text-white' : isHighlighted ? 'bg-contentBg dark:bg-cardColor' : active ? 'bg-contentBg dark:bg-cardColor' : ''}
-                              ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}
-                            `}
-                            tabIndex={option.disabled ? -1 : 0}
-                            role="option"
-                            aria-selected={isSelected}
-                          >
+                        {({ selected }) => (
+                          <>
                             <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>{option.label}</span>
                             {selected ? (
                               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                                 <CheckIcon className="w-5 h-5 text-white" aria-hidden="true" />
                               </span>
                             ) : null}
-                          </div>
+                          </>
                         )}
                       </Listbox.Option>
                     );

@@ -32,14 +32,14 @@
 // 5. On click delete income button
 // 6. On change currency in add income form
 
-// Список возможных уязвимостей и проблем с производительностью
-// 1. Множество запросов для конвертации валют, отсутсвие debounce
-// 2. Много логики, низкая читаемость
-// 3. Отсутствие мониторинга ошибок, показ ошибок в консоль браузера
-// 4. Небезопасная передача ID в БД 
-// 5. Отсутствие санитизации пользовательского ввода категорий
-// 6. Бесконечные циклы при рендере компонентов (useIncomeCurrencyConversion, tableColumns)
-// 7. Повторные запросы при навигаци, отсутсвие кеширования
+// List of potential vulnerabilities and performance issues
+// 1. Excessive currency conversion requests, missing debounce
+// 2. Heavy logic, poor readability
+// 3. No error monitoring, errors exposed to browser console
+// 4. Insecure passing of IDs to the DB
+// 5. Missing sanitization of user input for categories
+// 6. Infinite loops during component render (useIncomeCurrencyConversion, tableColumns)
+// 7. Redundant requests during navigation, missing caching
 
 
 import { useState } from 'react';
