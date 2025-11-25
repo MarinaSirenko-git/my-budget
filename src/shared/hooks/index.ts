@@ -8,4 +8,6 @@ export { useIncomeCalculations } from './useIncomeCalculations.tsx';
 export { useSavingsForm } from './useSavingsForm';
 export { useSavings } from './useSavings';
 export { useSavingsCalculations } from './useSavingsCalculations.tsx';
+export { useGoalForm } from './useGoalForm';
+export { useGoals } from './useGoals';
 
