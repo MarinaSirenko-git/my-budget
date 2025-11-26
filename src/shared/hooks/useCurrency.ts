@@ -23,6 +23,13 @@ export function useCurrency() {
   const loadCurrency = useCallback(async (userId: string) => {
     setLoading(true);
 
+    // Если currentScenarioId равен null, пропускаем запрос и устанавливаем дефолтную валюту
+    if (!currentScenarioId) {
+      setCurrency(DEFAULT_CURRENCY);
+      setLoading(false);
+      return;
+    }
+
     try {
       const { data, error: dbError } = await supabase
         .from('scenarios')

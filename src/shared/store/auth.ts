@@ -1,6 +1,6 @@
 // init session and scenario id/slug on app start
 import { create } from 'zustand';
-import type { Session, User } from '@supabase/supabase-js'
+import type { Session, User, AuthChangeEvent } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 import { reportErrorToTelegram } from '../utils/errorReporting';
 import { createSlug } from '@/shared/utils/slug';
@@ -11,6 +11,7 @@ type AuthState = {
     loading: boolean
     currentScenarioId: string | null
     currentScenarioSlug: string | null
+    initialized: boolean
     set: (p: Partial<AuthState>) => void
     init: () => Promise<void>
     signOut: () => Promise<void>
@@ -52,25 +53,70 @@ type AuthState = {
     loading: true,
     currentScenarioId: null,
     currentScenarioSlug: null,
+    initialized: false,
     set: (p) => set(p),
   
     init: async () => {
-      const handleAuthStateChange = async (session: Session | null) => {
-        const user = session?.user ?? null;
-        set({ session, user, loading: false });
-        if (user) {
-          await get().loadCurrentScenarioId();
-        } else {
-          set({ currentScenarioId: null, currentScenarioSlug: null });
+      // check if already initialized
+      if (get().initialized) {
+        return;  // return if already initialized (avoid double initialization)
+      }
+
+      const handleAuthStateChange = async (event: AuthChangeEvent, session: Session | null) => {
+        try {
+          const user = session?.user ?? null;
+          const previousUser = get().user;
+          
+          // Always update session and user, and set loading to false
+          set({ session, user, loading: false });
+          
+          // Handle different events differently
+          if (event === 'TOKEN_REFRESHED') {
+            // Token was refreshed - no need to reload scenario data
+            // Just update session and user, loading is already set to false
+            return;
+          }
+          
+          if (event === 'SIGNED_OUT') {
+            // User signed out - clear scenario data
+            set({ currentScenarioId: null, currentScenarioSlug: null });
+            return;
+          }
+          
+          if (event === 'INITIAL_SESSION') {
+            // Initial session - load scenario data only if user exists
+            if (user) {
+              await get().loadCurrentScenarioId();
+            } else {
+              set({ currentScenarioId: null, currentScenarioSlug: null });
+            }
+            return;
+          }
+          
+          // For SIGNED_IN and other events, check if user changed
+          if (user) {
+            // Only reload scenario data if user actually changed
+            if (!previousUser || previousUser.id !== user.id) {
+              await get().loadCurrentScenarioId();
+            }
+          } else {
+            set({ currentScenarioId: null, currentScenarioSlug: null });
+          }
+        } catch (error) {
+          // Ensure loading is always set to false even on error
+          set({ loading: false });
+          const currentUser = get().user;
+          if (currentUser) {
+            await reportAuthError('handleAuthStateChange', error, currentUser.id, { event });
+          }
         }
       };
 
-      supabase.auth.onAuthStateChange(async (_event, session) => {
-        await handleAuthStateChange(session);
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        await handleAuthStateChange(event, session);
       });
 
-      const { data: { session } } = await supabase.auth.getSession();
-      await handleAuthStateChange(session);
+      set({ initialized: true });  // mark as initialized
     },
 
     loadCurrentScenarioId: async () => {

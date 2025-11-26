@@ -143,7 +143,7 @@ export function useSettings({
     } finally {
       setLoading(false);
     }
-  }, [currentScenarioId, changeLanguage, languageOptions]);
+  }, [currentScenarioId]);
 
   useEffect(() => {
     if (userId) {
@@ -198,7 +198,6 @@ export function useSettings({
       const newSlug = createSlug(scenarioNameToSave);
       const oldSlug = scenarioSlug;
 
-      // Обновляем сценарий в таблице scenarios
       const { error: scenarioError } = await supabase
         .from('scenarios')
         .update({
@@ -206,7 +205,7 @@ export function useSettings({
           base_currency: currency,
         })
         .eq('id', currentScenarioId)
-        .eq('user_id', userId); // Защита от обновления чужих сценариев
+        .eq('user_id', userId);
 
       if (scenarioError) {
         await reportErrorToTelegram({
@@ -218,7 +217,6 @@ export function useSettings({
         throw scenarioError;
       }
 
-      // Обновляем язык в profiles
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ language })
@@ -234,25 +232,17 @@ export function useSettings({
         throw profileError;
       }
 
-      // Обновляем кэш
       localStorage.setItem(CURRENCY_STORAGE_KEY, currency);
       localStorage.setItem(PLACE_NAME_STORAGE_KEY, scenarioNameToSave);
       localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
 
-      // Отправляем событие об изменении валюты для обновления таблиц
       window.dispatchEvent(new Event('currencyChanged'));
-
-      // Устанавливаем язык в i18n после успешного сохранения
       const normalizedLang = normalizeLanguage(language);
       changeLanguage(normalizedLang);
 
       window.dispatchEvent(new Event('placeNameChanged'));
-
-      // Обновляем currentScenarioId в store после успешного сохранения
-      await loadCurrentScenarioId();
       await loadCurrentScenarioSlug();
 
-      // Если slug изменился, редиректим на новый URL
       if (oldSlug && newSlug !== oldSlug) {
         const currentPath = window.location.pathname;
         const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '');
@@ -261,9 +251,6 @@ export function useSettings({
 
       setMessage(t('settingsForm.successMessage'));
     } catch (err) {
-      const e = err as PostgrestError;
-      console.error('Error saving settings:', e);
-      // Не раскрываем детали ошибки пользователю для безопасности
       setMessage(t('settingsForm.errorMessage'));
     } finally {
       setSaving(false);
