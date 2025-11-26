@@ -1,91 +1,129 @@
 import { supabase } from '@/lib/supabase';
 
+const SENSITIVE_FIELDS = ['password', 'token', 'secret', 'key', 'auth', 'apiKey', 'accessToken'];
+const MAX_STRING_LENGTH = 100;
+const MAX_TRUNCATED_LENGTH = 50;
+const HASH_LENGTH = 8;
+const TELEGRAM_MAX_MESSAGE_LENGTH = 4096;
+
+function isDevelopment(): boolean {
+  return import.meta.env.DEV;
+}
+
+function isProduction(): boolean {
+  return import.meta.env.PROD;
+}
+
+export type ErrorContext = Record<string, string | number | boolean | null | undefined>;
+
 export interface ErrorReport {
   action: string;
   error: unknown;
   userId?: string;
-  context?: Record<string, any>;
+  context?: ErrorContext;
 }
 
-/**
- * Безопасно отправляет ошибку в Telegram
- * Санитизирует данные перед отправкой для защиты конфиденциальности
- */
+function formatErrorMessage(report: ErrorReport, sanitizedError: string, sanitizedContext: ErrorContext): string {
+  const header = `🚨 Error: ${report.action}`;
+  const userId = report.userId ? hashUserId(report.userId) : 'anonymous';
+  const timestamp = new Date().toISOString();
+  
+  let message = `${header}\n\n`;
+  message += `User: ${userId}\n`;
+  message += `Time: ${timestamp}\n\n`;
+  message += `Error:\n${sanitizedError}\n`;
+  
+  if (Object.keys(sanitizedContext).length > 0) {
+    message += `\nContext:\n${JSON.stringify(sanitizedContext, null, 2)}`;
+  }
+  
+  if (message.length > TELEGRAM_MAX_MESSAGE_LENGTH) {
+    const truncatedLength = TELEGRAM_MAX_MESSAGE_LENGTH - 100;
+    message = message.substring(0, truncatedLength) + '\n\n...[MESSAGE TRUNCATED]';
+  }
+  
+  return message;
+}
+
 export async function reportErrorToTelegram(report: ErrorReport): Promise<void> {
   try {
-    // Санитизируем ошибку - убираем чувствительные данные
     const sanitizedError = sanitizeError(report.error);
-    
-    const message = {
-      action: report.action,
-      error: sanitizedError,
-      userId: report.userId ? hashUserId(report.userId) : 'anonymous',
-      timestamp: new Date().toISOString(),
-      context: sanitizeContext(report.context),
-    };
+    const sanitizedContext = sanitizeContext(report.context);
+    const formattedMessage = formatErrorMessage(report, sanitizedError, sanitizedContext);
 
     await supabase.functions.invoke('send-to-telegram', {
       body: { 
-        message: `🚨 Error: ${report.action}\n\n${JSON.stringify(message, null, 2)}`
+        message: formattedMessage
       }
     });
   } catch (err) {
-    // Не логируем ошибку отправки в Telegram, чтобы избежать бесконечного цикла
-    // В development можно оставить console.error для отладки
-    if (import.meta.env.DEV) {
+    if (isDevelopment()) {
       console.error('Failed to send error to Telegram:', err);
     }
   }
 }
 
-/**
- * Санитизирует ошибку, убирая чувствительные данные
- */
-function sanitizeError(error: unknown): string {
+function getErrorCode(error: unknown): string | undefined {
+  if (error && typeof error === 'object' && 'code' in error) {
+    return (error as { code: string }).code;
+  }
+  return undefined;
+}
+
+function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
-    // В production убираем стек трейс, оставляем только сообщение
-    if (import.meta.env.PROD) {
-      return error.message;
-    }
-    // В development оставляем полный стек для отладки
-    return `${error.message}\n${error.stack}`;
+    return error.message;
+  }
+  if (error && typeof error === 'object' && 'message' in error) {
+    return String((error as { message: unknown }).message);
   }
   return String(error);
 }
 
-/**
- * Санитизирует контекст, убирая чувствительные поля
- */
-function sanitizeContext(context?: Record<string, any>): Record<string, any> {
+function sanitizeError(error: unknown): string {
+  const errorCode = getErrorCode(error);
+  const errorMessage = getErrorMessage(error);
+  
+  let result = errorMessage;
+  
+  if (errorCode) {
+    result = `[${errorCode}] ${result}`;
+  }
+  
+  if (error instanceof Error && !isProduction()) {
+    if (error.stack) {
+      result += `\n${error.stack}`;
+    }
+  }
+  
+  return result;
+}
+
+function sanitizeContext(context?: ErrorContext): ErrorContext {
   if (!context) return {};
   
-  // Список полей, которые нужно скрыть
-  const sensitiveFields = ['password', 'token', 'secret', 'key', 'auth', 'apiKey', 'accessToken'];
-  const sanitized = { ...context };
+  const sanitized: ErrorContext = { ...context };
   
   for (const key in sanitized) {
     const lowerKey = key.toLowerCase();
-    if (sensitiveFields.some(field => lowerKey.includes(field))) {
+    const value = sanitized[key];
+    
+    if (SENSITIVE_FIELDS.some(field => lowerKey.includes(field))) {
       sanitized[key] = '[REDACTED]';
-    }
-    // Также скрываем слишком длинные строки (могут содержать токены)
-    if (typeof sanitized[key] === 'string' && sanitized[key].length > 100) {
-      sanitized[key] = sanitized[key].substring(0, 50) + '...[TRUNCATED]';
+    } else if (typeof value === 'string' && value.length > MAX_STRING_LENGTH) {
+      sanitized[key] = value.substring(0, MAX_TRUNCATED_LENGTH) + '...[TRUNCATED]';
     }
   }
   
   return sanitized;
 }
 
-/**
- * Хеширует user ID для анонимизации
- */
 function hashUserId(userId: string): string {
-  // Простое хеширование для анонимизации (первые 8 символов base64)
   try {
-    return btoa(userId).slice(0, 8);
+    return btoa(userId).slice(0, HASH_LENGTH);
   } catch {
     return 'unknown';
   }
 }
+
 

@@ -1,62 +1,52 @@
 import { useState } from 'react';
-import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '@/shared/store/auth';
 import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import { useTranslation } from '@/shared/i18n';
 import { supabase } from '@/lib/supabase';
 import { loadExportData, generateCSV, downloadCSV } from '@/shared/utils/csvExport';
+import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function ExportButton() {
+  const { t } = useTranslation('components');
   const { user } = useAuth();
   const { scenarioId } = useScenarioRoute();
-  const { t } = useTranslation('components');
   const [loading, setLoading] = useState(false);
 
-  const handleExport = async () => {
-    if (!user) {
-      console.error('User not authenticated');
+  const handleExport = async (userId: string) => {
+    if (!scenarioId) {
       return;
     }
 
     setLoading(true);
 
     try {
-      if (!scenarioId) {
-        throw new Error(t('export.error'));
-      }
-
-      // Получаем валюту из текущего сценария
       const { data: scenario, error: scenarioError } = await supabase
         .from('scenarios')
         .select('base_currency')
         .eq('id', scenarioId)
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .single();
 
-      if (scenarioError) {
-        throw new Error(t('export.error'));
-      }
+      if (scenarioError) throw new Error(t('export.error'));
+      const defaultCurrency = scenario?.base_currency;
 
-      const defaultCurrency = scenario?.base_currency || 'USD';
-
-      // Загружаем данные
-      const exportData = await loadExportData(user.id, scenarioId, defaultCurrency);
-
+      const exportData = await loadExportData(userId, scenarioId, defaultCurrency);
       if (!exportData) {
         throw new Error(t('export.error'));
       }
-
-      // Генерируем CSV
       const csvContent = await generateCSV(exportData, t);
-
-      // Формируем имя файла
       const date = new Date().toISOString().split('T')[0];
       const filename = `budget_export_${date}.csv`;
 
-      // Скачиваем файл
       downloadCSV(csvContent, filename);
     } catch (err) {
-      console.error('Error exporting data:', err);
+      await reportErrorToTelegram({
+        action: 'exportData',
+        error: err,
+        userId: userId,
+        context: { scenarioId },
+      });
       alert(t('export.error'));
     } finally {
       setLoading(false);
@@ -65,8 +55,12 @@ export default function ExportButton() {
 
   return (
     <button
-      onClick={handleExport}
-      disabled={loading}
+      onClick={() => {
+        if (user?.id) {
+          handleExport(user.id);
+        }
+      }}
+      disabled={loading || !user?.id || !scenarioId}
       className="flex items-center font-normal gap-2 py-1 px-2 hover:text-primary disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <ArrowDownTrayIcon className="w-5 h-5" />

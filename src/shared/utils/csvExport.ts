@@ -1,6 +1,8 @@
 import { supabase } from '@/lib/supabase';
-import { getIncomeCategories, getExpenseCategories } from './categories';
-import type { TFunction } from '@/shared/i18n';
+import { getIncomeCategories } from './categories';
+import { convertCurrency } from './currencyConversion';
+import { reportErrorToTelegram } from './errorReporting';
+import type { TFunction } from 'i18next';
 
 interface IncomeData {
   amount: number;
@@ -30,158 +32,144 @@ interface GoalData {
 
 interface ExportData {
   incomes: IncomeData[];
-  expenses: ExpenseData[];
   savings: SavingData[];
   goals: GoalData[];
+  expenses: ExpenseData[];
   defaultCurrency: string;
+  userId: string;
 }
 
-/**
- * Конвертирует сумму в дефолтную валюту через RPC
- */
 async function convertToDefaultCurrency(
   amount: number,
   fromCurrency: string,
-  defaultCurrency: string
+  defaultCurrency: string,
+  userId?: string
 ): Promise<number | null> {
-  if (fromCurrency === defaultCurrency) {
-    return amount;
-  }
-
   try {
-    const { data, error } = await supabase.rpc('convert_amount', {
-      p_amount: amount,
-      p_from_currency: fromCurrency,
-      p_to_currency: defaultCurrency,
-    });
-
-    if (error) {
-      console.error('Error converting amount:', error);
-      return null;
-    }
-
-    if (Array.isArray(data) && data.length > 0 && data[0]?.converted_amount) {
-      return data[0].converted_amount;
-    }
-
-    return null;
+    return await convertCurrency(amount, fromCurrency, defaultCurrency);
   } catch (err) {
-    console.error('Error calling convert_amount RPC:', err);
+    await reportErrorToTelegram({
+      action: 'convertToDefaultCurrency',
+      error: err,
+      userId: userId,
+      context: {
+        amount,
+        fromCurrency,
+        defaultCurrency,
+      },
+    });
     return null;
   }
 }
 
-/**
- * Загружает все данные для экспорта
- */
 export async function loadExportData(
   userId: string,
-  scenarioId: string | null,
+  scenarioId: string,
   defaultCurrency: string
 ): Promise<ExportData | null> {
   try {
-    // Загружаем доходы
-    let incomesQuery = supabase
+    const { data: incomesData, error: incomesError } = await supabase
       .from('incomes_decrypted')
       .select('amount, type, frequency, currency')
-      .eq('user_id', userId);
-
-    if (scenarioId) {
-      incomesQuery = incomesQuery.eq('scenario_id', scenarioId);
-    }
-
-    const { data: incomesData, error: incomesError } = await incomesQuery.order('created_at', { ascending: false });
+      .eq('user_id', userId)
+      .eq('scenario_id', scenarioId)
+      .order('created_at', { ascending: false });
 
     if (incomesError) {
-      console.error('Error loading incomes:', incomesError);
+      await reportErrorToTelegram({
+        action: 'loadExportDataIncomes',
+        error: incomesError,
+        userId: userId,
+        context: { scenarioId, errorCode: incomesError.code },
+      });
       return null;
     }
 
-    // Загружаем расходы
-    let expensesQuery = supabase
+    const { data: expensesData, error: expensesError } = await supabase
       .from('expenses_decrypted')
       .select('amount, type, frequency, currency')
-      .eq('user_id', userId);
-
-    if (scenarioId) {
-      expensesQuery = expensesQuery.eq('scenario_id', scenarioId);
-    }
-
-    const { data: expensesData, error: expensesError } = await expensesQuery.order('created_at', { ascending: false });
+      .eq('user_id', userId)
+      .eq('scenario_id', scenarioId)
+      .order('created_at', { ascending: false });
 
     if (expensesError) {
-      console.error('Error loading expenses:', expensesError);
+      await reportErrorToTelegram({
+        action: 'loadExportDataExpenses',
+        error: expensesError,
+        userId: userId,
+        context: { scenarioId, errorCode: expensesError.code },
+      });
       return null;
     }
 
-    // Загружаем накопления
-    let savingsQuery = supabase
+    const { data: savingsData, error: savingsError } = await supabase
       .from('savings_decrypted')
       .select('amount, comment, currency')
-      .eq('user_id', userId);
-
-    if (scenarioId) {
-      savingsQuery = savingsQuery.eq('scenario_id', scenarioId);
-    }
-
-    const { data: savingsData, error: savingsError } = await savingsQuery.order('created_at', { ascending: false });
+      .eq('user_id', userId)
+      .eq('scenario_id', scenarioId)
+      .order('created_at', { ascending: false });
 
     if (savingsError) {
-      console.error('Error loading savings:', savingsError);
+      await reportErrorToTelegram({
+        action: 'loadExportDataSavings',
+        error: savingsError,
+        userId: userId,
+        context: { scenarioId, errorCode: savingsError.code },
+      });
       return null;
     }
 
-    // Загружаем цели
-    let goalsQuery = supabase
+    const { data: goalsData, error: goalsError } = await supabase
       .from('goals_decrypted')
       .select('target_amount, name, currency')
-      .eq('user_id', userId);
-
-    if (scenarioId) {
-      goalsQuery = goalsQuery.eq('scenario_id', scenarioId);
-    }
-
-    const { data: goalsData, error: goalsError } = await goalsQuery.order('created_at', { ascending: false });
+      .eq('user_id', userId)
+      .eq('scenario_id', scenarioId)
+      .order('created_at', { ascending: false });
 
     if (goalsError) {
-      console.error('Error loading goals:', goalsError);
+      await reportErrorToTelegram({
+        action: 'loadExportDataGoals',
+        error: goalsError,
+        userId: userId,
+        context: { scenarioId, errorCode: goalsError.code },
+      });
       return null;
     }
 
     return {
       incomes: (incomesData || []) as IncomeData[],
-      expenses: (expensesData || []) as ExpenseData[],
       savings: (savingsData || []) as SavingData[],
       goals: (goalsData || []) as GoalData[],
+      expenses: (expensesData || []) as ExpenseData[],
       defaultCurrency,
+      userId,
     };
   } catch (err) {
-    console.error('Error loading export data:', err);
+    await reportErrorToTelegram({
+      action: 'loadExportData',
+      error: err,
+      userId: userId,
+      context: { scenarioId },
+    });
     return null;
   }
 }
 
-/**
- * Рассчитывает итоговые суммы с учетом частоты и конвертации валют
- */
 async function calculateTotals(
-  data: ExportData,
-  t: TFunction
+  data: ExportData
 ): Promise<{
   incomeMonthly: { original: number; converted: number };
   incomeYearly: { original: number; converted: number };
-  expenseMonthly: { original: number; converted: number };
-  expenseYearly: { original: number; converted: number };
   savingsTotal: { original: number; converted: number };
   goalsTotal: { original: number; converted: number };
+  expenseMonthly: { original: number; converted: number };
+  expenseYearly: { original: number; converted: number };
 }> {
-  // Группируем суммы по валютам для расчета в валюте ввода
   const incomeByCurrency: Record<string, { monthly: number; yearly: number }> = {};
   const expenseByCurrency: Record<string, { monthly: number; yearly: number }> = {};
   const savingsByCurrency: Record<string, number> = {};
   const goalsByCurrency: Record<string, number> = {};
 
-  // Рассчитываем доходы
   for (const income of data.incomes) {
     if (!incomeByCurrency[income.currency]) {
       incomeByCurrency[income.currency] = { monthly: 0, yearly: 0 };
@@ -195,7 +183,6 @@ async function calculateTotals(
     }
   }
 
-  // Рассчитываем расходы
   for (const expense of data.expenses) {
     if (!expenseByCurrency[expense.currency]) {
       expenseByCurrency[expense.currency] = { monthly: 0, yearly: 0 };
@@ -212,7 +199,6 @@ async function calculateTotals(
     }
   }
 
-  // Рассчитываем накопления
   for (const saving of data.savings) {
     if (!savingsByCurrency[saving.currency]) {
       savingsByCurrency[saving.currency] = 0;
@@ -220,7 +206,6 @@ async function calculateTotals(
     savingsByCurrency[saving.currency] += saving.amount;
   }
 
-  // Рассчитываем цели
   for (const goal of data.goals) {
     if (!goalsByCurrency[goal.currency]) {
       goalsByCurrency[goal.currency] = 0;
@@ -228,7 +213,6 @@ async function calculateTotals(
     goalsByCurrency[goal.currency] += goal.target_amount;
   }
 
-  // Конвертируем все суммы в дефолтную валюту
   let incomeMonthlyConverted = 0;
   let incomeYearlyConverted = 0;
   let expenseMonthlyConverted = 0;
@@ -237,31 +221,29 @@ async function calculateTotals(
   let goalsTotalConverted = 0;
 
   for (const [currency, amounts] of Object.entries(incomeByCurrency)) {
-    const monthlyConverted = await convertToDefaultCurrency(amounts.monthly, currency, data.defaultCurrency);
-    const yearlyConverted = await convertToDefaultCurrency(amounts.yearly, currency, data.defaultCurrency);
+    const monthlyConverted = await convertToDefaultCurrency(amounts.monthly, currency, data.defaultCurrency, data.userId);
+    const yearlyConverted = await convertToDefaultCurrency(amounts.yearly, currency, data.defaultCurrency, data.userId);
     incomeMonthlyConverted += monthlyConverted || 0;
     incomeYearlyConverted += yearlyConverted || 0;
   }
 
   for (const [currency, amounts] of Object.entries(expenseByCurrency)) {
-    const monthlyConverted = await convertToDefaultCurrency(amounts.monthly, currency, data.defaultCurrency);
-    const yearlyConverted = await convertToDefaultCurrency(amounts.yearly, currency, data.defaultCurrency);
+    const monthlyConverted = await convertToDefaultCurrency(amounts.monthly, currency, data.defaultCurrency, data.userId);
+    const yearlyConverted = await convertToDefaultCurrency(amounts.yearly, currency, data.defaultCurrency, data.userId);
     expenseMonthlyConverted += monthlyConverted || 0;
     expenseYearlyConverted += yearlyConverted || 0;
   }
 
   for (const [currency, amount] of Object.entries(savingsByCurrency)) {
-    const converted = await convertToDefaultCurrency(amount, currency, data.defaultCurrency);
+    const converted = await convertToDefaultCurrency(amount, currency, data.defaultCurrency, data.userId);
     savingsTotalConverted += converted || 0;
   }
 
   for (const [currency, targetAmount] of Object.entries(goalsByCurrency)) {
-    const converted = await convertToDefaultCurrency(targetAmount, currency, data.defaultCurrency);
+    const converted = await convertToDefaultCurrency(targetAmount, currency, data.defaultCurrency, data.userId);
     goalsTotalConverted += converted || 0;
   }
 
-  // Для оригинальных сумм суммируем все валюты (они будут показаны в валюте ввода)
-  // Это упрощение - показываем сумму всех валют, но в CSV будет указана основная валюта
   const incomeMonthlyOriginal = Object.values(incomeByCurrency).reduce((sum, amounts) => sum + amounts.monthly, 0);
   const incomeYearlyOriginal = Object.values(incomeByCurrency).reduce((sum, amounts) => sum + amounts.yearly, 0);
   const expenseMonthlyOriginal = Object.values(expenseByCurrency).reduce((sum, amounts) => sum + amounts.monthly, 0);
@@ -279,20 +261,14 @@ async function calculateTotals(
   };
 }
 
-/**
- * Генерирует CSV контент из данных
- */
 export async function generateCSV(
   data: ExportData,
   t: TFunction
 ): Promise<string> {
   const lines: string[] = [];
 
-  // Получаем категории для переводов
   const incomeCategories = getIncomeCategories(t);
-  const expenseCategories = getExpenseCategories(t);
 
-  // Секция доходов
   lines.push('Доходы');
   lines.push('Сумма,Источник,Частота,Валюта,Сумма в дефолтной валюте');
 
@@ -300,14 +276,13 @@ export async function generateCSV(
     const category = incomeCategories.find(cat => cat.id === income.type);
     const source = category ? category.label : income.type;
     const frequency = income.frequency === 'monthly' ? t('incomeForm.monthly') : t('incomeForm.annual');
-    const converted = await convertToDefaultCurrency(income.amount, income.currency, data.defaultCurrency);
+    const converted = await convertToDefaultCurrency(income.amount, income.currency, data.defaultCurrency, data.userId);
     const convertedStr = converted !== null ? converted.toFixed(2) : '';
     lines.push(`${income.amount},${source},${frequency},${income.currency},${convertedStr}`);
   }
 
-  lines.push(''); // Пустая строка между секциями
+  lines.push('');
 
-  // Секция расходов
   lines.push('Расходы');
   lines.push('Сумма,Источник,Частота,Валюта,Сумма в дефолтной валюте');
 
@@ -321,46 +296,42 @@ export async function generateCSV(
     } else if (expense.frequency === 'one-time') {
       frequency = t('expensesForm.oneTime');
     }
-    const converted = await convertToDefaultCurrency(expense.amount, expense.currency, data.defaultCurrency);
+    const converted = await convertToDefaultCurrency(expense.amount, expense.currency, data.defaultCurrency, data.userId);
     const convertedStr = converted !== null ? converted.toFixed(2) : '';
     lines.push(`${expense.amount},${source},${frequency},${expense.currency},${convertedStr}`);
   }
 
-  lines.push(''); // Пустая строка между секциями
+  lines.push('');
 
-  // Секция накоплений
   lines.push('Накопления');
   lines.push('Сумма,Комментарий,Валюта,Сумма в дефолтной валюте');
 
   for (const saving of data.savings) {
-    const converted = await convertToDefaultCurrency(saving.amount, saving.currency, data.defaultCurrency);
+    const converted = await convertToDefaultCurrency(saving.amount, saving.currency, data.defaultCurrency, data.userId);
     const convertedStr = converted !== null ? converted.toFixed(2) : '';
     // Экранируем запятые в комментарии
     const comment = saving.comment.replace(/,/g, ';');
     lines.push(`${saving.amount},${comment},${saving.currency},${convertedStr}`);
   }
 
-  lines.push(''); // Пустая строка между секциями
+  lines.push('');
 
-  // Секция целей
   lines.push('Цели');
   lines.push('Сумма,Категория,Валюта,Сумма в дефолтной валюте');
 
   for (const goal of data.goals) {
-    const converted = await convertToDefaultCurrency(goal.target_amount, goal.currency, data.defaultCurrency);
+    const converted = await convertToDefaultCurrency(goal.target_amount, goal.currency, data.defaultCurrency, data.userId);
     const convertedStr = converted !== null ? converted.toFixed(2) : '';
     lines.push(`${goal.target_amount},${goal.name},${goal.currency},${convertedStr}`);
   }
 
-  lines.push(''); // Пустая строка между секциями
+  lines.push('');
 
-  // Секция итогов
   lines.push('Итоги');
   lines.push('Период,Тип,Сумма в валюте ввода,Валюта ввода,Сумма в дефолтной валюте,Дефолтная валюта');
 
-  const totals = await calculateTotals(data, t);
+  const totals = await calculateTotals(data);
 
-  // Определяем основную валюту ввода (дефолтная или первая встреченная)
   const inputCurrency = data.defaultCurrency || 
     (data.incomes.length > 0 ? data.incomes[0].currency : null) ||
     (data.expenses.length > 0 ? data.expenses[0].currency : null) ||
@@ -376,9 +347,6 @@ export async function generateCSV(
   return lines.join('\n');
 }
 
-/**
- * Скачивает CSV файл
- */
 export function downloadCSV(content: string, filename: string): void {
   const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8;' }); // BOM для корректного отображения кириллицы в Excel
   const link = document.createElement('a');

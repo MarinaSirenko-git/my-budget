@@ -3,10 +3,9 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/shared/store/auth';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import ModalWindow from '@/shared/ui/ModalWindow';
-import Form from '@/shared/ui/form/Form';
-import TextareaInput from '@/shared/ui/form/TextareaInput';
-import TextButton from '@/shared/ui/atoms/TextButton';
+import FeedbackForm from '@/features/feedback/FeedbackForm';
 import { useTranslation } from '@/shared/i18n';
+import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 
 interface FeedbackProps {
   /** Additional className for the button */
@@ -63,7 +62,12 @@ export default function Feedback({
         handleClose();
       }, 1500);
     } catch (err) {
-      console.error('Error sending feedback:', err);
+      await reportErrorToTelegram({
+        action: 'sendFeedback',
+        error: err,
+        userId: user?.id,
+        context: { feedbackLength: feedback.trim().length },
+      });
       setMessage(t('feedbackForm.errorMessage'));
     } finally {
       setSubmitting(false);
@@ -97,42 +101,15 @@ export default function Feedback({
       </div>
 
       <ModalWindow open={open} onClose={handleClose}>
-        <Form onSubmit={handleSubmit}>
-          <TextareaInput
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            label={t('feedbackForm.label')}
-            required
-            disabled={submitting}
-            className="w-full"
-            description={t('feedbackForm.description')}
-          />
-
-          {message && (
-            <div className={`text-sm ${message.includes(t('feedbackForm.errorMessage')) ? 'text-accentRed dark:text-accentRed' : 'text-success dark:text-success'}`}>
-              {message}
-            </div>
-          )}
-
-          <div className="flex gap-2 justify-end pt-2">
-            <TextButton
-              type="button"
-              onClick={handleClose}
-              variant="default"
-              disabled={submitting}
-            >
-              {t('feedbackForm.cancelButton')}
-            </TextButton>
-            <TextButton
-              type="submit"
-              variant="primary"
-              disabled={!feedback.trim() || submitting}
-              aria-label={t('feedbackForm.submitAriaLabel')}
-            >
-              {submitting ? t('feedbackForm.submittingButton') : t('feedbackForm.submitButton')}
-            </TextButton>
-          </div>
-        </Form>
+        <FeedbackForm
+          feedback={feedback}
+          setFeedback={setFeedback}
+          submitting={submitting}
+          message={message}
+          handleSubmit={handleSubmit}
+          handleClose={handleClose}
+          t={t}
+        />
       </ModalWindow>
     </>
   );

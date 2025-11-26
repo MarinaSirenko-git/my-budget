@@ -1,18 +1,17 @@
+// validate scenario id/slug on route change
+
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Outlet } from 'react-router-dom';
 import { useAuth, useAuth as useAuthStore } from '@/shared/store/auth';
 import { supabase } from '@/lib/supabase';
-import { isValidSlug, createSlug } from '@/shared/utils/slug';
+import { createSlug } from '@/shared/utils/slug';
+import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
+import { validateScenarioBySlug } from '@/shared/utils/scenarios';
 
-/**
- * Компонент-обертка для валидации scenario slug
- * Проверяет существование сценария по slug и права доступа
- * Редиректит на текущий сценарий пользователя при невалидном slug
- */
 export default function ScenarioRouteGuard() {
   const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
   const navigate = useNavigate();
-  const { user, currentScenarioId, loadCurrentScenarioId, loadCurrentScenarioSlug } = useAuth();
+  const { user, loadCurrentScenarioId, loadCurrentScenarioSlug } = useAuth();
   const [loading, setLoading] = useState(true);
   const [isValid, setIsValid] = useState(false);
 
@@ -24,60 +23,24 @@ export default function ScenarioRouteGuard() {
         return;
       }
 
-      // Валидация формата slug
-      if (!isValidSlug(scenarioSlug)) {
-        await redirectToCurrentScenario();
+      setLoading(true);
+
+      const scenarioId = await validateScenarioBySlug(scenarioSlug, user.id);
+
+      if (!scenarioId) {
+        await redirectToCurrentScenario(user.id);
         return;
       }
 
-      try {
-        setLoading(true);
+      const authStore = useAuthStore.getState();
+      authStore.setCurrentScenarioId(scenarioId);
 
-        // Получаем все сценарии пользователя
-        const { data: scenarios, error: fetchError } = await supabase
-          .from('scenarios')
-          .select('id, name, user_id')
-          .eq('user_id', user.id);
-
-        if (fetchError) {
-          throw fetchError;
-        }
-
-        // Ищем сценарий по slug
-        const matchingScenario = scenarios?.find(scenario => {
-          const scenarioSlugFromName = createSlug(scenario.name);
-          return scenarioSlugFromName === scenarioSlug;
-        });
-
-        if (!matchingScenario) {
-          // Сценарий не найден, редирект на текущий
-          await redirectToCurrentScenario();
-          return;
-        }
-
-        // Проверяем права доступа (scenario принадлежит пользователю)
-        if (matchingScenario.user_id !== user.id) {
-          // Нет прав доступа, редирект на текущий сценарий
-          await redirectToCurrentScenario();
-          return;
-        }
-
-        // Устанавливаем currentScenarioId в store для использования на страницах
-        const authStore = useAuthStore.getState();
-        authStore.setCurrentScenarioId(matchingScenario.id);
-
-        // Валидация пройдена
-        setIsValid(true);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error validating scenario:', err);
-        await redirectToCurrentScenario();
-      }
+      setIsValid(true);
+      setLoading(false);
     }
 
-    async function redirectToCurrentScenario() {
+    async function redirectToCurrentScenario(userId: string) {
       try {
-        // Загружаем текущий сценарий пользователя
         await loadCurrentScenarioId();
         await loadCurrentScenarioSlug();
         
@@ -87,32 +50,51 @@ export default function ScenarioRouteGuard() {
         
         if (currentId && currentSlug) {
           const currentPath = window.location.pathname;
-          // Заменяем текущий slug на правильный
-          const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/goals';
+          const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/incomes';
           navigate(`/${currentSlug}${pathWithoutSlug}`, { replace: true });
-        } else if (currentId) {
-          // Если slug не загружен, получаем имя сценария
+          return;
+        }
+        
+        if (currentId) {
           const { data: scenario, error: scenarioError } = await supabase
             .from('scenarios')
             .select('name')
             .eq('id', currentId)
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .single();
 
           if (!scenarioError && scenario) {
             const slug = createSlug(scenario.name);
             const currentPath = window.location.pathname;
-            const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/goals';
+            const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/incomes';
             navigate(`/${slug}${pathWithoutSlug}`, { replace: true });
-          } else {
-            navigate('/scenario/goals', { replace: true });
+            return;
           }
-        } else {
-          navigate('/scenario/goals', { replace: true });
         }
+        
+        // If no current scenario, try to find any scenario for user
+        const { data: scenarios, error: scenariosError } = await supabase
+          .from('scenarios')
+          .select('name, id')
+          .eq('user_id', userId)
+          .limit(1);
+
+        if (!scenariosError && scenarios && scenarios.length > 0) {
+          const slug = createSlug(scenarios[0].name);
+          navigate(`/${slug}/goals`, { replace: true });
+          return;
+        }
+        
+        // If no scenarios exist, redirect to auth
+        navigate('/auth', { replace: true });
       } catch (err) {
-        console.error('Error redirecting to current scenario:', err);
-        navigate('/scenario/goals', { replace: true });
+        await reportErrorToTelegram({
+          action: 'redirectToCurrentScenario',
+          error: err,
+          userId: userId,
+          context: { currentPath: window.location.pathname },
+        });
+        navigate('/auth', { replace: true });
       }
     }
 
@@ -124,12 +106,11 @@ export default function ScenarioRouteGuard() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-textColor dark:text-textColor">Loading...</div>
       </div>
+
     );
   }
 
-  if (!isValid) {
-    return null; // Редирект в процессе
-  }
+  if (!isValid) return null
 
   return <Outlet />;
 }

@@ -1,11 +1,9 @@
 import { useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useCurrency } from './useCurrency';
+import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
+import { convertCurrency } from '@/shared/utils/currencyConversion';
 
-/**
- * Хук для конвертации валют
- * Предоставляет функции для конвертации одной суммы и множества сумм
- */
 export function useCurrencyConversion() {
   const { currency: settingsCurrency } = useCurrency();
 
@@ -20,24 +18,17 @@ export function useCurrencyConversion() {
     }
 
     try {
-      const { data, error } = await supabase.rpc('convert_amount', {
-        p_amount: amount,
-        p_from_currency: fromCurrency,
-        p_to_currency: targetCurrency,
-      });
-
-      if (error) {
-        console.error('Error converting amount:', error);
-        return null;
-      }
-
-      if (Array.isArray(data) && data.length > 0 && data[0]?.converted_amount) {
-        return data[0].converted_amount;
-      }
-
-      return null;
+      return await convertCurrency(amount, fromCurrency, targetCurrency);
     } catch (err) {
-      console.error('Error calling convert_amount RPC:', err);
+      await reportErrorToTelegram({
+        action: 'convertAmount',
+        error: err,
+        context: {
+          fromCurrency,
+          toCurrency: targetCurrency,
+          amount,
+        },
+      });
       return null;
     }
   }, [settingsCurrency]);
@@ -58,7 +49,15 @@ export function useCurrencyConversion() {
       });
 
       if (error) {
-        console.error('Error converting amounts bulk:', error);
+        await reportErrorToTelegram({
+          action: 'convertAmountsBulk',
+          error: error,
+          context: {
+            toCurrency: targetCurrency,
+            itemsCount: items.length,
+            errorCode: error.code,
+          },
+        });
         return null;
       }
 
@@ -74,7 +73,14 @@ export function useCurrencyConversion() {
 
       return resultMap;
     } catch (err) {
-      console.error('Error calling convert_amount_bulk RPC:', err);
+      await reportErrorToTelegram({
+        action: 'convertAmountsBulk',
+        error: err,
+        context: {
+          toCurrency: targetCurrency,
+          itemsCount: items.length,
+        },
+      });
       return null;
     }
   }, [settingsCurrency]);

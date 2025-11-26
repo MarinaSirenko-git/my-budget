@@ -1,16 +1,12 @@
-// src/shared/router/ProtectedRoute.tsx
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
-import { useAuth } from '@/shared/store/auth' // где лежит user/session
+import { useAuth } from '@/shared/store/auth'
 
 export default function ProtectedRoute() {
   const { user, loading } = useAuth()
   const location = useLocation()
 
-  if (loading) return null // или спиннер, пока инициализируется сессия
-
-  // нет пользователя → отправляем на /auth и запоминаем, откуда пришли
+  if (loading) return null
   if (!user) return <Navigate to="/auth" replace state={{ from: location }} />
 
-  // доступ разрешён → рендерим вложенные маршруты
   return <Outlet />
 }

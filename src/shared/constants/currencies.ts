@@ -68,3 +68,8 @@ export function isValidCurrency(currency: string | null | undefined): currency i
   return validateCurrency(currency) !== null;
 }
 
+/**
+ * Дефолтная валюта
+ */
+export const DEFAULT_CURRENCY: CurrencyCode = 'USD';
+

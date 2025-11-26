@@ -2,16 +2,28 @@ import { useState, useEffect, useMemo } from 'react';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/shared/store/auth';
-import { supabase } from '@/lib/supabase';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import { createSlug } from '@/shared/utils/slug';
+import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
+import { loadUserScenarios, updateCurrentScenario, type Scenario } from '@/shared/utils/scenarios';
 
 const PLACE_NAME_STORAGE_KEY = 'user_place_name';
 const DEFAULT_PLACE_NAME = 'Phuket';
 
-interface Scenario {
-  id: string;
-  name: string;
+function getPlaceNameFromScenario(
+  scenarios: Scenario[],
+  currentScenarioId: string | null
+): string {
+  if (currentScenarioId) {
+    const currentScenario = scenarios.find(s => s.id === currentScenarioId);
+    if (currentScenario) {
+      localStorage.setItem(PLACE_NAME_STORAGE_KEY, currentScenario.name);
+      return currentScenario.name;
+    }
+  }
+  
+  const savedPlaceName = localStorage.getItem(PLACE_NAME_STORAGE_KEY);
+  return savedPlaceName || DEFAULT_PLACE_NAME;
 }
 
 export default function PlaceName() {
@@ -21,73 +33,27 @@ export default function PlaceName() {
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load all scenarios and current scenario name from database
   useEffect(() => {
     async function loadScenarios() {
-      if (!user) {
-        setLoading(false);
-        // Fallback to localStorage if no user
+      const allScenarios = await loadUserScenarios(user!.id);
+      
+      if (allScenarios) {
+        setScenarios(allScenarios);
+        const placeNameFromScenario = getPlaceNameFromScenario(allScenarios, currentScenarioId);
+        setPlaceName(placeNameFromScenario);
+      } else {
         const savedPlaceName = localStorage.getItem(PLACE_NAME_STORAGE_KEY);
         if (savedPlaceName) {
           setPlaceName(savedPlaceName);
         }
-        return;
       }
-
-      try {
-        // Загружаем все сценарии пользователя
-        const { data: allScenarios, error: scenariosError } = await supabase
-          .from('scenarios')
-          .select('id, name')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (scenariosError) {
-          console.error('Error loading scenarios:', scenariosError);
-          setLoading(false);
-          return;
-        }
-
-        if (allScenarios) {
-          setScenarios(allScenarios);
-
-          // Загружаем имя текущего сценария
-          if (currentScenarioId) {
-            const currentScenario = allScenarios.find(s => s.id === currentScenarioId);
-            if (currentScenario) {
-              setPlaceName(currentScenario.name);
-              localStorage.setItem(PLACE_NAME_STORAGE_KEY, currentScenario.name);
-            } else {
-              // Fallback to localStorage if scenario not found
-              const savedPlaceName = localStorage.getItem(PLACE_NAME_STORAGE_KEY);
-              if (savedPlaceName) {
-                setPlaceName(savedPlaceName);
-              }
-            }
-          } else {
-            // Fallback to localStorage if no current scenario
-            const savedPlaceName = localStorage.getItem(PLACE_NAME_STORAGE_KEY);
-            if (savedPlaceName) {
-              setPlaceName(savedPlaceName);
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Error loading scenarios:', err);
-        // Fallback to localStorage on error
-        const savedPlaceName = localStorage.getItem(PLACE_NAME_STORAGE_KEY);
-        if (savedPlaceName) {
-          setPlaceName(savedPlaceName);
-        }
-      } finally {
-        setLoading(false);
-      }
+      
+      setLoading(false);
     }
 
     loadScenarios();
   }, [user, currentScenarioId]);
 
-  // Listen for storage changes to update when changed from Settings page
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === PLACE_NAME_STORAGE_KEY && e.newValue) {
@@ -97,7 +63,6 @@ export default function PlaceName() {
 
     window.addEventListener('storage', handleStorageChange);
     
-    // Also listen for custom event for same-window updates
     const handleCustomStorageChange = () => {
       const savedPlaceName = localStorage.getItem(PLACE_NAME_STORAGE_KEY);
       if (savedPlaceName) {
@@ -107,27 +72,13 @@ export default function PlaceName() {
 
     window.addEventListener('placeNameChanged', handleCustomStorageChange);
     
-    // Listen for scenario change event
     const handleScenarioChanged = async () => {
-      // Reload scenarios and scenario name when scenario changes
-      if (user) {
-        const { data: allScenarios, error: scenariosError } = await supabase
-          .from('scenarios')
-          .select('id, name')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-
-        if (!scenariosError && allScenarios) {
-          setScenarios(allScenarios);
-          
-          if (currentScenarioId) {
-            const currentScenario = allScenarios.find(s => s.id === currentScenarioId);
-            if (currentScenario) {
-              setPlaceName(currentScenario.name);
-              localStorage.setItem(PLACE_NAME_STORAGE_KEY, currentScenario.name);
-            }
-          }
-        }
+      const allScenarios = await loadUserScenarios(user!.id);
+      
+      if (allScenarios) {
+        setScenarios(allScenarios);
+        const placeNameFromScenario = getPlaceNameFromScenario(allScenarios, currentScenarioId);
+        setPlaceName(placeNameFromScenario);
       }
     };
 
@@ -140,7 +91,6 @@ export default function PlaceName() {
     };
   }, [user, currentScenarioId]);
 
-  // Prepare options for select
   const scenarioOptions = useMemo(() => {
     return scenarios.map(scenario => ({
       label: scenario.name,
@@ -148,28 +98,20 @@ export default function PlaceName() {
     }));
   }, [scenarios]);
 
-  // Handle scenario selection
   const handleScenarioChange = async (scenarioId: string) => {
-    if (!user || scenarioId === currentScenarioId) return;
+    if (scenarioId === currentScenarioId) return;
 
     try {
-      // Обновляем current_scenario_id в profiles
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ current_scenario_id: scenarioId })
-        .eq('id', user.id);
-
-      if (updateError) {
-        console.error('Error updating current scenario:', updateError);
+      const success = await updateCurrentScenario(user!.id, scenarioId);
+      
+      if (!success) {
         return;
       }
 
-      // Обновляем store
       setCurrentScenarioId(scenarioId);
       await loadCurrentScenarioId();
       await loadCurrentScenarioSlug();
 
-      // Получаем имя выбранного сценария для генерации slug
       const selectedScenario = scenarios.find(s => s.id === scenarioId);
       if (selectedScenario) {
         const slug = createSlug(selectedScenario.name);
@@ -178,14 +120,17 @@ export default function PlaceName() {
         navigate(`/${slug}${pathWithoutSlug}`, { replace: true });
       }
 
-      // Отправляем событие для обновления UI
       window.dispatchEvent(new Event('scenarioChanged'));
     } catch (err) {
-      console.error('Error switching scenario:', err);
+      await reportErrorToTelegram({
+        action: 'handleScenarioChange',
+        error: err,
+        userId: user!.id,
+        context: { scenarioId },
+      });
     }
   };
 
-  // Show select if more than one scenario, otherwise show text
   const hasMultipleScenarios = scenarios.length > 1;
 
   if (loading) {

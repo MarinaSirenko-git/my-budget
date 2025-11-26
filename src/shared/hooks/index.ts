@@ -5,9 +5,15 @@ export { useIncomeForm } from './useIncomeForm';
 export { useIncomes } from './useIncomes';
 export { useIncomeCurrencyConversion } from './useIncomeCurrencyConversion';
 export { useIncomeCalculations } from './useIncomeCalculations.tsx';
+export { useExpenseForm } from './useExpenseForm';
+export { useExpenses } from './useExpenses';
+export { useExpenseCurrencyConversion } from './useExpenseCurrencyConversion';
+export { useExpenseCalculations } from './useExpenseCalculations.tsx';
 export { useSavingsForm } from './useSavingsForm';
 export { useSavings } from './useSavings';
 export { useSavingsCalculations } from './useSavingsCalculations.tsx';
 export { useGoalForm } from './useGoalForm';
 export { useGoals } from './useGoals';
+export { useFinancialSummary } from './useFinancialSummary';
+export { useSettings } from './useSettings';
 

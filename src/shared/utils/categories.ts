@@ -3,6 +3,7 @@ import type { IncomeType } from '@/mocks/pages/income.mock';
 import type { ExpenseCategory } from '@/mocks/pages/expenses.mock';
 import { INCOME_CATEGORY_IDS, EXPENSE_CATEGORY_IDS } from '@/shared/constants/categories';
 import { frequencyOptions as INCOME_FREQUENCY_VALUES, type IncomeFrequency } from '@/shared/constants/frequencies';
+import { languageValues, type LanguageCode } from '@/shared/constants/languages';
 
 /**
  * Генерирует массив категорий доходов с переведенными labels
@@ -42,6 +43,23 @@ export function getIncomeFrequencyOptions(t: TFunction): FrequencyOption[] {
   return INCOME_FREQUENCY_VALUES.map((frequency) => ({
     label: t(`incomeForm.${frequency}`),
     value: frequency,
+  }));
+}
+
+export interface LanguageOption {
+  label: string;
+  value: LanguageCode;
+}
+
+/**
+ * Генерирует массив опций языков интерфейса с переведенными labels
+ * @param t - функция перевода из i18next
+ * @returns массив опций языков с переведенными labels
+ */
+export function getLanguageOptions(t: TFunction): LanguageOption[] {
+  return languageValues.map((lang) => ({
+    label: t(`settingsForm.${lang === 'ru' ? 'russian' : 'english'}`),
+    value: lang,
   }));
 }
 

@@ -1,6 +1,9 @@
+// init session and scenario id/slug on app start
 import { create } from 'zustand';
 import type { Session, User } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import { reportErrorToTelegram } from '../utils/errorReporting';
+import { createSlug } from '@/shared/utils/slug';
 
 type AuthState = {
     user: User | null
@@ -17,6 +20,32 @@ type AuthState = {
     getScenarioIdBySlug: (slug: string) => Promise<string | null>
   }
 
+  // Helper function to safely extract error code from unknown error
+  function getErrorCode(error: unknown): string | undefined {
+    if (error && typeof error === 'object' && 'code' in error) {
+      return (error as { code: string }).code;
+    }
+    return undefined;
+  }
+
+  // Helper function to report error with automatic errorCode extraction
+  async function reportAuthError(
+    action: string,
+    error: unknown,
+    userId: string,
+    additionalContext?: Record<string, any>
+  ): Promise<void> {
+    await reportErrorToTelegram({
+      action,
+      error,
+      userId,
+      context: {
+        errorCode: getErrorCode(error),
+        ...additionalContext,
+      },
+    });
+  }
+
   export const useAuth = create<AuthState>((set, get) => ({
     user: null,
     session: null,
@@ -26,25 +55,22 @@ type AuthState = {
     set: (p) => set(p),
   
     init: async () => {
-        supabase.auth.onAuthStateChange(async (_event, session2) => {
-            const user = session2?.user ?? null;
-            set({ session: session2, user, loading: false });
-            // Загружаем currentScenarioId после установки user
-            if (user) {
-              await get().loadCurrentScenarioId();
-            } else {
-              set({ currentScenarioId: null });
-            }
-          });
-          const { data: { session } } = await supabase.auth.getSession();
-          const user = session?.user ?? null;
-          set({ session, user, loading: false });
-          // Загружаем currentScenarioId после установки user
-          if (user) {
-            await get().loadCurrentScenarioId();
-          } else {
-            set({ currentScenarioId: null });
-          }
+      const handleAuthStateChange = async (session: Session | null) => {
+        const user = session?.user ?? null;
+        set({ session, user, loading: false });
+        if (user) {
+          await get().loadCurrentScenarioId();
+        } else {
+          set({ currentScenarioId: null, currentScenarioSlug: null });
+        }
+      };
+
+      supabase.auth.onAuthStateChange(async (_event, session) => {
+        await handleAuthStateChange(session);
+      });
+
+      const { data: { session } } = await supabase.auth.getSession();
+      await handleAuthStateChange(session);
     },
 
     loadCurrentScenarioId: async () => {
@@ -62,7 +88,7 @@ type AuthState = {
           .single();
 
         if (error && error.code !== 'PGRST116') {
-          console.error('Error loading current scenario ID:', error);
+          await reportAuthError('loadCurrentScenarioId', error, user.id);
           set({ currentScenarioId: null, currentScenarioSlug: null });
           return;
         }
@@ -70,14 +96,13 @@ type AuthState = {
         const scenarioId = data?.current_scenario_id ?? null;
         set({ currentScenarioId: scenarioId });
 
-        // Загружаем slug для текущего сценария
         if (scenarioId) {
           await get().loadCurrentScenarioSlug();
         } else {
           set({ currentScenarioSlug: null });
         }
       } catch (error) {
-        console.error('Error loading current scenario ID:', error);
+        await reportAuthError('loadCurrentScenarioId', error, user.id);
         set({ currentScenarioId: null, currentScenarioSlug: null });
       }
     },
@@ -98,20 +123,19 @@ type AuthState = {
           .single();
 
         if (error) {
-          console.error('Error loading scenario name:', error);
+          await reportAuthError('loadCurrentScenarioSlug', error, user.id);
           set({ currentScenarioSlug: null });
           return;
         }
 
         if (data?.name) {
-          const { createSlug } = await import('@/shared/utils/slug');
           const slug = createSlug(data.name);
           set({ currentScenarioSlug: slug });
         } else {
           set({ currentScenarioSlug: null });
         }
       } catch (error) {
-        console.error('Error loading current scenario slug:', error);
+        await reportAuthError('loadCurrentScenarioSlug', error, user.id);
         set({ currentScenarioSlug: null });
       }
     },
@@ -129,11 +153,10 @@ type AuthState = {
           .eq('user_id', user.id);
 
         if (error) {
-          console.error('Error loading scenarios:', error);
+          await reportAuthError('getScenarioIdBySlug', error, user.id, { slug });
           return null;
         }
 
-        const { createSlug } = await import('@/shared/utils/slug');
         const matchingScenario = scenarios?.find(scenario => {
           const scenarioSlug = createSlug(scenario.name);
           return scenarioSlug === slug;
@@ -141,7 +164,7 @@ type AuthState = {
 
         return matchingScenario?.id ?? null;
       } catch (error) {
-        console.error('Error getting scenario ID by slug:', error);
+        await reportAuthError('getScenarioIdBySlug', error, user.id, { slug });
         return null;
       }
     },

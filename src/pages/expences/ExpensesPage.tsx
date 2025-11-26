@@ -1,742 +1,252 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+// Business problem: 
+// users need to organize their expenses
+// This page allows users to enter expenses into the system, have a list of expenses at hand, view expenses in the form of a chart, edit and delete expenses.
+// This page calculates expenses per month, per year, one-time expenses, shows a convertible equivalent of expenses.
+
+// Test cases:
+// 1. User can add expense
+// 2. User can edit expense
+// 3. User can delete expense
+// 4. User can see expenses in the form of a chart
+// 5. User can see expenses in the form of a table
+// 6. User can enter expense in any currency from the list and get a convertible equivalent of expense in an additional column in the table.
+// 7. User can see monthly, annual and one-time expenses in the selected currency in the settings.
+// 8. User can recalculate amounts in any currency from the list.
+
+// UI interface:
+// 1. EmptyState component for showing empty state
+// 2. Tag component for showing expense categories
+// 3. ModalWindow component for showing modal window
+// 4. AddExpenseForm component for showing add expense form
+// 5. Tabs component for showing table and chart
+// 6. Table component for showing table
+// 7. PieChart component for showing pie chart
+// 8. LoadingState component for showing loading state
+// 9. ErrorState component for showing error state
+
+// Event handlers
+// 1. On click expense tag button
+// 2. On click add expense button
+// 3. On click submit button in add expense form
+// 4. On click edit expense button
+// 5. On click delete expense button
+// 6. On change currency in add expense form
+
+// List of potential vulnerabilities and performance issues
+// 1. Excessive currency conversion requests, missing debounce
+// 2. Heavy logic, poor readability
+// 3. No error monitoring, errors exposed to browser console
+// 4. Insecure passing of IDs to the DB
+// 5. Missing sanitization of user input for categories
+// 6. Infinite loops during component render (useExpenseCurrencyConversion, tableColumns)
+// 7. Redundant requests during navigation, missing caching
+
+import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
+// reusable global components
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import Tag from '@/shared/ui/atoms/Tag';
 import LoadingState from '@/shared/ui/atoms/LoadingState';
 import ErrorState from '@/shared/ui/atoms/ErrorState';
-import type { ExpenseCategory, Expense } from '@/mocks/pages/expenses.mock';
-import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/shared/store/auth';
-import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import ModalWindow from '@/shared/ui/ModalWindow';
-import Form from '@/shared/ui/form/Form';
-import TextInput from '@/shared/ui/form/TextInput';
-import MoneyInput from '@/shared/ui/form/MoneyInput';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import TextButton from '@/shared/ui/atoms/TextButton';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
-import IconButton from '@/shared/ui/atoms/IconButton';
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
-import { currencyOptions } from '@/shared/constants/currencies';
+// reusable local components
+import AddExpenseForm from '@/features/expenses/AddExpenseForm';
+// custom hooks
+import { useAuth } from '@/shared/store/auth';
+import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import { useTranslation } from '@/shared/i18n';
-import { useCurrency, useCurrencyConversion } from '@/shared/hooks';
+import {
+  useCurrency,
+  useExpenseForm,
+  useExpenses,
+  useExpenseCurrencyConversion,
+  useExpenseCalculations,
+} from '@/shared/hooks';
+// constants
+import { currencyOptions } from '@/shared/constants/currencies';
 import { getExpenseCategories } from '@/shared/utils/categories';
+// types
+import type { Expense, ExpenseCategory } from '@/mocks/pages/expenses.mock';
 
 export default function ExpensesPage() {
+  const { t } = useTranslation('components');
   const { user } = useAuth();
   const { scenarioId } = useScenarioRoute();
-  const { t } = useTranslation('components');
+  const { currency: settingsCurrency } = useCurrency();
+  
+  // Modal state
   const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState('');
-  const [amount, setAmount] = useState<string | undefined>(undefined);
-  const [currency, setCurrency] = useState(currencyOptions[0].value);
+  const [editingId, setEditingId] = useState<string | null>(null);
   
-  // Генерируем категории расходов с переводами
+  // Types and options
   const expenseCategories = useMemo(() => getExpenseCategories(t), [t]);
-  
-  const [categoryId, setCategoryId] = useState('');
-  const [isTagSelected, setIsTagSelected] = useState(false); // Флаг для отслеживания, что форма открыта через клик на тэг
-  
-  // Convert expenseCategories to SelectInput options
   const expenseCategoryOptions = useMemo(() => expenseCategories.map(category => ({
     label: category.label,
     value: category.id,
   })), [expenseCategories]);
   
-  const frequencyOptions = useMemo(() => [
-    { label: t('expensesForm.monthly'), value: 'monthly' },
-    { label: t('expensesForm.annual'), value: 'annual' },
-    { label: t('expensesForm.oneTime'), value: 'one-time' },
+  const frequencyOptions = useMemo<Array<{ label: string; value: Expense['frequency'] }>>(() => [
+    { label: t('expensesForm.monthly'), value: 'monthly' as const },
+    { label: t('expensesForm.annual'), value: 'annual' as const },
+    { label: t('expensesForm.oneTime'), value: 'one-time' as const },
   ], [t]);
   
-  const [frequency, setFrequency] = useState('monthly');
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-  const { currency: settingsCurrency } = useCurrency();
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  // Состояние для выбранной валюты в колонке конвертации (по умолчанию settingsCurrency)
-  const [selectedConversionCurrency, setSelectedConversionCurrency] = useState<string | null>(null);
-  // Кэш конвертированных сумм: ключ = `${expenseId}_${toCurrency}`, значение = конвертированная сумма
-  const [convertedAmountsCache, setConvertedAmountsCache] = useState<Record<string, number>>({});
-  // Состояние для отслеживания загрузки конвертации
-  const [convertingIds, setConvertingIds] = useState<Set<string>>(new Set());
+  // Custom hooks
+  const expenseForm = useExpenseForm({
+    expenseCategories,
+    settingsCurrency,
+  });
 
-  // Инициализируем categoryId после создания категорий
-  useEffect(() => {
-    if (expenseCategories.length > 0 && !categoryId) {
-      setCategoryId(expenseCategories[0].id);
-    }
-  }, [expenseCategories, categoryId]);
+  const {
+    expenses,
+    loading,
+    error,
+    submitting,
+    deletingId,
+    formError,
+    handleCreateExpense,
+    handleUpdateExpense,
+    handleDeleteExpense,
+    setFormError,
+  } = useExpenses({
+    userId: user?.id,
+    scenarioId,
+    settingsCurrency,
+  });
 
-  // Wrapper function to handle currency change with validation
-  const handleCurrencyChange = (newCurrency: string) => {
-    const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
-    if (validCurrency) {
-      setCurrency(validCurrency.value);
-    }
-  };
+  const {
+    selectedConversionCurrency,
+    convertedAmountsCache,
+    convertingIds,
+    handleConversionCurrencyChange,
+  } = useExpenseCurrencyConversion({
+    expenses,
+    settingsCurrency,
+    userId: user?.id,
+  });
 
+  const {
+    monthlyTotal,
+    annualTotal,
+    oneTimeTotal,
+    pieChartData,
+    tableColumns,
+  } = useExpenseCalculations({
+    expenses,
+    expenseCategories,
+    selectedConversionCurrency,
+    settingsCurrency,
+    convertedAmountsCache,
+    convertingIds,
+    t,
+    onEdit: handleEditExpense,
+    onDelete: handleDeleteExpenseClick,
+    deletingId,
+  });
+
+  // Event handlers
   function handleTagClick(category: ExpenseCategory) {
-    // При клике на любой тэг показываем TextInput с предзаполненным значением
-    setEditingId(null);
-    setCategoryId('custom');
-    setTitle(category.label); // Предзаполняем названием категории из тэга
-    setIsTagSelected(true);
+    expenseForm.initializeForTag(category);
     setFormError(null);
+    setEditingId(null);
     setOpen(true);
   }
 
   function handleAddExpenseClick() {
-    setEditingId(null);
-    setCategoryId(expenseCategories[0]?.id || '');
-    setTitle('');
-    setIsTagSelected(false);
+    expenseForm.initializeForCreate();
     setFormError(null);
+    setEditingId(null);
     setOpen(true);
   }
 
-  const handleEditExpense = useCallback((expense: Expense) => {
-    setEditingId(expense.id);
-    // Для редактирования всегда показываем TextInput с предзаполненным значением
-    setCategoryId('custom');
-    setTitle(expense.type);
-    setIsTagSelected(true);
-    setAmount(expense.amount.toString());
-    // Validate currency before setting
-    const validCurrency = currencyOptions.find(opt => opt.value === expense.currency);
-    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
-    setFrequency(expense.frequency);
-    setFormError(null);
-    setOpen(true);
-  }, [expenseCategories]);
-
-  function handleModalClose() {
-    setOpen(false);
-    setEditingId(null);
-    setCategoryId(expenseCategories[0]?.id || '');
-    setTitle('');
-    setIsTagSelected(false);
-    setAmount(undefined);
-    const defaultCurrency = settingsCurrency || currencyOptions[0].value;
-    const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrency);
-    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
-    setFrequency('monthly');
-    setFormError(null);
-  }
-
-  // Check if form is valid
-  const isFormValid = useMemo(() => {
-    const hasValidCategory = (categoryId === 'custom' || isTagSelected)
-      ? title.trim().length > 0
-      : categoryId;
-    return !!(
-      hasValidCategory &&
-      title.trim() &&
-      amount &&
-      parseFloat(amount) > 0 &&
-      currency
-    );
-  }, [categoryId, isTagSelected, title, amount, currency]);
-
-  // запросы к БД
-  const { convertAmount, convertAmountsBulk } = useCurrencyConversion();
-
-  // Handle form submission
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    
-    if (!user || !isFormValid) {
-      return;
-    }
+    if (!user || !expenseForm.isFormValid || !expenseForm.amount) return;
 
     try {
-      setSubmitting(true);
-      setFormError(null);
-      
-      const expenseAmount = parseFloat(amount!);
-      
-      const finalType = (categoryId === 'custom' || isTagSelected) ? title.trim() : categoryId;
+      const finalType = expenseForm.getFinalCategory();
+      const expenseAmount = parseFloat(expenseForm.amount);
       
       if (editingId) {
-        // Update existing expense
-        const { error: updateError } = await supabase
-          .from('expenses')
-          .update({
+        await handleUpdateExpense({
+          expenseId: editingId,
             type: finalType,
             amount: expenseAmount,
-            currency: currency,
-            frequency: frequency || 'monthly',
-          })
-          .eq('id', editingId)
-          .eq('user_id', user.id);
-          
-        if (updateError) {
-          throw updateError;
-        }
-      } else {
-        // Create new expense
-        // Вызываем RPC конвертацию если валюта отличается от дефолтной
-        if (settingsCurrency && currency !== settingsCurrency) {
-          await supabase.rpc('convert_amount', {
-            p_amount: expenseAmount,
-            p_from_currency: currency,
-            p_to_currency: settingsCurrency, // Всегда передаем явно, чтобы избежать ошибки с default_currency
-          });
-        }
-        
-        const { error: insertError } = await supabase
-          .from('expenses')
-          .insert({
-            type: finalType,
-            amount: expenseAmount,
-            currency: currency,
-            frequency: frequency || 'monthly',
-            scenario_id: scenarioId,
-          });
-
-        if (insertError) {
-          throw insertError;
-        }
-      }
-
-      // Refresh expenses list
-      const { data, error: fetchError } = await supabase
-        .from('expenses_decrypted')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (data) {
-        // Map Supabase data to Expense interface and convert amounts if needed
-        const mappedExpensesPromises = data.map(async (item: any) => {
-          const expense: Expense = {
-            id: item.id,
-            type: item.type,
-            category: item.type,
-            amount: item.amount,
-            currency: item.currency,
-            frequency: item.frequency || 'monthly',
-            date: item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-            createdAt: item.created_at,
-          };
-
-          // Конвертируем сумму если валюта отличается от дефолтной
-          if (settingsCurrency && expense.currency !== settingsCurrency) {
-            const convertedAmount = await convertAmount(expense.amount, expense.currency);
-            if (convertedAmount !== null) {
-              expense.amountInDefaultCurrency = convertedAmount;
-            }
-          }
-
-          return expense;
+          currency: expenseForm.currency,
+          frequency: expenseForm.frequency,
         });
-
-        const mappedExpenses = await Promise.all(mappedExpensesPromises);
-        setExpenses(mappedExpenses);
-        
-        // Отправляем событие для обновления Summary в сайдбаре
-        window.dispatchEvent(new CustomEvent('expenseUpdated'));
+      } else {
+        await handleCreateExpense({
+            type: finalType,
+            amount: expenseAmount,
+          currency: expenseForm.currency,
+          frequency: expenseForm.frequency,
+        });
       }
 
       handleModalClose();
     } catch (err) {
-      console.error(`Error ${editingId ? 'updating' : 'adding'} expense:`, err);
       const errorKey = editingId ? 'expensesForm.updateErrorMessage' : 'expensesForm.errorMessage';
       setFormError(err instanceof Error ? err.message : t(errorKey));
-    } finally {
-      setSubmitting(false);
     }
   }
 
-  // Handle expense deletion
-  const handleDeleteExpense = useCallback(async (expenseId: string) => {
-    if (!user) {
-      return;
-    }
+  function handleEditExpense(expense: Expense) {
+    setEditingId(expense.id);
+    expenseForm.initializeForEdit(expense);
+    setFormError(null);
+    setOpen(true);
+  }
 
-    // Confirm deletion
+  async function handleDeleteExpenseClick(expenseId: string) {
     const confirmMessage = t('expensesForm.deleteConfirm') ?? 'Are you sure you want to delete this expense?';
-    if (!window.confirm(confirmMessage)) {
-      return;
-    }
-
     try {
-      setDeletingId(expenseId);
-      
-      const { error: deleteError } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('id', expenseId)
-        .eq('user_id', user.id);
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      // Refresh expenses list
-      const { data, error: fetchError } = await supabase
-        .from('expenses_decrypted')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        throw fetchError;
-      }
-
-      if (data) {
-        // Map Supabase data to Expense interface and convert amounts if needed
-        const mappedExpensesPromises = data.map(async (item: any) => {
-          const expense: Expense = {
-            id: item.id,
-            type: item.type,
-            category: item.type,
-            amount: item.amount,
-            currency: item.currency,
-            frequency: item.frequency || 'monthly',
-            date: item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-            createdAt: item.created_at,
-          };
-
-          // Конвертируем сумму если валюта отличается от дефолтной
-          if (settingsCurrency && expense.currency !== settingsCurrency) {
-            const convertedAmount = await convertAmount(expense.amount, expense.currency);
-            if (convertedAmount !== null) {
-              expense.amountInDefaultCurrency = convertedAmount;
-            }
-          }
-
-          return expense;
-        });
-
-        const mappedExpenses = await Promise.all(mappedExpensesPromises);
-        setExpenses(mappedExpenses);
-        
-        // Отправляем событие для обновления Summary в сайдбаре
-        window.dispatchEvent(new CustomEvent('expenseUpdated'));
-      }
+      await handleDeleteExpense(expenseId, confirmMessage);
     } catch (err) {
-      console.error('Error deleting expense:', err);
       const errorMessage = err instanceof Error ? err.message : (t('expensesForm.deleteError') ?? 'Error deleting expense');
       alert(errorMessage);
-    } finally {
-      setDeletingId(null);
     }
-  }, [user, t, settingsCurrency, convertAmount]);
+  }
 
-
-  // Set default currency from settings when loaded
-  useEffect(() => {
-    if (settingsCurrency) {
-      const validCurrency = currencyOptions.find(opt => opt.value === settingsCurrency);
-      if (validCurrency && currency === currencyOptions[0].value) {
-        setCurrency(validCurrency.value);
-      }
-    }
-  }, [settingsCurrency, currency]);
-
-  // Fetch expenses from Supabase
-  useEffect(() => {
-    async function fetchExpenses() {
-      if (!user) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-        
-        let query = supabase
-          .from('expenses_decrypted')
-          .select('*')
-          .eq('user_id', user.id);
-        
-        // Фильтруем по scenario_id если он установлен
-        if (scenarioId) {
-          query = query.eq('scenario_id', scenarioId);
+  function handleModalClose() {
+    setOpen(false);
+    setEditingId(null);
+    expenseForm.resetForm();
+    setFormError(null);
         }
         
-        const { data, error: fetchError } = await query
-          .order('created_at', { ascending: false });
+  const modal = (
+    <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('expensesForm.editTitle') : t('expensesForm.title')}>
+      <AddExpenseForm
+        handleSubmit={handleSubmit}
+        handleCurrencyChange={expenseForm.handleCurrencyChange}
+        isFormValid={expenseForm.isFormValid}
+        formError={formError}
+        categoryId={expenseForm.categoryId}
+        isTagSelected={expenseForm.isTagSelected}
+        customCategoryText={expenseForm.customCategoryText}
+        setCustomCategoryText={expenseForm.setCustomCategoryText}
+        expenseCategoryOptions={expenseCategoryOptions}
+        handleCategoryChange={expenseForm.handleCategoryChange}
+        amount={expenseForm.amount}
+        setAmount={expenseForm.setAmount}
+        currency={expenseForm.currency}
+        frequency={expenseForm.frequency}
+        setFrequency={expenseForm.setFrequency}
+        frequencyOptions={frequencyOptions}
+        submitting={submitting}
+        editingId={editingId}
+        t={t}
+      />
+    </ModalWindow>
+  );
 
-        if (fetchError) {
-          throw fetchError;
-        }
-
-        if (data) {
-          // Map Supabase data to Expense interface and convert amounts if needed
-          const mappedExpensesPromises = data.map(async (item: any) => {
-            const expense: Expense = {
-              id: item.id,
-              type: item.type,
-              category: item.type,
-              amount: item.amount,
-              currency: item.currency,
-              frequency: item.frequency || 'monthly',
-              date: item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-              createdAt: item.created_at,
-            };
-
-            // Конвертируем сумму если валюта отличается от дефолтной
-            if (settingsCurrency && expense.currency !== settingsCurrency) {
-              const convertedAmount = await convertAmount(expense.amount, expense.currency);
-              if (convertedAmount !== null) {
-                expense.amountInDefaultCurrency = convertedAmount;
-              }
-            }
-
-            return expense;
-          });
-
-          const mappedExpenses = await Promise.all(mappedExpensesPromises);
-          setExpenses(mappedExpenses);
-        }
-      } catch (err) {
-        console.error('Error fetching expenses:', err);
-        setError(err instanceof Error ? err.message : t('expensesForm.loadingError'));
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchExpenses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, scenarioId, settingsCurrency]);
-
-  // Calculate totals in selected conversion currency
-  const monthlyTotal = useMemo(() => {
-    const targetCurrency = selectedConversionCurrency || settingsCurrency;
-    if (!targetCurrency) return 0;
-
-    // Суммируем месячные расходы
-    const monthlyExpensesTotal = expenses
-      .filter(expense => expense.frequency === 'monthly')
-      .reduce((sum, expense) => {
-        // Если валюта совпадает с целевой, используем исходную сумму
-        if (expense.currency === targetCurrency) {
-          return sum + expense.amount;
-        }
-        
-        // Ищем конвертированную сумму в кэше
-        const cacheKey = `${expense.id}_${targetCurrency}`;
-        const cachedAmount = convertedAmountsCache[cacheKey];
-        
-        if (cachedAmount !== undefined) {
-          return sum + cachedAmount;
-        }
-        
-        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
-        if (targetCurrency === settingsCurrency && expense.amountInDefaultCurrency !== undefined) {
-          return sum + expense.amountInDefaultCurrency;
-        }
-        
-        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
-        return sum + expense.amount;
-      }, 0);
-
-    // Суммируем годовые расходы, разделенные на 12
-    const annualExpensesMonthlyTotal = expenses
-      .filter(expense => expense.frequency === 'annual')
-      .reduce((sum, expense) => {
-        // Если валюта совпадает с целевой, используем исходную сумму
-        if (expense.currency === targetCurrency) {
-          return sum + (expense.amount / 12);
-        }
-        
-        // Ищем конвертированную сумму в кэше
-        const cacheKey = `${expense.id}_${targetCurrency}`;
-        const cachedAmount = convertedAmountsCache[cacheKey];
-        
-        if (cachedAmount !== undefined) {
-          return sum + (cachedAmount / 12);
-        }
-        
-        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
-        if (targetCurrency === settingsCurrency && expense.amountInDefaultCurrency !== undefined) {
-          return sum + (expense.amountInDefaultCurrency / 12);
-        }
-        
-        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
-        return sum + (expense.amount / 12);
-      }, 0);
-
-    return monthlyExpensesTotal + annualExpensesMonthlyTotal;
-  }, [expenses, selectedConversionCurrency, settingsCurrency, convertedAmountsCache]);
-
-  const annualTotal = useMemo(() => {
-    const targetCurrency = selectedConversionCurrency || settingsCurrency;
-    if (!targetCurrency) return 0;
-
-    // Суммируем месячные расходы, умноженные на 12
-    const monthlyExpensesTotal = expenses
-      .filter(expense => expense.frequency === 'monthly')
-      .reduce((sum, expense) => {
-        // Если валюта совпадает с целевой, используем исходную сумму
-        if (expense.currency === targetCurrency) {
-          return sum + (expense.amount * 12);
-        }
-        
-        // Ищем конвертированную сумму в кэше
-        const cacheKey = `${expense.id}_${targetCurrency}`;
-        const cachedAmount = convertedAmountsCache[cacheKey];
-        
-        if (cachedAmount !== undefined) {
-          return sum + (cachedAmount * 12);
-        }
-        
-        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
-        if (targetCurrency === settingsCurrency && expense.amountInDefaultCurrency !== undefined) {
-          return sum + (expense.amountInDefaultCurrency * 12);
-        }
-        
-        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
-        return sum + (expense.amount * 12);
-      }, 0);
-
-    // Суммируем годовые расходы
-    const annualExpensesTotal = expenses
-      .filter(expense => expense.frequency === 'annual')
-      .reduce((sum, expense) => {
-        // Если валюта совпадает с целевой, используем исходную сумму
-        if (expense.currency === targetCurrency) {
-          return sum + expense.amount;
-        }
-        
-        // Ищем конвертированную сумму в кэше
-        const cacheKey = `${expense.id}_${targetCurrency}`;
-        const cachedAmount = convertedAmountsCache[cacheKey];
-        
-        if (cachedAmount !== undefined) {
-          return sum + cachedAmount;
-        }
-        
-        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
-        if (targetCurrency === settingsCurrency && expense.amountInDefaultCurrency !== undefined) {
-          return sum + expense.amountInDefaultCurrency;
-        }
-        
-        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
-        return sum + expense.amount;
-      }, 0);
-
-    return monthlyExpensesTotal + annualExpensesTotal;
-  }, [expenses, selectedConversionCurrency, settingsCurrency, convertedAmountsCache]);
-
-  const oneTimeTotal = useMemo(() => {
-    const targetCurrency = selectedConversionCurrency || settingsCurrency;
-    if (!targetCurrency) return 0;
-
-    return expenses
-      .filter(expense => expense.frequency === 'one-time')
-      .reduce((sum, expense) => {
-        // Если валюта совпадает с целевой, используем исходную сумму
-        if (expense.currency === targetCurrency) {
-          return sum + expense.amount;
-        }
-        
-        // Ищем конвертированную сумму в кэше
-        const cacheKey = `${expense.id}_${targetCurrency}`;
-        const cachedAmount = convertedAmountsCache[cacheKey];
-        
-        if (cachedAmount !== undefined) {
-          return sum + cachedAmount;
-        }
-        
-        // Если нет в кэше, но есть amountInDefaultCurrency и целевая валюта = settingsCurrency
-        if (targetCurrency === settingsCurrency && expense.amountInDefaultCurrency !== undefined) {
-          return sum + expense.amountInDefaultCurrency;
-        }
-        
-        // Если ничего не найдено, используем исходную сумму (будет конвертировано позже)
-        return sum + expense.amount;
-      }, 0);
-  }, [expenses, selectedConversionCurrency, settingsCurrency, convertedAmountsCache]);
-
-  // Transform data for pie chart (group by category, sum amounts)
-  const pieChartData = useMemo(() => {
-    const grouped = expenses.reduce((acc, expense) => {
-      const category = expenseCategories.find(c => c.id === expense.category);
-      const label = category?.label || expense.type || 'Unknown';
-      
-      if (!acc[label]) {
-        acc[label] = 0;
-      }
-      acc[label] += expense.amount;
-      return acc;
-    }, {} as Record<string, number>);
-
-    return Object.entries(grouped).map(([name, value]) => ({
-      name,
-      value,
-    }));
-  }, [expenses, expenseCategories]);
-
-  const handleConversionCurrencyChange = useCallback(async (newCurrency: string) => {
-    setSelectedConversionCurrency(newCurrency);
-    
-    // Фильтруем расходы, которые нужно конвертировать
-    const expensesToConvert = expenses.filter(expense => {
-      const cacheKey = `${expense.id}_${newCurrency}`;
-      // Пропускаем если валюта совпадает или уже в кэше
-      return expense.currency !== newCurrency && convertedAmountsCache[cacheKey] === undefined;
-    });
-
-    if (expensesToConvert.length === 0) {
-      return;
-    }
-
-    // Подготавливаем массив items для batch конвертации
-    const items = expensesToConvert.map(expense => ({
-      amount: expense.amount,
-      currency: expense.currency,
-    }));
-
-    // Отмечаем все как конвертируемые
-    const cacheKeys = expensesToConvert.map(expense => `${expense.id}_${newCurrency}`);
-    setConvertingIds(prev => {
-      const newSet = new Set(prev);
-      cacheKeys.forEach(key => newSet.add(key));
-      return newSet;
-    });
-
-    try {
-      // Выполняем batch конвертацию одним запросом
-      const resultMap = await convertAmountsBulk(items, newCurrency);
-      
-      if (resultMap) {
-        // Обновляем кэш для всех результатов одновременно
-        const newCache: Record<string, number> = {};
-        
-        expensesToConvert.forEach((expense, index) => {
-          const cacheKey = `${expense.id}_${newCurrency}`;
-          const convertedAmount = resultMap.get(index);
-          
-          if (convertedAmount !== undefined) {
-            newCache[cacheKey] = convertedAmount;
-          }
-        });
-
-        setConvertedAmountsCache(prev => ({ ...prev, ...newCache }));
-      }
-    } catch (err) {
-      console.error('Error converting amounts bulk:', err);
-    } finally {
-      // Убираем из convertingIds
-      setConvertingIds(prev => {
-        const newSet = new Set(prev);
-        cacheKeys.forEach(key => newSet.delete(key));
-        return newSet;
-      });
-    }
-  }, [expenses, convertedAmountsCache, convertAmountsBulk]);
-
-  // Table columns
-  const tableColumns = useMemo(() => {
-    const columns: any[] = [
-      { 
-        key: 'category', 
-        label: t('expensesForm.tableColumns.category'),
-        render: (value: string) => {
-          const category = expenseCategories.find(cat => cat.id === value);
-          return category?.label || value;
-        }
-      },
-      { 
-        key: 'amount', 
-        label: t('expensesForm.tableColumns.amount'),
-        align: 'left' as const,
-        render: (value: number, row: Expense) => `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.currency}`
-      },
-    ];
-
-    // Добавляем колонку с суммой в валюте настроек, если валюта отличается
-    if (settingsCurrency) {
-      const hasDifferentCurrency = expenses.some(expense => expense.currency !== settingsCurrency);
-      if (hasDifferentCurrency) {
-        const targetCurrency = selectedConversionCurrency || settingsCurrency;
-
-        columns.push({
-          key: 'amountInSettingsCurrency',
-          label: t('expensesForm.tableColumns.amountInSettingsCurrency'),
-          align: 'left' as const,
-          render: (_value: any, row: Expense) => {
-            if (row.currency === targetCurrency) {
-              return '-'; // Не показываем, если валюта совпадает
-            }
-
-            const cacheKey = `${row.id}_${targetCurrency}`;
-            const cachedAmount = convertedAmountsCache[cacheKey];
-            const isConverting = convertingIds.has(cacheKey);
-
-            // Определяем сумму для отображения
-            let displayAmount: number | null = null;
-            if (targetCurrency === row.currency) {
-              displayAmount = row.amount;
-            } else if (cachedAmount !== undefined) {
-              displayAmount = cachedAmount;
-            } else if (targetCurrency === settingsCurrency && row.amountInDefaultCurrency !== undefined) {
-              displayAmount = row.amountInDefaultCurrency;
-            }
-
-            return (
-              <span className="text-sm">
-                {isConverting ? (
-                  '...'
-                ) : displayAmount !== null ? (
-                  `${displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${targetCurrency}`
-                ) : (
-                  `... ${targetCurrency}`
-                )}
-              </span>
-            );
-          }
-        });
-      }
-    }
-
-    columns.push(
-      { key: 'frequency', label: t('expensesForm.tableColumns.frequency'), align: 'left' as const },
-      { key: 'date', label: t('expensesForm.tableColumns.date') },
-      {
-        key: 'actions',
-        label: t('expensesForm.tableColumns.actions'),
-        align: 'left' as const,
-        render: (_value: any, row: Expense) => (
-          <div className="flex gap-2 items-center justify-start" onClick={(e) => e.stopPropagation()}>
-            <IconButton 
-              aria-label={t('expensesForm.actions.editAriaLabel')} 
-              title={t('expensesForm.actions.edit')} 
-              onClick={() => handleEditExpense(row)}
-            >
-              <PencilIcon className="w-4 h-4" />
-            </IconButton>
-            <IconButton 
-              aria-label={t('expensesForm.actions.deleteAriaLabel')} 
-              title={t('expensesForm.actions.delete')} 
-              onClick={() => handleDeleteExpense(row.id)}
-              disabled={deletingId === row.id}
-            >
-              <TrashIcon className="w-4 h-4" />
-            </IconButton>
-          </div>
-        )
-      }
-    );
-
-    return columns;
-  }, [t, expenseCategories, settingsCurrency, expenses, deletingId, handleDeleteExpense, handleEditExpense, selectedConversionCurrency, convertedAmountsCache, convertingIds]);
-
+  // Render states
   if (loading) {
     return <LoadingState message={t('expensesForm.loading')} />;
   }
@@ -763,59 +273,13 @@ export default function ExpensesPage() {
               />
             ))}
           </div>
-          <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('expensesForm.editTitle') : t('expensesForm.title')}>
-            <Form onSubmit={handleSubmit}>
-              {formError && (
-                <div className="text-accentRed dark:text-accentRed text-sm">
-                  {formError}
-                </div>
-              )}
-              {categoryId === 'custom' || isTagSelected ? (
-                <TextInput
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  label={t('expensesForm.categoryLabel')}
-                  placeholder={t('expensesForm.titlePlaceholder')}
-                />
-              ) : (
-                <SelectInput 
-                  value={categoryId} 
-                  options={expenseCategoryOptions} 
-                  onChange={setCategoryId} 
-                  label={t('expensesForm.categoryLabel')} 
-                  creatable={true}
-                />
-              )}
-              <MoneyInput 
-                value={amount}
-                onValueChange={setAmount}
-                placeholder="1,000" 
-                label={t('expensesForm.amountLabelFull')}
-              />
-              <SelectInput 
-                value={currency} 
-                options={currencyOptions} 
-                onChange={handleCurrencyChange} 
-                label={t('expensesForm.currencyLabel')} 
-              />
-              <TextButton 
-                type="submit"
-                disabled={!isFormValid || submitting}
-                aria-label={editingId ? t('expensesForm.saveAriaLabel') : t('expensesForm.submitAriaLabel')}
-                variant="primary"
-                className="mt-4"
-              >
-                {submitting 
-                  ? (editingId ? t('expensesForm.savingButton') : t('expensesForm.submittingButton'))
-                  : (editingId ? t('expensesForm.saveButton') : t('expensesForm.submitButton'))
-                }
-              </TextButton>
-            </Form>
-          </ModalWindow>
+          {modal}
         </div>
       </div>
     );
   }
+
+  const totalCurrency = selectedConversionCurrency || settingsCurrency || 'USD';
 
   return (
     <div className="flex flex-col gap-6 min-h-[calc(100vh-100px)]">
@@ -837,10 +301,10 @@ export default function ExpensesPage() {
             content: (
               <div className="space-y-2 px-12">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
-                  <div className="flex gap-3">
-                    <span>{t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
-                    <span>{t('expensesForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
-                    <span>{t('expensesForm.totals.oneTime')} <strong className="text-mainTextColor dark:text-mainTextColor">{oneTimeTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
+                  <div className="flex flex-wrap gap-3">
+                    <span>{t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
+                    <span>{t('expensesForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
+                    <span>{t('expensesForm.totals.oneTime')} <strong className="text-mainTextColor dark:text-mainTextColor">{oneTimeTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
                   </div>
                   {settingsCurrency && expenses.some(expense => expense.currency !== settingsCurrency) && (
                     <div className="flex items-center gap-2">
@@ -864,7 +328,7 @@ export default function ExpensesPage() {
             content: (
               <div className="space-y-2 px-12">
                 <div className="text-sm text-textColor dark:text-textColor text-right">
-                  {t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong>
+                  {t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong>
                 </div>
                 <PieChart 
                   data={pieChartData}
@@ -876,61 +340,7 @@ export default function ExpensesPage() {
         ]}
       />
 
-          <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('expensesForm.editTitle') : t('expensesForm.title')}>
-            <Form onSubmit={handleSubmit}>
-              {formError && (
-                <div className="text-accentRed dark:text-accentRed text-sm">
-                  {formError}
-                </div>
-              )}
-              {categoryId === 'custom' || isTagSelected ? (
-                <TextInput
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  label={t('expensesForm.categoryLabel')}
-                  placeholder={t('expensesForm.titlePlaceholder')}
-                />
-              ) : (
-                <SelectInput 
-                  value={categoryId} 
-                  options={expenseCategoryOptions} 
-                  onChange={setCategoryId} 
-                  label={t('expensesForm.categoryLabel')} 
-                  creatable={true}
-                />
-              )}
-              <MoneyInput 
-                value={amount}
-                onValueChange={setAmount}
-                placeholder="1,000"
-                label={t('expensesForm.amountLabel')}
-              />
-              <SelectInput 
-                value={currency} 
-                options={currencyOptions} 
-                onChange={handleCurrencyChange} 
-                label={t('expensesForm.currencyLabel')} 
-              />
-              <SelectInput 
-                value={frequency} 
-                options={frequencyOptions} 
-                onChange={setFrequency} 
-                label={t('expensesForm.frequencyLabel')} 
-              />
-              <TextButton 
-                type="submit"
-                disabled={!isFormValid || submitting}
-                aria-label={editingId ? t('expensesForm.saveAriaLabel') : t('expensesForm.submitAriaLabel')}
-                variant="primary"
-                className="mt-4"
-              >
-                {submitting 
-                  ? (editingId ? t('expensesForm.savingButton') : t('expensesForm.submittingButton'))
-                  : (editingId ? t('expensesForm.saveButton') : t('expensesForm.submitButton'))
-                }
-              </TextButton>
-            </Form>
-          </ModalWindow>
+      {modal}
     </div>
   );
 }
