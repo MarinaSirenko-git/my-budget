@@ -213,7 +213,7 @@ export default function AuthCallback() {
         }
 
         // Redirect to scenario goals page
-          navigate(`/${currentScenarioSlug}/incomes`, { replace: true });
+          navigate(`/${currentScenarioSlug}/income`, { replace: true });
 
         } catch (error) {
           await reportErrorToTelegram({

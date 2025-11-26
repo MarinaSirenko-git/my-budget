@@ -50,7 +50,7 @@ export default function ScenarioRouteGuard() {
         
         if (currentId && currentSlug) {
           const currentPath = window.location.pathname;
-          const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/incomes';
+          const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/income';
           navigate(`/${currentSlug}${pathWithoutSlug}`, { replace: true });
           return;
         }
@@ -66,7 +66,7 @@ export default function ScenarioRouteGuard() {
           if (!scenarioError && scenario) {
             const slug = createSlug(scenario.name);
             const currentPath = window.location.pathname;
-            const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/incomes';
+            const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/income';
             navigate(`/${slug}${pathWithoutSlug}`, { replace: true });
             return;
           }
