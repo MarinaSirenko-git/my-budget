@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import IconButton from '../atoms/IconButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { useCurrency } from '@/shared/hooks/useCurrency';
+import { useCurrencyConversion } from '@/shared/hooks/useCurrencyConversion';
+import { DEFAULT_CURRENCY } from '@/shared/constants/currencies';
 
 interface GoalCardProps {
   title: string;
@@ -12,9 +15,68 @@ interface GoalCardProps {
   onDelete?: () => void;
 }
 
-const formatMoney = (value: number, currency = '₽') => value.toLocaleString('ru-RU') + ' ' + currency;
+const formatMoney = (value: number, currency: string) => 
+  value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
 
-const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = '₽', monthsLeft, onEdit, onDelete }) => {
+const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = DEFAULT_CURRENCY, monthsLeft, onEdit, onDelete }) => {
+  const { currency: baseCurrency, loading: currencyLoading } = useCurrency();
+  const { convertAmount } = useCurrencyConversion();
+  const [convertedSaved, setConvertedSaved] = useState<number | null>(null);
+  const [convertedTarget, setConvertedTarget] = useState<number | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function performConversion() {
+      if (currencyLoading) return;
+
+      if (!baseCurrency || !currency || currency === baseCurrency) {
+        if (isMounted) {
+          setConvertedSaved(null);
+          setConvertedTarget(null);
+        }
+        return;
+      }
+
+      if (typeof baseCurrency !== 'string' || typeof currency !== 'string' || baseCurrency.trim() === '' || currency.trim() === '') {
+        if (isMounted) {
+          setConvertedSaved(null);
+          setConvertedTarget(null);
+        }
+        return;
+      }
+
+      if (!isFinite(saved) || !isFinite(target) || target <= 0) {
+        if (isMounted) {
+          setConvertedSaved(null);
+          setConvertedTarget(null);
+        }
+        return;
+      }
+
+      try {
+        const savedConverted = await convertAmount(saved, currency, baseCurrency);
+        const targetConverted = await convertAmount(target, currency, baseCurrency);
+        
+        if (isMounted) {
+          setConvertedSaved(savedConverted);
+          setConvertedTarget(targetConverted);
+        }
+      } catch (error) {
+        if (isMounted) {
+          setConvertedSaved(null);
+          setConvertedTarget(null);
+        }
+      }
+    }
+
+    performConversion();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currencyLoading, baseCurrency, currency, saved, target, convertAmount]);
+
   function handleEdit(e: React.MouseEvent) {
     e.stopPropagation();
     if (onEdit) onEdit();
@@ -44,6 +106,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = '�
       </div>
       <div className="text-base font-medium text-mainTextColor dark:text-textColor">
         {formatMoney(saved, currency)} / {formatMoney(target, currency)}
+
       </div>
       {/* Progress bar */}
       <div className="relative w-full h-3 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
@@ -52,9 +115,16 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = '�
           style={{ width: `${target > 0 ? Math.min(100, (saved / target) * 100) : 0}%` }}
         />
       </div>
-      {typeof monthsLeft === 'number' && (
-        <div className="text-sm opacity-60 mt-1">Осталось {monthsLeft} месяцев</div>
-      )}
+      <div className="flex items-center gap-2 justify-between text-sm opacity-60 mt-1">
+        {typeof monthsLeft === 'number' && (
+          <div>Осталось {monthsLeft} месяцев</div>
+        )}
+       {baseCurrency && currency !== baseCurrency && convertedSaved !== null && convertedTarget !== null && (
+          <div>
+            {formatMoney(convertedSaved, baseCurrency)} / {formatMoney(convertedTarget, baseCurrency)}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

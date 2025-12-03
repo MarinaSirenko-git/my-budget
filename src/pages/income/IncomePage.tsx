@@ -76,7 +76,7 @@ import type { IncomeType, Income } from '@/mocks/pages/income.mock';
 export default function IncomePage() {
   const { t } = useTranslation('components');
   const { user } = useAuth();
-  const { scenarioId } = useScenarioRoute();
+  const { scenarioId} = useScenarioRoute();
   const { currency: settingsCurrency } = useCurrency();
   
   // Modal state
@@ -114,6 +114,8 @@ export default function IncomePage() {
     settingsCurrency,
   });
 
+
+
   const {
     selectedConversionCurrency,
     convertedAmountsCache,
@@ -123,6 +125,7 @@ export default function IncomePage() {
     incomes,
     settingsCurrency,
     userId: user?.id,
+    scenarioId,
   });
 
   const {
@@ -160,6 +163,10 @@ export default function IncomePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) {
+      console.warn('Submit already in progress, ignoring duplicate request');
+      return;
+    }
     if (!user || !incomeForm.isFormValid) return;
     
     try {
@@ -245,6 +252,7 @@ export default function IncomePage() {
               handleSubmit={handleSubmit}
               handleCurrencyChange={incomeForm.handleCurrencyChange}
               isFormValid={incomeForm.isFormValid}
+              hasChanges={incomeForm.hasChanges}
               formError={formError}
               incomeTypeId={incomeForm.incomeTypeId}
               isTagSelected={incomeForm.isTagSelected}
@@ -292,7 +300,7 @@ export default function IncomePage() {
                     <span>{t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
                     <span>{t('incomeForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
                   </div>
-                  {settingsCurrency && incomes.some(income => income.currency !== settingsCurrency) && (
+                  {settingsCurrency && incomes.length > 0 && (
                     <div className="flex items-center gap-2">
                       <SelectInput
                         value={selectedConversionCurrency || settingsCurrency}
@@ -331,6 +339,7 @@ export default function IncomePage() {
           handleSubmit={handleSubmit}
           handleCurrencyChange={incomeForm.handleCurrencyChange}
           isFormValid={incomeForm.isFormValid}
+          hasChanges={incomeForm.hasChanges}
           formError={formError}
           incomeTypeId={incomeForm.incomeTypeId}
           isTagSelected={incomeForm.isTagSelected}

@@ -83,7 +83,6 @@ export function useSavingsCalculations({
       },
     ];
 
-    // Добавляем колонку с суммой в валюте настроек, если валюта отличается
     if (settingsCurrency) {
       const hasDifferentCurrency = savings.some(saving => saving.currency !== settingsCurrency);
       if (hasDifferentCurrency) {
@@ -129,15 +128,6 @@ export function useSavingsCalculations({
     }
 
     columns.push(
-      { 
-        key: 'createdAt', 
-        label: t('savingsForm.tableColumns.date'),
-        render: (value: string) => {
-          if (!value) return '-';
-          const date = new Date(value);
-          return date.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        }
-      },
       {
         key: 'actions',
         label: t('savingsForm.tableColumns.actions'),

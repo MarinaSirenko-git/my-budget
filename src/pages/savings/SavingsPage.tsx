@@ -110,6 +110,7 @@ export default function SavingsPage() {
     items: savings,
     settingsCurrency,
     userId: user?.id,
+    scenarioId,
   });
 
   const {
@@ -155,6 +156,10 @@ export default function SavingsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) {
+      console.warn('Submit already in progress, ignoring duplicate request');
+      return;
+    }
     if (!user || !savingsForm.isFormValid) return;
     
     try {
@@ -218,6 +223,7 @@ export default function SavingsPage() {
               handleSubmit={handleSubmit}
               handleCurrencyChange={savingsForm.handleCurrencyChange}
               isFormValid={savingsForm.isFormValid}
+              hasChanges={savingsForm.hasChanges}
               formError={formError}
               comment={savingsForm.comment}
               setComment={savingsForm.setComment}
@@ -257,7 +263,7 @@ export default function SavingsPage() {
                   <div>
                     <span>{t('savingsForm.totals.total')} <strong className="text-mainTextColor dark:text-mainTextColor">{totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
                   </div>
-                  {settingsCurrency && savings.some(saving => saving.currency !== settingsCurrency) && (
+                  {settingsCurrency && savings.length > 0 && (
                     <div className="flex items-center gap-2">
                       <SelectInput
                         value={selectedConversionCurrency || settingsCurrency}
@@ -295,6 +301,7 @@ export default function SavingsPage() {
           handleSubmit={handleSubmit}
           handleCurrencyChange={savingsForm.handleCurrencyChange}
           isFormValid={savingsForm.isFormValid}
+          hasChanges={savingsForm.hasChanges}
           formError={formError}
           comment={savingsForm.comment}
           setComment={savingsForm.setComment}

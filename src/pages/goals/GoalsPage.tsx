@@ -115,6 +115,10 @@ export default function GoalsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (submitting) {
+      console.warn('Submit already in progress, ignoring duplicate request');
+      return;
+    }
     if (!user || !goalForm.isFormValid) return;
 
     try {
@@ -180,6 +184,7 @@ export default function GoalsPage() {
               handleSubmit={handleSubmit}
               handleCurrencyChange={goalForm.handleCurrencyChange}
               isFormValid={goalForm.isFormValid}
+              hasChanges={goalForm.hasChanges}
               formError={formError}
               name={goalForm.name}
               setName={goalForm.setName}
@@ -205,6 +210,7 @@ export default function GoalsPage() {
           handleSubmit={handleSubmit}
           handleCurrencyChange={goalForm.handleCurrencyChange}
           isFormValid={goalForm.isFormValid}
+          hasChanges={goalForm.hasChanges}
           formError={formError}
           name={goalForm.name}
           setName={goalForm.setName}

@@ -21,6 +21,7 @@ interface SettingsFormProps {
   currencyOptions: Array<{ label: string; value: CurrencyCode }>;
   languageOptions: LanguageOption[];
   isFormValid: boolean;
+  hasChanges: boolean;
   saving: boolean;
   message: string | null;
   maxPlaceNameLength: number;
@@ -39,6 +40,7 @@ export default function SettingsForm({
   currencyOptions,
   languageOptions,
   isFormValid,
+  hasChanges,
   saving,
   message,
   maxPlaceNameLength,
@@ -102,7 +104,7 @@ export default function SettingsForm({
           variant="primary"
           aria-label={t('settingsForm.saveAriaLabel')}
           className="w-full"
-          disabled={!isFormValid || saving}
+          disabled={!isFormValid || !hasChanges || saving}
         >
           {saving ? t('settingsForm.savingButton') : t('settingsForm.saveButton')}
         </TextButton>

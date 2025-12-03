@@ -17,6 +17,10 @@ export function useCurrencyConversion() {
       return null;
     }
 
+    if (amount === 0) {
+      return 0;
+    }
+
     try {
       return await convertCurrency(amount, fromCurrency, targetCurrency);
     } catch (err) {

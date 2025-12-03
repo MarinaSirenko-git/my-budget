@@ -11,6 +11,7 @@ interface AddGoalFormProps {
   handleSubmit: (e: React.FormEvent) => void;
   handleCurrencyChange: (value: string) => void;
   isFormValid: boolean;
+  hasChanges: boolean;
   formError: string | null;
   name: string;
   setName: (value: string) => void;
@@ -28,6 +29,7 @@ export default function AddGoalForm({
   handleSubmit,
   handleCurrencyChange,
   isFormValid,
+  hasChanges,
   formError,
   name,
   setName,
@@ -74,7 +76,7 @@ export default function AddGoalForm({
       />
       <TextButton 
         type="submit"
-        disabled={!isFormValid || submitting}
+        disabled={!isFormValid || submitting || (editingId !== null && !hasChanges)}
         variant="primary" 
         className="mt-4"
         aria-label={editingId ? t('goalsForm.saveAriaLabel') : t('goalsForm.createAriaLabel')}

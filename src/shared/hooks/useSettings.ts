@@ -5,11 +5,10 @@ import { currencyOptions, type CurrencyCode } from '@/shared/constants/currencie
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 import { generateScenarioName } from '@/shared/utils/scenarioName';
 import { countryNames, DEFAULT_COUNTRY_NAMES } from '@/shared/constants/countries';
-import { createSlug } from '@/shared/utils/slug';
-import type { PostgrestError } from '@supabase/supabase-js';
 import { CURRENCY_STORAGE_KEY, PLACE_NAME_STORAGE_KEY, LANGUAGE_STORAGE_KEY } from '@/shared/constants/storageKeys';
 import { MAX_TEXT_FIELD_LENGTH } from '@/shared/constants/validation';
 import { getCountryCodeFromLocale } from '@/shared/utils/locale';
+import { sanitizeName } from '@/shared/utils/sanitize';
 
 /**
  * Нормализует формат языка (RU/EN -> ru/en)
@@ -43,8 +42,7 @@ interface UseSettingsProps {
   changeLanguage: (lang: string) => void;
   languageOptions: LanguageOption[];
   scenarioSlug?: string | undefined;
-  loadCurrentScenarioId: () => Promise<void>;
-  loadCurrentScenarioSlug: () => Promise<void>;
+  loadCurrentScenarioData: () => Promise<void>;
   t: (key: string) => string;
 }
 
@@ -56,6 +54,7 @@ interface UseSettingsReturn {
   saving: boolean;
   message: string | null;
   isFormValid: boolean;
+  hasChanges: boolean;
   handleSave: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
   handleCurrencyChange: (newCurrency: string) => void;
   handleLanguageChange: (newLanguage: string) => void;
@@ -68,8 +67,7 @@ export function useSettings({
   changeLanguage,
   languageOptions,
   scenarioSlug,
-  loadCurrentScenarioId,
-  loadCurrentScenarioSlug,
+  loadCurrentScenarioData,
   t,
 }: UseSettingsProps): UseSettingsReturn {
   const navigate = useNavigate();
@@ -79,6 +77,11 @@ export function useSettings({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  
+  // Исходные значения для отслеживания изменений
+  const [initialCurrency, setInitialCurrency] = useState<CurrencyCode | null>(null);
+  const [initialPlaceName, setInitialPlaceName] = useState<string | null>(null);
+  const [initialLanguage, setInitialLanguage] = useState<string | null>(null);
 
   const loadSettings = useCallback(async (userIdParam: string) => {
     try {
@@ -118,10 +121,30 @@ export function useSettings({
               const validCurrency = currencyOptions.find(opt => opt.value === scenarios.base_currency);
               if (validCurrency) {
                 setCurrency(validCurrency.value);
+                setInitialCurrency(validCurrency.value);
+              } else {
+                // Если валюта не найдена, используем первую из списка
+                setInitialCurrency(currencyOptions[0].value);
               }
+            } else {
+              // Если валюта не задана, используем первую из списка
+              setInitialCurrency(currencyOptions[0].value);
             }
             setPlaceName(scenarios.name);
+            setInitialPlaceName(scenarios.name);
+          } else {
+            // Если сценарий не найден, устанавливаем дефолтные значения
+            const defaultPlaceName = getDefaultPlaceName('ru');
+            setPlaceName(defaultPlaceName);
+            setInitialPlaceName(defaultPlaceName);
+            setInitialCurrency(currencyOptions[0].value);
           }
+        } else {
+          // Если currentScenarioId отсутствует, устанавливаем дефолтные значения
+          const defaultPlaceName = getDefaultPlaceName('ru');
+          setPlaceName(defaultPlaceName);
+          setInitialPlaceName(defaultPlaceName);
+          setInitialCurrency(currencyOptions[0].value);
         }
 
         if (profileData?.language) {
@@ -129,8 +152,12 @@ export function useSettings({
           const validLanguage = languageOptions.find(opt => opt.value === normalizedLang);
           if (validLanguage) {
             setLanguage(validLanguage.value);
+            setInitialLanguage(validLanguage.value);
             changeLanguage(validLanguage.value);
           }
+        } else {
+          // Если язык не загружен, устанавливаем дефолтный и сохраняем как исходный
+          setInitialLanguage('ru');
         }
       }
     } catch (error) {
@@ -157,6 +184,24 @@ export function useSettings({
     return !!placeName.trim();
   }, [placeName]);
 
+  // Проверка наличия изменений
+  const hasChanges = useMemo(() => {
+    // Если исходные значения еще не загружены, считаем что изменений нет
+    if (initialCurrency === null || initialPlaceName === null || initialLanguage === null) {
+      return false;
+    }
+    
+    // Сравниваем текущие значения с исходными (с учетом санитизации для placeName)
+    const sanitizedPlaceName = placeName.trimStart().trimEnd();
+    const sanitizedInitialPlaceName = initialPlaceName.trimStart().trimEnd();
+    
+    return (
+      currency !== initialCurrency ||
+      sanitizedPlaceName !== sanitizedInitialPlaceName ||
+      language !== initialLanguage
+    );
+  }, [currency, placeName, language, initialCurrency, initialPlaceName, initialLanguage]);
+
   const handleCurrencyChange = useCallback((newCurrency: string) => {
     const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
     if (validCurrency) {
@@ -172,7 +217,7 @@ export function useSettings({
   }, [languageOptions]);
 
   const handlePlaceNameChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
+    const value = e.target.value.replace(/[<>]/g, '');
     if (value.length <= MAX_TEXT_FIELD_LENGTH) {
       setPlaceName(value);
     }
@@ -180,6 +225,10 @@ export function useSettings({
 
   const handleSave = useCallback(async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (saving) {
+      console.warn('Save already in progress, ignoring duplicate request');
+      return;
+    }
     if (!userId) {
       console.error(t('settingsForm.loginRequired'));
       return;
@@ -194,18 +243,15 @@ export function useSettings({
     setMessage(null);
 
     try {
-      const scenarioNameToSave = placeName || getDefaultPlaceName(language);
-      const newSlug = createSlug(scenarioNameToSave);
+      // Санитизируем имя перед сохранением (защита от XSS)
+      const scenarioNameToSave = sanitizeName(placeName) || getDefaultPlaceName(language);
       const oldSlug = scenarioSlug;
 
-      const { error: scenarioError } = await supabase
-        .from('scenarios')
-        .update({
-          name: scenarioNameToSave,
-          base_currency: currency,
-        })
-        .eq('id', currentScenarioId)
-        .eq('user_id', userId);
+      const { data: renameData, error: scenarioError } = await supabase.rpc('rename_scenario', {
+        p_scenario_id: currentScenarioId,
+        p_new_name: scenarioNameToSave,
+        p_base_currency: currency,
+      });
 
       if (scenarioError) {
         await reportErrorToTelegram({
@@ -216,6 +262,8 @@ export function useSettings({
         });
         throw scenarioError;
       }
+
+      const newSlug = renameData?.slug || oldSlug;
 
       const { error: profileError } = await supabase
         .from('profiles')
@@ -241,7 +289,7 @@ export function useSettings({
       changeLanguage(normalizedLang);
 
       window.dispatchEvent(new Event('placeNameChanged'));
-      await loadCurrentScenarioSlug();
+      await loadCurrentScenarioData();
 
       if (oldSlug && newSlug !== oldSlug) {
         const currentPath = window.location.pathname;
@@ -250,13 +298,19 @@ export function useSettings({
       }
 
       setMessage(t('settingsForm.successMessage'));
+      
+      // Обновляем исходные значения после успешного сохранения
+      const sanitizedPlaceName = sanitizeName(placeName) || getDefaultPlaceName(language);
+      setInitialCurrency(currency);
+      setInitialPlaceName(sanitizedPlaceName);
+      setInitialLanguage(language);
     } catch (err) {
       setMessage(t('settingsForm.errorMessage'));
     } finally {
       setSaving(false);
       setTimeout(() => setMessage(null), 3000);
     }
-  }, [userId, currentScenarioId, placeName, language, currency, scenarioSlug, changeLanguage, loadCurrentScenarioId, loadCurrentScenarioSlug, navigate, t]);
+  }, [userId, currentScenarioId, placeName, language, currency, scenarioSlug, changeLanguage, loadCurrentScenarioData, navigate, t]);
 
   return {
     currency,
@@ -266,6 +320,7 @@ export function useSettings({
     saving,
     message,
     isFormValid,
+    hasChanges,
     handleSave,
     handleCurrencyChange,
     handleLanguageChange,

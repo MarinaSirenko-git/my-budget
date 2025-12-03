@@ -263,14 +263,26 @@ async function calculateTotals(
 
 export async function generateCSV(
   data: ExportData,
-  t: TFunction
+  t: TFunction,
+  tPages?: TFunction
 ): Promise<string> {
   const lines: string[] = [];
 
   const incomeCategories = getIncomeCategories(t);
 
-  lines.push('Доходы');
-  lines.push('Сумма,Источник,Частота,Валюта,Сумма в дефолтной валюте');
+  // Используем переводы из pages, если доступны, иначе fallback на хардкод
+  const getSectionLabel = (key: string, fallback: string) => tPages ? tPages(`report.sections.${key}`) : fallback;
+  const getColumnLabel = (key: string, fallback: string) => tPages ? tPages(`report.columns.${key}`) : fallback;
+
+  // Доходы
+  lines.push(getSectionLabel('incomes', 'Доходы'));
+  lines.push([
+    getColumnLabel('amount', 'Сумма'),
+    getColumnLabel('currency', 'Валюта'),
+    getColumnLabel('convertedAmount', 'Сумма в дефолтной валюте'),
+    getColumnLabel('source', 'Источник'),
+    getColumnLabel('frequency', 'Частота')
+  ].join(','));
 
   for (const income of data.incomes) {
     const category = incomeCategories.find(cat => cat.id === income.type);
@@ -278,13 +290,56 @@ export async function generateCSV(
     const frequency = income.frequency === 'monthly' ? t('incomeForm.monthly') : t('incomeForm.annual');
     const converted = await convertToDefaultCurrency(income.amount, income.currency, data.defaultCurrency, data.userId);
     const convertedStr = converted !== null ? converted.toFixed(2) : '';
-    lines.push(`${income.amount},${source},${frequency},${income.currency},${convertedStr}`);
+    lines.push(`${income.amount},${income.currency},${convertedStr},${source},${frequency}`);
   }
 
   lines.push('');
 
-  lines.push('Расходы');
-  lines.push('Сумма,Источник,Частота,Валюта,Сумма в дефолтной валюте');
+  // Накопления
+  lines.push(getSectionLabel('savings', 'Накопления'));
+  lines.push([
+    getColumnLabel('amount', 'Сумма'),
+    getColumnLabel('currency', 'Валюта'),
+    getColumnLabel('convertedAmount', 'Сумма в дефолтной валюте'),
+    getColumnLabel('comment', 'Комментарий')
+  ].join(','));
+
+  for (const saving of data.savings) {
+    const converted = await convertToDefaultCurrency(saving.amount, saving.currency, data.defaultCurrency, data.userId);
+    const convertedStr = converted !== null ? converted.toFixed(2) : '';
+    // Экранируем запятые в комментарии
+    const comment = saving.comment.replace(/,/g, ';');
+    lines.push(`${saving.amount},${saving.currency},${convertedStr},${comment}`);
+  }
+
+  lines.push('');
+
+  // Цели
+  lines.push(getSectionLabel('goals', 'Цели'));
+  lines.push([
+    getColumnLabel('amount', 'Сумма'),
+    getColumnLabel('currency', 'Валюта'),
+    getColumnLabel('convertedAmount', 'Сумма в дефолтной валюте'),
+    getColumnLabel('category', 'Категория')
+  ].join(','));
+
+  for (const goal of data.goals) {
+    const converted = await convertToDefaultCurrency(goal.target_amount, goal.currency, data.defaultCurrency, data.userId);
+    const convertedStr = converted !== null ? converted.toFixed(2) : '';
+    lines.push(`${goal.target_amount},${goal.currency},${convertedStr},${goal.name}`);
+  }
+
+  lines.push('');
+
+  // Расходы
+  lines.push(getSectionLabel('expenses', 'Расходы'));
+  lines.push([
+    getColumnLabel('amount', 'Сумма'),
+    getColumnLabel('currency', 'Валюта'),
+    getColumnLabel('convertedAmount', 'Сумма в дефолтной валюте'),
+    getColumnLabel('category', 'Категория'),
+    getColumnLabel('frequency', 'Частота')
+  ].join(','));
 
   for (const expense of data.expenses) {
     const source = expense.type;
@@ -298,57 +353,43 @@ export async function generateCSV(
     }
     const converted = await convertToDefaultCurrency(expense.amount, expense.currency, data.defaultCurrency, data.userId);
     const convertedStr = converted !== null ? converted.toFixed(2) : '';
-    lines.push(`${expense.amount},${source},${frequency},${expense.currency},${convertedStr}`);
+    lines.push(`${expense.amount},${expense.currency},${convertedStr},${source},${frequency}`);
   }
 
   lines.push('');
 
-  lines.push('Накопления');
-  lines.push('Сумма,Комментарий,Валюта,Сумма в дефолтной валюте');
-
-  for (const saving of data.savings) {
-    const converted = await convertToDefaultCurrency(saving.amount, saving.currency, data.defaultCurrency, data.userId);
-    const convertedStr = converted !== null ? converted.toFixed(2) : '';
-    // Экранируем запятые в комментарии
-    const comment = saving.comment.replace(/,/g, ';');
-    lines.push(`${saving.amount},${comment},${saving.currency},${convertedStr}`);
-  }
-
-  lines.push('');
-
-  lines.push('Цели');
-  lines.push('Сумма,Категория,Валюта,Сумма в дефолтной валюте');
-
-  for (const goal of data.goals) {
-    const converted = await convertToDefaultCurrency(goal.target_amount, goal.currency, data.defaultCurrency, data.userId);
-    const convertedStr = converted !== null ? converted.toFixed(2) : '';
-    lines.push(`${goal.target_amount},${goal.name},${goal.currency},${convertedStr}`);
-  }
-
-  lines.push('');
-
-  lines.push('Итоги');
-  lines.push('Период,Тип,Сумма в валюте ввода,Валюта ввода,Сумма в дефолтной валюте,Дефолтная валюта');
+  // Итоги
+  lines.push(getSectionLabel('totals', 'Итоги'));
+  lines.push([
+    getColumnLabel('type', 'Тип'),
+    getColumnLabel('period', 'Период'),
+    getColumnLabel('originalAmount', 'Сумма в валюте ввода'),
+    getColumnLabel('convertedAmount', 'Сумма в дефолтной валюте'),
+    getColumnLabel('defaultCurrency', 'Дефолтная валюта')
+  ].join(','));
 
   const totals = await calculateTotals(data);
 
-  const inputCurrency = data.defaultCurrency || 
-    (data.incomes.length > 0 ? data.incomes[0].currency : null) ||
-    (data.expenses.length > 0 ? data.expenses[0].currency : null) ||
-    'USD';
+  // Используем переводы из pages, если доступны, иначе fallback на хардкод
+  const monthLabel = tPages ? tPages('report.totals.month') : 'Месяц';
+  const yearLabel = tPages ? tPages('report.totals.year') : 'Год';
+  const incomeLabel = tPages ? tPages('report.totals.income') : 'Доходы';
+  const expenseLabel = tPages ? tPages('report.totals.expense') : 'Расходы';
+  const savingsLabel = tPages ? tPages('report.totals.savings') : 'Накопления';
+  const goalsLabel = tPages ? tPages('report.totals.goals') : 'Цели';
 
-  lines.push(`Месяц,Доходы,${totals.incomeMonthly.original.toFixed(2)},${inputCurrency},${totals.incomeMonthly.converted.toFixed(2)},${data.defaultCurrency}`);
-  lines.push(`Год,Доходы,${totals.incomeYearly.original.toFixed(2)},${inputCurrency},${totals.incomeYearly.converted.toFixed(2)},${data.defaultCurrency}`);
-  lines.push(`Месяц,Расходы,${totals.expenseMonthly.original.toFixed(2)},${inputCurrency},${totals.expenseMonthly.converted.toFixed(2)},${data.defaultCurrency}`);
-  lines.push(`Год,Расходы,${totals.expenseYearly.original.toFixed(2)},${inputCurrency},${totals.expenseYearly.converted.toFixed(2)},${data.defaultCurrency}`);
-  lines.push(`,Накопления,${totals.savingsTotal.original.toFixed(2)},${inputCurrency},${totals.savingsTotal.converted.toFixed(2)},${data.defaultCurrency}`);
-  lines.push(`,Цели,${totals.goalsTotal.original.toFixed(2)},${inputCurrency},${totals.goalsTotal.converted.toFixed(2)},${data.defaultCurrency}`);
+  lines.push(`${incomeLabel},${monthLabel},${totals.incomeMonthly.original.toFixed(2)},${totals.incomeMonthly.converted.toFixed(2)},${data.defaultCurrency}`);
+  lines.push(`${incomeLabel},${yearLabel},${totals.incomeYearly.original.toFixed(2)},${totals.incomeYearly.converted.toFixed(2)},${data.defaultCurrency}`);
+  lines.push(`${expenseLabel},${monthLabel},${totals.expenseMonthly.original.toFixed(2)},${totals.expenseMonthly.converted.toFixed(2)},${data.defaultCurrency}`);
+  lines.push(`${expenseLabel},${yearLabel},${totals.expenseYearly.original.toFixed(2)},${totals.expenseYearly.converted.toFixed(2)},${data.defaultCurrency}`);
+  lines.push(`${savingsLabel},,${totals.savingsTotal.original.toFixed(2)},${totals.savingsTotal.converted.toFixed(2)},${data.defaultCurrency}`);
+  lines.push(`${goalsLabel},,${totals.goalsTotal.original.toFixed(2)},${totals.goalsTotal.converted.toFixed(2)},${data.defaultCurrency}`);
 
   return lines.join('\n');
 }
 
 export function downloadCSV(content: string, filename: string): void {
-  const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8;' }); // BOM для корректного отображения кириллицы в Excel
+  const blob = new Blob(['\ufeff' + content], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
   

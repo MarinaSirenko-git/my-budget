@@ -19,6 +19,7 @@ interface UseIncomeFormReturn {
   
   // Form validation
   isFormValid: boolean;
+  hasChanges: boolean;
   
   // Setters
   setIncomeTypeId: (value: string) => void;
@@ -51,6 +52,14 @@ export function useIncomeForm({
   const [currency, setCurrency] = useState<CurrencyCode>(currencyOptions[0].value);
   const [frequency, setFrequency] = useState<string>('monthly');
   const [isTagSelected, setIsTagSelected] = useState(false);
+  
+  // Original values for change detection when editing
+  const [originalValues, setOriginalValues] = useState<{
+    type: string;
+    amount: number;
+    currency: CurrencyCode;
+    frequency: string;
+  } | null>(null);
 
   // Initialize incomeTypeId when incomeTypes are available
   useEffect(() => {
@@ -86,6 +95,22 @@ export function useIncomeForm({
       frequency
     );
   }, [incomeTypeId, isTagSelected, customCategoryText, amount, currency, frequency]);
+
+  const hasChanges = useMemo(() => {
+    if (!originalValues) return true; // If no original values, assume changes (create mode)
+    
+    const currentType = (incomeTypeId === 'custom' || isTagSelected) 
+      ? customCategoryText.trim() 
+      : incomeTypeId;
+    const currentAmount = amount ? parseFloat(amount) : 0;
+    
+    return (
+      currentType !== originalValues.type ||
+      currentAmount !== originalValues.amount ||
+      currency !== originalValues.currency ||
+      frequency !== originalValues.frequency
+    );
+  }, [originalValues, incomeTypeId, isTagSelected, customCategoryText, amount, currency, frequency]);
 
   const getFinalType = () => {
     return (incomeTypeId === 'custom' || isTagSelected) 
@@ -125,6 +150,7 @@ export function useIncomeForm({
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setFrequency('monthly');
+    setOriginalValues(null);
   };
 
   const initializeForEdit = (income: { type: string; amount: number; currency: string; frequency: string }) => {
@@ -134,9 +160,18 @@ export function useIncomeForm({
     setAmount(income.amount.toString());
     
     const validCurrency = currencyOptions.find(opt => opt.value === income.currency);
-    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    const incomeCurrency = validCurrency ? validCurrency.value : currencyOptions[0].value;
+    setCurrency(incomeCurrency);
     
     setFrequency(income.frequency);
+    
+    // Save original values for change detection
+    setOriginalValues({
+      type: income.type,
+      amount: income.amount,
+      currency: incomeCurrency,
+      frequency: income.frequency,
+    });
   };
 
   const initializeForCreate = () => {
@@ -148,6 +183,7 @@ export function useIncomeForm({
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setFrequency('monthly');
+    setOriginalValues(null);
   };
 
   const initializeForTag = (type: IncomeType) => {
@@ -164,6 +200,7 @@ export function useIncomeForm({
     frequency,
     isTagSelected,
     isFormValid,
+    hasChanges,
     setIncomeTypeId,
     setCustomCategoryText,
     setAmount,

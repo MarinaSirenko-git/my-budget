@@ -28,9 +28,6 @@ export interface FetchIncomesParams {
   convertAmount: (amount: number, fromCurrency: string, toCurrency?: string) => Promise<number | null>;
 }
 
-/**
- * Обновляет существующий доход
- */
 export async function updateIncome(params: UpdateIncomeParams): Promise<void> {
   const { incomeId, userId, type, amount, currency, frequency } = params;
 
@@ -50,14 +47,9 @@ export async function updateIncome(params: UpdateIncomeParams): Promise<void> {
   }
 }
 
-/**
- * Создает новый доход
- * Выполняет конвертацию валюты если она отличается от валюты настроек
- */
 export async function createIncome(params: CreateIncomeParams): Promise<void> {
-  const { userId, scenarioId, type, amount, currency, frequency, settingsCurrency } = params;
+  const { scenarioId, type, amount, currency, frequency, settingsCurrency } = params;
 
-  // Вызываем RPC конвертацию если валюта отличается от дефолтной
   if (settingsCurrency && currency !== settingsCurrency) {
     await supabase.rpc('convert_amount', {
       p_amount: amount,
@@ -81,32 +73,18 @@ export async function createIncome(params: CreateIncomeParams): Promise<void> {
   }
 }
 
-/**
- * Получает список доходов с конвертацией валют
- */
 export async function fetchIncomes(params: FetchIncomesParams): Promise<Income[]> {
   const { userId, scenarioId, settingsCurrency, convertAmount } = params;
-
-  let query = supabase
+  const { data, error } = await supabase
     .from('incomes_decrypted')
     .select('*')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('scenario_id', scenarioId)
+    .order('created_at', { ascending: false });
 
-  if (scenarioId) {
-    query = query.eq('scenario_id', scenarioId);
-  }
+  if (error) throw error;
+  if (!data) return [];
 
-  const { data, error } = await query.order('created_at', { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    return [];
-  }
-
-  // Map Supabase data to Income interface and convert amounts if needed
   const mappedIncomesPromises = data.map(async (item: any) => {
     const income: Income = {
       id: item.id,
@@ -118,7 +96,6 @@ export async function fetchIncomes(params: FetchIncomesParams): Promise<Income[]
       createdAt: item.created_at,
     };
 
-    // Конвертируем сумму если валюта отличается от дефолтной
     if (settingsCurrency && income.currency !== settingsCurrency) {
       const convertedAmount = await convertAmount(income.amount, income.currency);
       if (convertedAmount !== null) {
@@ -137,9 +114,6 @@ export interface DeleteIncomeParams {
   userId: string;
 }
 
-/**
- * Удаляет доход
- */
 export async function deleteIncome(params: DeleteIncomeParams): Promise<void> {
   const { incomeId, userId } = params;
 

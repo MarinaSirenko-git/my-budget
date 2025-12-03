@@ -16,6 +16,7 @@ interface UseExpenseFormReturn {
   frequency: Expense['frequency'];
   isTagSelected: boolean;
   isFormValid: boolean;
+  hasChanges: boolean;
 
   setCategoryId: (value: string) => void;
   setCustomCategoryText: (value: string) => void;
@@ -44,6 +45,14 @@ export function useExpenseForm({
   const [currency, setCurrency] = useState<CurrencyCode>(currencyOptions[0].value);
   const [frequency, setFrequency] = useState<Expense['frequency']>('monthly');
   const [isTagSelected, setIsTagSelected] = useState(false);
+  
+  // Original values for change detection when editing
+  const [originalValues, setOriginalValues] = useState<{
+    type: string;
+    amount: number;
+    currency: CurrencyCode;
+    frequency: Expense['frequency'];
+  } | null>(null);
 
   useEffect(() => {
     if (expenseCategories.length > 0 && !categoryId) {
@@ -78,6 +87,22 @@ export function useExpenseForm({
       frequency
     );
   }, [categoryId, isTagSelected, customCategoryText, amount, currency, frequency]);
+
+  const hasChanges = useMemo(() => {
+    if (!originalValues) return true; // If no original values, assume changes (create mode)
+    
+    const currentType = (categoryId === 'custom' || isTagSelected)
+      ? customCategoryText.trim()
+      : categoryId;
+    const currentAmount = amount ? parseFloat(amount) : 0;
+    
+    return (
+      currentType !== originalValues.type ||
+      currentAmount !== originalValues.amount ||
+      currency !== originalValues.currency ||
+      frequency !== originalValues.frequency
+    );
+  }, [originalValues, categoryId, isTagSelected, customCategoryText, amount, currency, frequency]);
 
   const getFinalCategory = () => {
     return (categoryId === 'custom' || isTagSelected)
@@ -117,6 +142,7 @@ export function useExpenseForm({
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setFrequency('monthly');
+    setOriginalValues(null);
   };
 
   const initializeForEdit = (expense: Expense) => {
@@ -126,9 +152,18 @@ export function useExpenseForm({
     setAmount(expense.amount.toString());
 
     const validCurrency = currencyOptions.find(opt => opt.value === expense.currency);
-    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    const expenseCurrency = validCurrency ? validCurrency.value : currencyOptions[0].value;
+    setCurrency(expenseCurrency);
 
     setFrequency(expense.frequency);
+    
+    // Save original values for change detection
+    setOriginalValues({
+      type: expense.type,
+      amount: expense.amount,
+      currency: expenseCurrency,
+      frequency: expense.frequency,
+    });
   };
 
   const initializeForCreate = () => {
@@ -140,6 +175,7 @@ export function useExpenseForm({
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setFrequency('monthly');
+    setOriginalValues(null);
   };
 
   const initializeForTag = (category: ExpenseCategory) => {
@@ -156,6 +192,7 @@ export function useExpenseForm({
     frequency,
     isTagSelected,
     isFormValid,
+    hasChanges,
     setCategoryId,
     setCustomCategoryText,
     setAmount,

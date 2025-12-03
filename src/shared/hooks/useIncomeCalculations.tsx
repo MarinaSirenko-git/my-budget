@@ -266,7 +266,6 @@ export function useIncomeCalculations({
 
     columns.push(
       { key: 'frequency', label: t('incomeForm.tableColumns.frequency'), align: 'left' as const },
-      { key: 'date', label: t('incomeForm.tableColumns.date') },
       {
         key: 'actions',
         label: t('incomeForm.tableColumns.actions'),

@@ -6,6 +6,7 @@ interface UseIncomeCurrencyConversionProps {
   incomes: Income[];
   settingsCurrency?: CurrencyCode | null;
   userId?: string;
+  scenarioId?: string | null;
 }
 
 interface UseIncomeCurrencyConversionReturn {
@@ -28,11 +29,13 @@ export function useIncomeCurrencyConversion({
   incomes,
   settingsCurrency,
   userId,
+  scenarioId,
 }: UseIncomeCurrencyConversionProps): UseIncomeCurrencyConversionReturn {
   return useCurrencyConversionForItems<Income>({
     items: incomes,
     settingsCurrency,
     userId,
+    scenarioId,
   });
 }
 

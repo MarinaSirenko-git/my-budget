@@ -15,6 +15,7 @@ interface UseGoalFormReturn {
   
   // Form validation
   isFormValid: boolean;
+  hasChanges: boolean;
   
   // Setters
   setName: (value: string) => void;
@@ -37,6 +38,14 @@ export function useGoalForm({
   const [amount, setAmount] = useState<string | undefined>(undefined);
   const [currency, setCurrency] = useState<CurrencyCode>(currencyOptions[0].value);
   const [targetDate, setTargetDate] = useState<string | undefined>(undefined);
+  
+  // Original values for change detection when editing
+  const [originalValues, setOriginalValues] = useState<{
+    name: string;
+    amount: number;
+    currency: CurrencyCode;
+    targetDate: string;
+  } | null>(null);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -63,6 +72,19 @@ export function useGoalForm({
     );
   }, [name, amount, currency, targetDate]);
 
+  const hasChanges = useMemo(() => {
+    if (!originalValues) return true; // If no original values, assume changes (create mode)
+    
+    const currentAmount = amount ? parseFloat(amount) : 0;
+    
+    return (
+      name.trim() !== originalValues.name ||
+      currentAmount !== originalValues.amount ||
+      currency !== originalValues.currency ||
+      targetDate !== originalValues.targetDate
+    );
+  }, [originalValues, name, amount, currency, targetDate]);
+
   const handleCurrencyChange = (newCurrency: string) => {
     const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
     if (validCurrency) {
@@ -77,6 +99,7 @@ export function useGoalForm({
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setTargetDate(undefined);
+    setOriginalValues(null);
   };
 
   const initializeForEdit = (goal: { name: string; amount: number; currency: string; targetDate: string }) => {
@@ -84,8 +107,17 @@ export function useGoalForm({
     setAmount(goal.amount.toString());
     
     const validCurrency = currencyOptions.find(opt => opt.value === goal.currency);
-    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    const goalCurrency = validCurrency ? validCurrency.value : currencyOptions[0].value;
+    setCurrency(goalCurrency);
     setTargetDate(goal.targetDate);
+    
+    // Save original values for change detection
+    setOriginalValues({
+      name: goal.name || '',
+      amount: goal.amount,
+      currency: goalCurrency,
+      targetDate: goal.targetDate,
+    });
   };
 
   const initializeForCreate = () => {
@@ -95,6 +127,7 @@ export function useGoalForm({
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
     setTargetDate(undefined);
+    setOriginalValues(null);
   };
 
   return {
@@ -103,6 +136,7 @@ export function useGoalForm({
     currency,
     targetDate,
     isFormValid,
+    hasChanges,
     setName,
     setAmount,
     setCurrency,

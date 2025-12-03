@@ -1,10 +1,6 @@
 import type { IncomeType } from '@/mocks/pages/income.mock';
 import type { ExpenseCategory } from '@/mocks/pages/expenses.mock';
 
-/**
- * Константы категорий доходов
- * label будет добавляться динамически через i18n
- */
 export const INCOME_CATEGORY_IDS: Omit<IncomeType, 'label'>[] = [
   {
     id: 'salary',
@@ -43,15 +39,11 @@ export const INCOME_CATEGORY_IDS: Omit<IncomeType, 'label'>[] = [
   },
   {
     id: 'custom',
-    value: 'Custom',
+    value: 'custom',
     isCustom: true,
   },
 ];
 
-/**
- * Константы категорий расходов
- * label будет добавляться динамически через i18n
- */
 export const EXPENSE_CATEGORY_IDS: Omit<ExpenseCategory, 'label'>[] = [
   {
     id: 'kids-school-receipt',

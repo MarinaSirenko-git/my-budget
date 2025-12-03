@@ -30,7 +30,7 @@ export default function ScenarioForm({
   t,
 }: ScenarioFormProps) {
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
+    const value = e.target.value.replace(/[<>]/g, '');
     if (value.length <= MAX_TEXT_FIELD_LENGTH) {
       setScenarioName(value);
     }
@@ -95,4 +95,9 @@ export default function ScenarioForm({
     </div>
   );
 }
+
+
+
+
+
 

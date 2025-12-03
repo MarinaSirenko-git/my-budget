@@ -6,6 +6,7 @@ interface UseExpenseCurrencyConversionProps {
   expenses: Expense[];
   settingsCurrency?: CurrencyCode | null;
   userId?: string;
+  scenarioId?: string | null;
 }
 
 interface UseExpenseCurrencyConversionReturn {
@@ -23,12 +24,19 @@ export function useExpenseCurrencyConversion({
   expenses,
   settingsCurrency,
   userId,
+  scenarioId,
 }: UseExpenseCurrencyConversionProps): UseExpenseCurrencyConversionReturn {
   return useCurrencyConversionForItems<Expense>({
     items: expenses,
     settingsCurrency,
     userId,
+    scenarioId,
   });
 }
+
+
+
+
+
 
 

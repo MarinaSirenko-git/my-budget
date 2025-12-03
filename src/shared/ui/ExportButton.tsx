@@ -9,6 +9,7 @@ import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 export default function ExportButton() {
   const { t } = useTranslation('components');
+  const { t: tPages } = useTranslation('pages');
   const { user } = useAuth();
   const { scenarioId } = useScenarioRoute();
   const [loading, setLoading] = useState(false);
@@ -35,7 +36,7 @@ export default function ExportButton() {
       if (!exportData) {
         throw new Error(t('export.error'));
       }
-      const csvContent = await generateCSV(exportData, t);
+      const csvContent = await generateCSV(exportData, t, tPages);
       const date = new Date().toISOString().split('T')[0];
       const filename = `budget_export_${date}.csv`;
 

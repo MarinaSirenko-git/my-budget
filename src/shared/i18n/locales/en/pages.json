@@ -39,7 +39,7 @@
       "description": "The method «<strong>enter income → set goals → categorize expenses → use envelopes</strong>» turns money from an abstraction into a clear plan: you see how much comes in, where it goes, which goals are more important, and what limits each category has. This reduces anxiety, eliminates «leaks» and gives a sense of control."
     },
     "section1": {
-      "title": "1) Enter income → understand the real base",
+      "title": "1) Enter income and savings → understand the real base",
       "why": "without honest income accounting, any plans are «in the air».",
       "what": "a fixed framework (monthly/annual) from which limits and goal deadlines are calculated.",
       "result": "illusions of «seems like enough» disappear, real numbers appear.",
@@ -62,8 +62,7 @@
       "what": "visibility of «where it flows», quick wins in several categories.",
       "result": "find 2–3 areas for optimization without feeling deprived.",
       "inAppTitle": "In the app:",
-      "inAppItem1": "Use ready-made categories (food, transport, housing, communication, etc.) or add your own.",
-      "inAppItem2": "Enable auto-accounting of depreciation/taxes for rental income — expenses will be recalculated automatically."
+      "inAppItem1": "Use ready-made categories (food, transport, housing, communication, etc.) or add your own."
     },
     "section4": {
       "title": "4) Envelope method → turn plan into behavior",
@@ -87,9 +86,9 @@
       "title": "What the app does for you",
       "item1": "Converts currencies and provides a unified picture.",
       "item2": "Automatically allocates part of income to expenses (taxes, depreciation for rent).",
-      "item3": "Visualizes income/expenses/goals (charts, goal progress).",
-      "item4": "Warns about overspending and suggests options (shift limit, reduce spending, postpone goal).",
-      "item5": "Saves scenarios (e.g., different city/suburb) and allows comparing them side by side."
+      "item3": "Visualizes income/savings/expenses/goals (charts, goal progress).",
+      "item4": "Warns about overspending.",
+      "item5": "Saves scenarios (e.g., different city/suburb)."
     },
     "howToUse": {
       "title": "How to use it to make it work",
@@ -118,6 +117,43 @@
   "notFound": {
     "title": "Page Not Found",
     "message": "The requested page does not exist"
+  },
+  "report": {
+    "title": "Financial Report",
+    "loading": "Loading report data...",
+    "errorPrefix": "Error loading report:",
+    "empty": "No data available for export",
+    "downloadButton": "Download CSV",
+    "sections": {
+      "incomes": "Incomes",
+      "expenses": "Expenses",
+      "savings": "Savings",
+      "goals": "Goals",
+      "totals": "Totals"
+    },
+    "columns": {
+      "amount": "Amount",
+      "source": "Source",
+      "frequency": "Frequency",
+      "currency": "Currency",
+      "converted": "Amount in {{currency}}",
+      "comment": "Comment",
+      "category": "Category",
+      "period": "Period",
+      "type": "Type",
+      "originalAmount": "Amount in Input Currency",
+      "originalCurrency": "Input Currency",
+      "convertedAmount": "Amount in Default Currency",
+      "defaultCurrency": "Default Currency"
+    },
+    "totals": {
+      "month": "Month",
+      "year": "Year",
+      "income": "Income",
+      "expense": "Expenses",
+      "savings": "Savings",
+      "goals": "Goals"
+    }
   }
 }
 

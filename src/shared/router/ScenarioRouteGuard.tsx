@@ -1,117 +1,87 @@
-// validate scenario id/slug on route change
-
+import { Outlet, useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate, Outlet } from 'react-router-dom';
-import { useAuth, useAuth as useAuthStore } from '@/shared/store/auth';
-import { supabase } from '@/lib/supabase';
-import { createSlug } from '@/shared/utils/slug';
-import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
+import { useAuth } from '@/shared/store/auth';
 import { validateScenarioBySlug } from '@/shared/utils/scenarios';
+import { useTranslation } from '@/shared/i18n';
 
 export default function ScenarioRouteGuard() {
   const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
   const navigate = useNavigate();
-  const { user, loadCurrentScenarioId, loadCurrentScenarioSlug } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [isValid, setIsValid] = useState(false);
+  const loading = useAuth(s => s.loading);
+  const user = useAuth(s => s.user);
+  const currentScenarioSlug = useAuth(s => s.currentScenarioSlug);
+  const [validating, setValidating] = useState(false);
+  const { t } = useTranslation('components');
+
+  const redirectToCurrentScenario = (targetSlug: string) => {
+    const currentPath = window.location.pathname;
+    const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/income';
+    navigate(`/${targetSlug}${pathWithoutSlug}`, { replace: true });
+  };
 
   useEffect(() => {
-    async function validateScenario() {
-      if (!user || !scenarioSlug) {
-        setLoading(false);
-        setIsValid(false);
-        return;
+    if (loading) return;
+
+    if (!scenarioSlug) {
+      if (currentScenarioSlug) {
+        redirectToCurrentScenario(currentScenarioSlug);
+      } else {
+        navigate('/404', { replace: true });
       }
-
-      setLoading(true);
-
-      const scenarioId = await validateScenarioBySlug(scenarioSlug, user.id);
-
-      if (!scenarioId) {
-        await redirectToCurrentScenario(user.id);
-        return;
-      }
-
-      const authStore = useAuthStore.getState();
-      authStore.setCurrentScenarioId(scenarioId);
-
-      setIsValid(true);
-      setLoading(false);
+      return;
     }
 
-    async function redirectToCurrentScenario(userId: string) {
+    if (!currentScenarioSlug) {
+      navigate('/settings', { replace: true });
+      return;
+    }
+
+    if (!user) return;
+
+    const slug = scenarioSlug;
+    const userId = user.id;
+    const currentSlug = currentScenarioSlug;
+
+    async function validateScenario() {
+      setValidating(true);
+      
       try {
-        await loadCurrentScenarioId();
-        await loadCurrentScenarioSlug();
+        const scenarioId = await validateScenarioBySlug(slug, userId);
         
-        const authState = useAuth.getState();
-        const currentId = authState.currentScenarioId;
-        const currentSlug = authState.currentScenarioSlug;
-        
-        if (currentId && currentSlug) {
-          const currentPath = window.location.pathname;
-          const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/income';
-          navigate(`/${currentSlug}${pathWithoutSlug}`, { replace: true });
+        if (!scenarioId) {
+          redirectToCurrentScenario(currentSlug);
           return;
         }
         
-        if (currentId) {
-          const { data: scenario, error: scenarioError } = await supabase
-            .from('scenarios')
-            .select('name')
-            .eq('id', currentId)
-            .eq('user_id', userId)
-            .single();
-
-          if (!scenarioError && scenario) {
-            const slug = createSlug(scenario.name);
-            const currentPath = window.location.pathname;
-            const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/income';
-            navigate(`/${slug}${pathWithoutSlug}`, { replace: true });
-            return;
-          }
-        }
-        
-        // If no current scenario, try to find any scenario for user
-        const { data: scenarios, error: scenariosError } = await supabase
-          .from('scenarios')
-          .select('name, id')
-          .eq('user_id', userId)
-          .limit(1);
-
-        if (!scenariosError && scenarios && scenarios.length > 0) {
-          const slug = createSlug(scenarios[0].name);
-          navigate(`/${slug}/goals`, { replace: true });
+        if (slug !== currentSlug) {
+          redirectToCurrentScenario(currentSlug);
           return;
         }
         
-        // If no scenarios exist, redirect to auth
-        navigate('/auth', { replace: true });
-      } catch (err) {
-        await reportErrorToTelegram({
-          action: 'redirectToCurrentScenario',
-          error: err,
-          userId: userId,
-          context: { currentPath: window.location.pathname },
-        });
-        navigate('/auth', { replace: true });
+        setValidating(false);
+      } catch (error) {
+        redirectToCurrentScenario(currentSlug);
       }
     }
 
     validateScenario();
-  }, [scenarioSlug, user, navigate, loadCurrentScenarioId, loadCurrentScenarioSlug]);
+  }, [loading, scenarioSlug, user, currentScenarioSlug, navigate]);
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-textColor dark:text-textColor">Loading...</div>
+        <div>{t('scenarioRouteGuard.loadingCurrentScenario')}</div>
       </div>
-
     );
   }
 
-  if (!isValid) return null
+  if (validating) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div>{t('scenarioRouteGuard.validatingScenario')}</div>
+      </div>
+    );
+  }
 
   return <Outlet />;
 }
-

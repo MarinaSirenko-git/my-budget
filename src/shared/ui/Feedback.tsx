@@ -36,6 +36,11 @@ export default function Feedback({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Защита от множественных запросов
+    if (submitting) {
+      console.warn('Submit already in progress, ignoring duplicate request');
+      return;
+    }
 
     if (!feedback.trim()) {
       setMessage(t('feedbackForm.validationError'));

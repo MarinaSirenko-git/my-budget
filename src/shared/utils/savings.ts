@@ -33,9 +33,6 @@ export interface FetchSavingsParams {
   convertAmount: (amount: number, fromCurrency: string, toCurrency?: string) => Promise<number | null>;
 }
 
-/**
- * Обновляет существующее накопление
- */
 export async function updateSaving(params: UpdateSavingParams): Promise<void> {
   const { savingId, userId, comment, amount, currency } = params;
 
@@ -54,11 +51,8 @@ export async function updateSaving(params: UpdateSavingParams): Promise<void> {
   }
 }
 
-/**
- * Создает новое накопление
- */
 export async function createSaving(params: CreateSavingParams): Promise<void> {
-  const { userId, scenarioId, comment, amount, currency } = params;
+  const { scenarioId, comment, amount, currency } = params;
 
   const { error } = await supabase
     .from('savings')
@@ -74,9 +68,6 @@ export async function createSaving(params: CreateSavingParams): Promise<void> {
   }
 }
 
-/**
- * Получает список накоплений с конвертацией валют
- */
 export async function fetchSavings(params: FetchSavingsParams): Promise<Saving[]> {
   const { userId, scenarioId, settingsCurrency, convertAmount } = params;
 
@@ -99,7 +90,6 @@ export async function fetchSavings(params: FetchSavingsParams): Promise<Saving[]
     return [];
   }
 
-  // Map Supabase data to Saving interface and convert amounts if needed
   const mappedSavingsPromises = data.map(async (item: any) => {
     const saving: Saving = {
       id: item.id,
@@ -109,15 +99,14 @@ export async function fetchSavings(params: FetchSavingsParams): Promise<Saving[]
       createdAt: item.created_at,
     };
 
-    // Конвертируем сумму если валюта отличается от дефолтной
-    if (settingsCurrency && saving.currency !== settingsCurrency) {
-      const convertedAmount = await convertAmount(saving.amount, saving.currency);
-      if (convertedAmount !== null) {
-        saving.amountInDefaultCurrency = convertedAmount;
-      }
-    }
+  if (settingsCurrency && saving.currency !== settingsCurrency) {
+    const convertedAmount = await convertAmount(saving.amount, saving.currency);
+    if (convertedAmount !== null) {
+      saving.amountInDefaultCurrency = convertedAmount;
+}
+ }
 
-    return saving;
+   return saving;
   });
 
   return Promise.all(mappedSavingsPromises);
@@ -128,9 +117,6 @@ export interface DeleteSavingParams {
   userId: string;
 }
 
-/**
- * Удаляет накопление
- */
 export async function deleteSaving(params: DeleteSavingParams): Promise<void> {
   const { savingId, userId } = params;
 

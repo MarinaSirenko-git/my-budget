@@ -11,6 +11,7 @@ interface AddIncomeFormProps {
   handleSubmit: (e: React.FormEvent) => void;
   handleCurrencyChange: (value: string) => void;
   isFormValid: boolean;
+  hasChanges: boolean;
   formError: string | null;
   incomeTypeId: string;
   isTagSelected: boolean;
@@ -33,6 +34,7 @@ export default function AddIncomeForm({
   handleSubmit,
   handleCurrencyChange,
   isFormValid,
+  hasChanges,
   formError,
   incomeTypeId,
   isTagSelected,
@@ -71,7 +73,6 @@ export default function AddIncomeForm({
         options={incomeTypeOptions} 
         onChange={handleIncomeTypeChange} 
         label={t('incomeForm.categoryLabel')}
-        creatable={true}
       />
     )}
     <MoneyInput 
@@ -94,7 +95,7 @@ export default function AddIncomeForm({
     />
     <TextButton 
       type="submit"
-      disabled={!isFormValid || submitting}
+      disabled={!isFormValid || submitting || (editingId !== null && !hasChanges)}
       aria-label={editingId ? t('incomeForm.saveAriaLabel') : t('incomeForm.submitAriaLabel')}
       variant="primary"
       className="mt-4"

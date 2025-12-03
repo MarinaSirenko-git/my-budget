@@ -82,7 +82,7 @@ export function useExpenseCalculations({
     if (!targetCurrency) return [];
 
     const grouped = expenses.reduce((acc, expense) => {
-      const category = expenseCategories.find(c => c.id === expense.category);
+      const category = expenseCategories.find(c => c.id === expense.type);
       const label = category?.label || expense.type || 'Unknown';
 
       if (!acc[label]) {
@@ -106,7 +106,7 @@ export function useExpenseCalculations({
   const tableColumns = useMemo(() => {
     const columns: TableColumn<Expense>[] = [
       { 
-        key: 'category', 
+        key: 'type', 
         label: t('expensesForm.tableColumns.category'),
         render: (value: string) => {
           const category = expenseCategories.find(cat => cat.id === value);
@@ -166,7 +166,6 @@ export function useExpenseCalculations({
 
     columns.push(
       { key: 'frequency', label: t('expensesForm.tableColumns.frequency'), align: 'left' as const },
-      { key: 'date', label: t('expensesForm.tableColumns.date') },
       {
         key: 'actions',
         label: t('expensesForm.tableColumns.actions'),

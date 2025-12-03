@@ -46,7 +46,6 @@ export function useIncomes({
 
   const refreshIncomes = useCallback(async () => {
     if (!userId) return;
-    
     try {
       const fetchedIncomes = await fetchIncomes({
         userId,
@@ -149,7 +148,7 @@ export function useIncomes({
   // Initial load
   useEffect(() => {
     async function loadIncomes() {
-      if (!userId) {
+      if (!userId || !scenarioId) {
         setLoading(false);
         return;
       }
@@ -180,7 +179,7 @@ export function useIncomes({
     }
 
     loadIncomes();
-  }, [userId, scenarioId, settingsCurrency, convertAmount]);
+  }, []);
 
   return {
     incomes,

@@ -1,10 +1,10 @@
 import { supabase } from '@/lib/supabase';
-import { createSlug, isValidSlug } from './slug';
 import { reportErrorToTelegram } from './errorReporting';
 
 export interface Scenario {
   id: string;
   name: string;
+  slug: string;
 }
 
 export interface ScenarioData {
@@ -12,12 +12,6 @@ export interface ScenarioData {
   base_currency: string;
 }
 
-/**
- * Ожидает создания сценария триггером с оптимизированной логикой
- * Проверяет обе таблицы (profiles и scenarios) для надежности
- * @param userId ID пользователя
- * @returns ID сценария или null
- */
 export async function waitForScenarioCreation(userId: string): Promise<string | null> {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
@@ -59,50 +53,21 @@ export async function waitForScenarioCreation(userId: string): Promise<string | 
   return null;
 }
 
-/**
- * Получает slug сценария по его ID
- * @param scenarioId ID сценария
- * @param userId ID пользователя
- * @returns Slug сценария или null
- */
-export async function getScenarioSlug(scenarioId: string, userId: string): Promise<string | null> {
-  const { data: scenario, error } = await supabase
-    .from('scenarios')
-    .select('name')
-    .eq('id', scenarioId)
-    .eq('user_id', userId)
-    .single();
-
-  if (error || !scenario?.name) return null;
-  return createSlug(scenario.name);
-}
-
-/**
- * Валидирует сценарий по slug
- * Проверяет, существует ли сценарий с таким slug для данного пользователя
- * @param scenarioSlug Slug сценария из URL
- * @param userId ID пользователя
- * @returns ID сценария, если валидация успешна, или null
- */
 export async function validateScenarioBySlug(
   scenarioSlug: string,
   userId: string
 ): Promise<string | null> {
-  if (!isValidSlug(scenarioSlug)) {
-    return null;
-  }
 
   try {
     const { data: scenarios, error: fetchError } = await supabase
       .from('scenarios')
-      .select('id, name, user_id')
+      .select('id, name, slug, user_id')
       .eq('user_id', userId);
 
     if (fetchError) throw fetchError;
 
     const matchingScenario = scenarios?.find(scenario => {
-      const scenarioSlugFromName = createSlug(scenario.name);
-      return scenarioSlugFromName === scenarioSlug && scenario.user_id === userId;
+      return scenario.slug === scenarioSlug && scenario.user_id === userId;
     });
 
     return matchingScenario?.id || null;
@@ -117,27 +82,16 @@ export async function validateScenarioBySlug(
   }
 }
 
-/**
- * Загружает все сценарии пользователя
- * @param userId ID пользователя
- * @returns Массив сценариев или null в случае ошибки
- */
 export async function loadUserScenarios(userId: string): Promise<Scenario[] | null> {
   try {
     const { data: scenarios, error } = await supabase
       .from('scenarios')
-      .select('id, name')
+      .select('id, name, slug')
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
     if (error) {
-      await reportErrorToTelegram({
-        action: 'loadUserScenarios',
-        error: error,
-        userId: userId,
-        context: { errorCode: error.code },
-      });
-      return null;
+      throw new Error('Failed to load user scenarios');
     }
 
     return scenarios || [];
@@ -151,15 +105,9 @@ export async function loadUserScenarios(userId: string): Promise<Scenario[] | nu
   }
 }
 
-/**
- * Обновляет current_scenario_id в профиле пользователя
- * @param userId ID пользователя
- * @param scenarioId ID сценария
- * @returns true если успешно, false в случае ошибки
- */
 export async function updateCurrentScenario(
   userId: string,
-  scenarioId: string
+  scenarioId: string,
 ): Promise<boolean> {
   try {
     const { error } = await supabase
@@ -196,19 +144,13 @@ export async function loadScenarioData(
   try {
     const { data, error } = await supabase
       .from('scenarios')
-      .select('name, base_currency')
+      .select('name, base_currency, slug')
       .eq('id', scenarioId)
       .eq('user_id', userId)
       .single();
 
     if (error) {
-      await reportErrorToTelegram({
-        action: 'loadScenarioData',
-        error: error,
-        userId: userId,
-        context: { scenarioId, errorCode: error.code },
-      });
-      return null;
+     throw new Error('Failed to load scenario data');
     }
 
     return data || null;
@@ -235,47 +177,18 @@ export async function createScenario(
   isClone: boolean
 ): Promise<CreateScenarioResult | null> {
   try {
-    const { data: newScenarioId, error: createError } = await supabase.rpc('create_scenario', {
+    const { data, error: createError } = await supabase.rpc('create_scenario', {
       p_base_currency: baseCurrency,
       p_name: name,
       p_is_clone: isClone,
     });
 
-    if (createError) {
-      await reportErrorToTelegram({
-        action: isClone ? 'cloneScenario' : 'createScenario',
-        error: createError,
-        userId: userId,
-        context: { name, baseCurrency, isClone, errorCode: createError.code },
-      });
-      throw createError;
-    }
+    if (createError) throw new Error('Failed to create scenario');
 
-    if (!newScenarioId) {
-      const error = new Error('Failed to create scenario: no ID returned');
-      await reportErrorToTelegram({
-        action: isClone ? 'cloneScenario' : 'createScenario',
-        error: error,
-        userId: userId,
-        context: { name, baseCurrency, isClone },
-      });
-      throw error;
-    }
+    const success = await updateCurrentScenario(userId, data.newScenarioId);
+    if (!success) throw new Error('Failed to update current scenario');
 
-    const success = await updateCurrentScenario(userId, newScenarioId);
-    if (!success) {
-      const error = new Error('Failed to update current scenario');
-      await reportErrorToTelegram({
-        action: 'updateCurrentScenarioAfterCreate',
-        error: error,
-        userId: userId,
-        context: { scenarioId: newScenarioId },
-      });
-      throw error;
-    }
-
-    const slug = createSlug(name);
-    return { scenarioId: newScenarioId, slug };
+    return { scenarioId: data.id, slug: data.slug };
   } catch (err) {
     await reportErrorToTelegram({
       action: isClone ? 'cloneScenario' : 'createScenario',
@@ -283,7 +196,7 @@ export async function createScenario(
       userId: userId,
       context: { name, baseCurrency, isClone },
     });
-    throw err;
+    return null;
   }
 }
 

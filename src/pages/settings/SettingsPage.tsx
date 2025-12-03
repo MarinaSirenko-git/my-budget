@@ -12,7 +12,7 @@ import { MAX_TEXT_FIELD_LENGTH } from '@/shared/constants/validation';
 export default function SettingsPage() {
   const { t } = useTranslation('components');
   const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
-  const { user, currentScenarioId, loadCurrentScenarioId, loadCurrentScenarioSlug } = useAuth();
+  const { user, currentScenarioId, loadCurrentScenarioData } = useAuth();
   const { changeLanguage } = useLanguage();
   const languageOptions = useMemo(() => getLanguageOptions(t), [t]);
   
@@ -24,6 +24,7 @@ export default function SettingsPage() {
     saving,
     message,
     isFormValid,
+    hasChanges,
     handleSave,
     handleCurrencyChange,
     handleLanguageChange,
@@ -34,8 +35,7 @@ export default function SettingsPage() {
     changeLanguage,
     languageOptions,
     scenarioSlug,
-    loadCurrentScenarioId,
-    loadCurrentScenarioSlug,
+    loadCurrentScenarioData,
     t,
   });
 
@@ -60,6 +60,7 @@ export default function SettingsPage() {
           currencyOptions={currencyOptions}
           languageOptions={languageOptions}
           isFormValid={isFormValid}
+          hasChanges={hasChanges}
           saving={saving}
           message={message}
           maxPlaceNameLength={MAX_TEXT_FIELD_LENGTH}

@@ -14,6 +14,7 @@ interface UseSavingsFormReturn {
   
   // Form validation
   isFormValid: boolean;
+  hasChanges: boolean;
   
   // Setters
   setComment: (value: string) => void;
@@ -34,6 +35,13 @@ export function useSavingsForm({
   const [comment, setComment] = useState('');
   const [amount, setAmount] = useState<string | undefined>(undefined);
   const [currency, setCurrency] = useState<CurrencyCode>(currencyOptions[0].value);
+  
+  // Original values for change detection when editing
+  const [originalValues, setOriginalValues] = useState<{
+    comment: string;
+    amount: number;
+    currency: CurrencyCode;
+  } | null>(null);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -59,6 +67,18 @@ export function useSavingsForm({
     );
   }, [comment, amount, currency]);
 
+  const hasChanges = useMemo(() => {
+    if (!originalValues) return true; // If no original values, assume changes (create mode)
+    
+    const currentAmount = amount ? parseFloat(amount) : 0;
+    
+    return (
+      comment.trim() !== originalValues.comment ||
+      currentAmount !== originalValues.amount ||
+      currency !== originalValues.currency
+    );
+  }, [originalValues, comment, amount, currency]);
+
   const handleCurrencyChange = (newCurrency: string) => {
     const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
     if (validCurrency) {
@@ -72,6 +92,7 @@ export function useSavingsForm({
     const defaultCurrencyValue = settingsCurrency || currencyOptions[0].value;
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setOriginalValues(null);
   };
 
   const initializeForEdit = (saving: { comment: string; amount: number; currency: string }) => {
@@ -79,7 +100,15 @@ export function useSavingsForm({
     setAmount(saving.amount.toString());
     
     const validCurrency = currencyOptions.find(opt => opt.value === saving.currency);
-    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    const savingCurrency = validCurrency ? validCurrency.value : currencyOptions[0].value;
+    setCurrency(savingCurrency);
+    
+    // Save original values for change detection
+    setOriginalValues({
+      comment: saving.comment || '',
+      amount: saving.amount,
+      currency: savingCurrency,
+    });
   };
 
   const initializeForCreate = () => {
@@ -88,6 +117,7 @@ export function useSavingsForm({
     const defaultCurrencyValue = settingsCurrency || currencyOptions[0].value;
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setOriginalValues(null);
   };
 
   return {
@@ -95,6 +125,7 @@ export function useSavingsForm({
     amount,
     currency,
     isFormValid,
+    hasChanges,
     setComment,
     setAmount,
     setCurrency,

@@ -10,6 +10,7 @@ interface AddSavingFormProps {
   handleSubmit: (e: React.FormEvent) => void;
   handleCurrencyChange: (value: string) => void;
   isFormValid: boolean;
+  hasChanges: boolean;
   formError: string | null;
   comment: string;
   setComment: (value: string) => void;
@@ -25,6 +26,7 @@ export default function AddSavingForm({
   handleSubmit,
   handleCurrencyChange,
   isFormValid,
+  hasChanges,
   formError,
   comment,
   setComment,
@@ -63,7 +65,7 @@ export default function AddSavingForm({
       />
       <TextButton 
         type="submit"
-        disabled={!isFormValid || submitting}
+        disabled={!isFormValid || submitting || (editingId !== null && !hasChanges)}
         variant="primary" 
         className="mt-4"
         aria-label={editingId ? t('savingsForm.saveAriaLabel') : t('savingsForm.createAriaLabel')}

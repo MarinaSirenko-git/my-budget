@@ -7,11 +7,12 @@ import ModalWindow from '@/shared/ui/ModalWindow';
 import { currencyOptions } from '@/shared/constants/currencies';
 import { loadScenarioData, createScenario } from '@/shared/utils/scenarios';
 import ScenarioForm from '@/features/scenarios/ScenarioForm';
+import { sanitizeName } from '@/shared/utils/sanitize';
 
 export default function ScenarioSwitch() {
   const { t } = useTranslation('components');
   const navigate = useNavigate();
-  const { user, currentScenarioId, loadCurrentScenarioId, setCurrentScenarioId, loadCurrentScenarioSlug } = useAuth();
+  const { user, currentScenarioId, loadCurrentScenarioData, setCurrentScenarioId } = useAuth();
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +60,10 @@ export default function ScenarioSwitch() {
   }, [scenarioName]);
 
   const handleCreateScenario = async (isClone: boolean) => {
+    if (creating) {
+      console.warn('Create scenario already in progress, ignoring duplicate request');
+      return;
+    }
     if (!isFormValid) return;
 
     if (isClone && !currentScenarioId) {
@@ -70,7 +75,7 @@ export default function ScenarioSwitch() {
     setError(null);
 
     try {
-      const scenarioNameToSave = scenarioName.trim() || t('scenarioForm.defaultName');
+      const scenarioNameToSave = sanitizeName(scenarioName ?? '') || t('scenarioForm.defaultName');
       const result = await createScenario(user!.id, scenarioNameToSave, currency, isClone);
 
       if (!result) {
@@ -78,8 +83,7 @@ export default function ScenarioSwitch() {
       }
 
       setCurrentScenarioId(result.scenarioId);
-      await loadCurrentScenarioId();
-      await loadCurrentScenarioSlug();
+      await loadCurrentScenarioData();
 
       handleClose();
       

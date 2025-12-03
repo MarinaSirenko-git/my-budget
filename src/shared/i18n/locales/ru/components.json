@@ -22,7 +22,7 @@
     "copy": "копия",
     "scenarioNameLabel": "Название сценария",
     "scenarioNamePlaceholder": "Введите название сценария",
-    "currencyLabel": "Валюта",
+    "currencyLabel": "В какой валюте делать расчёты",
     "createButton": "Создать сценарий",
     "createButtonAria": "Создать новый сценарий",
     "back": "Назад",
@@ -40,10 +40,15 @@
   },
   "summary": {
     "income": "Доходы",
+    "incomeTitle": "Сумма, которую ты получаешь ежемесячно",
     "expenses": "Расходы",
+    "expensesTitle": "Сумма, которую ты тратишь ежемесячно",
     "goals": "Цели",
+    "goalsTitle": "Сумма, которую нужно откладывать ежемесячно для достижения целей",
     "savings": "Накопления",
-    "remainder": "Остаток"
+    "savingsTitle": "Сумма, которая у тебя в накоплениях",
+    "remainder": "Остаток",
+    "remainderTitle": "Сумма, которая остается после вычета расходов и целей"
   },
   "settingsForm": {
     "title": "Настройки",
@@ -88,6 +93,7 @@
     "submitButton": "Добавить",
     "submittingButton": "Добавление...",
     "submitAriaLabel": "Добавить доход",
+    "customCategoryPlaceholder": "Введите название категории дохода",
     "saveButton": "Сохранить",
     "savingButton": "Сохранение...",
     "saveAriaLabel": "Сохранить доход",
@@ -129,6 +135,7 @@
   },
   "expensesForm": {
     "title": "Добавить расход",
+    "editTitle": "Редактировать расход",
     "categoryLabel": "Категория расхода",
     "titleLabel": "Название расхода",
     "titlePlaceholder": "Название расхода",
@@ -140,9 +147,15 @@
     "submitButton": "Добавить",
     "submittingButton": "Добавление...",
     "submitAriaLabel": "Добавить расход",
+    "saveButton": "Сохранить",
+    "savingButton": "Сохранение...",
+    "saveAriaLabel": "Сохранить расход",
     "addNewButton": "Добавить новый расход",
     "addNewAriaLabel": "Добавить новый расход",
     "errorMessage": "Ошибка добавления расхода",
+    "updateErrorMessage": "Ошибка обновления расхода",
+    "deleteError": "Ошибка удаления расхода",
+    "deleteConfirm": "Вы уверены, что хотите удалить этот расход?",
     "loadingError": "Ошибка загрузки расходов",
     "loading": "Загрузка...",
     "errorPrefix": "Ошибка:",
@@ -266,11 +279,22 @@
     "kids-hobbies": "Детские кружки",
     "fix-repair": "Ремонт и обслуживание",
     "credit": "Кредиты",
-    "custom": "Прочий расход"
+    "custom": "Твой вариант"
   },
   "export": {
     "error": "Ошибка экспорта данных",
     "loading": "Экспорт..."
+  },
+  "firstScenarioCurrency": {
+    "title": "Валюта текущего сценария (по умолчанию USD)",
+    "description": "Выберите валюту, которая будет считаться основной в этом сценарии. Можно изменить в любое время в настройках.",
+    "currencyLabel": "Валюта",
+    "confirmButton": "Продолжить",
+    "confirmingButton": "Сохранение..."
+  },
+  "scenarioRouteGuard": {
+    "loadingCurrentScenario": "Загрузка текущего сценария...",
+    "validatingScenario": "Проверка сценария..."
   }
 }
 

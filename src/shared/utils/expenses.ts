@@ -28,9 +28,6 @@ export interface FetchExpensesParams {
   convertAmount: (amount: number, fromCurrency: string, toCurrency?: string) => Promise<number | null>;
 }
 
-/**
- * Обновляет существующий расход
- */
 export async function updateExpense(params: UpdateExpenseParams): Promise<void> {
   const { expenseId, userId, type, amount, currency, frequency } = params;
 
@@ -50,12 +47,8 @@ export async function updateExpense(params: UpdateExpenseParams): Promise<void> 
   }
 }
 
-/**
- * Создает новый расход
- * Выполняет конвертацию валюты если она отличается от валюты настроек
- */
 export async function createExpense(params: CreateExpenseParams): Promise<void> {
-  const { userId, scenarioId, type, amount, currency, frequency, settingsCurrency } = params;
+  const { scenarioId, type, amount, currency, frequency, settingsCurrency } = params;
 
   if (settingsCurrency && currency !== settingsCurrency) {
     await supabase.rpc('convert_amount', {
@@ -80,9 +73,6 @@ export async function createExpense(params: CreateExpenseParams): Promise<void> 
   }
 }
 
-/**
- * Получает список расходов с конвертацией валют
- */
 export async function fetchExpenses(params: FetchExpensesParams): Promise<Expense[]> {
   const { userId, scenarioId, settingsCurrency, convertAmount } = params;
 
@@ -105,7 +95,7 @@ export async function fetchExpenses(params: FetchExpensesParams): Promise<Expens
     return [];
   }
 
-  const mappedExpensesPromises = data.map(async (item: any) => {
+   const mappedExpensesPromises = data.map(async (item: any) => {
     const expense: Expense = {
       id: item.id,
       type: item.type,
@@ -135,9 +125,6 @@ export interface DeleteExpenseParams {
   userId: string;
 }
 
-/**
- * Удаляет расход
- */
 export async function deleteExpense(params: DeleteExpenseParams): Promise<void> {
   const { expenseId, userId } = params;
 
@@ -151,5 +138,6 @@ export async function deleteExpense(params: DeleteExpenseParams): Promise<void> 
     throw error;
   }
 }
+
 
 

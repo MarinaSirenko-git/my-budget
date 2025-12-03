@@ -93,7 +93,6 @@ export default function ExpensesPage() {
   const frequencyOptions = useMemo<Array<{ label: string; value: Expense['frequency'] }>>(() => [
     { label: t('expensesForm.monthly'), value: 'monthly' as const },
     { label: t('expensesForm.annual'), value: 'annual' as const },
-    { label: t('expensesForm.oneTime'), value: 'one-time' as const },
   ], [t]);
   
   // Custom hooks
@@ -128,6 +127,7 @@ export default function ExpensesPage() {
     expenses,
     settingsCurrency,
     userId: user?.id,
+    scenarioId,
   });
 
   const {
@@ -166,6 +166,10 @@ export default function ExpensesPage() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitting) {
+      console.warn('Submit already in progress, ignoring duplicate request');
+      return;
+    }
     if (!user || !expenseForm.isFormValid || !expenseForm.amount) return;
 
     try {
@@ -226,6 +230,7 @@ export default function ExpensesPage() {
         handleSubmit={handleSubmit}
         handleCurrencyChange={expenseForm.handleCurrencyChange}
         isFormValid={expenseForm.isFormValid}
+        hasChanges={expenseForm.hasChanges}
         formError={formError}
         categoryId={expenseForm.categoryId}
         isTagSelected={expenseForm.isTagSelected}
@@ -304,9 +309,8 @@ export default function ExpensesPage() {
                   <div className="flex flex-wrap gap-3">
                     <span>{t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
                     <span>{t('expensesForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
-                    <span>{t('expensesForm.totals.oneTime')} <strong className="text-mainTextColor dark:text-mainTextColor">{oneTimeTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
                   </div>
-                  {settingsCurrency && expenses.some(expense => expense.currency !== settingsCurrency) && (
+                  {settingsCurrency && expenses.length > 0 && (
                     <div className="flex items-center gap-2">
                       <SelectInput
                         value={selectedConversionCurrency || settingsCurrency}

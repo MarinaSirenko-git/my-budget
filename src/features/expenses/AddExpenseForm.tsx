@@ -16,6 +16,7 @@ interface AddExpenseFormProps {
   handleSubmit: (e: React.FormEvent) => void;
   handleCurrencyChange: (value: string) => void;
   isFormValid: boolean;
+  hasChanges: boolean;
   formError: string | null;
   categoryId: string;
   isTagSelected: boolean;
@@ -38,6 +39,7 @@ export default function AddExpenseForm({
   handleSubmit,
   handleCurrencyChange,
   isFormValid,
+  hasChanges,
   formError,
   categoryId,
   isTagSelected,
@@ -76,7 +78,6 @@ export default function AddExpenseForm({
           options={expenseCategoryOptions} 
           onChange={handleCategoryChange} 
           label={t('expensesForm.categoryLabel')} 
-          creatable={true}
         />
       )}
       <MoneyInput 
@@ -99,7 +100,7 @@ export default function AddExpenseForm({
       />
       <TextButton 
         type="submit"
-        disabled={!isFormValid || submitting}
+        disabled={!isFormValid || submitting || (editingId !== null && !hasChanges)}
         aria-label={editingId ? t('expensesForm.saveAriaLabel') : t('expensesForm.submitAriaLabel')}
         variant="primary"
         className="mt-4"
@@ -112,4 +113,9 @@ export default function AddExpenseForm({
     </Form>
   );
 }
+
+
+
+
+
 

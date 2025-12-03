@@ -17,6 +17,7 @@ interface UseCurrencyConversionForItemsProps<T extends FinancialItem> {
   items: T[];
   settingsCurrency?: CurrencyCode | null;
   userId?: string;
+  scenarioId?: string | null;
 }
 
 interface UseCurrencyConversionForItemsReturn {
@@ -39,6 +40,7 @@ export function useCurrencyConversionForItems<T extends FinancialItem>({
   items,
   settingsCurrency,
   userId,
+  scenarioId,
 }: UseCurrencyConversionForItemsProps<T>): UseCurrencyConversionForItemsReturn {
   const [selectedConversionCurrency, setSelectedConversionCurrency] = useState<CurrencyCode | null>(null);
   const [convertedAmountsCache, setConvertedAmountsCache] = useState<Record<string, number>>({});
@@ -46,6 +48,14 @@ export function useCurrencyConversionForItems<T extends FinancialItem>({
   const [isCurrencyManuallySelected, setIsCurrencyManuallySelected] = useState(false);
   
   const { convertAmountsBulk } = useCurrencyConversion();
+
+  // Reset state when scenario or currency changes
+  useEffect(() => {
+    setIsCurrencyManuallySelected(false);
+    setSelectedConversionCurrency(null);
+    setConvertedAmountsCache({});
+    setConvertingIds(new Set());
+  }, [scenarioId, settingsCurrency]);
 
   // Set default conversion currency from settings when loaded
   useEffect(() => {
