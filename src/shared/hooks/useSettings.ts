@@ -10,9 +10,6 @@ import { MAX_TEXT_FIELD_LENGTH } from '@/shared/constants/validation';
 import { getCountryCodeFromLocale } from '@/shared/utils/locale';
 import { sanitizeName } from '@/shared/utils/sanitize';
 
-/**
- * Нормализует формат языка (RU/EN -> ru/en)
- */
 function normalizeLanguage(lng: string): string {
   const normalized = lng.toLowerCase();
   if (normalized === 'ru' || normalized === 'en') {
@@ -21,9 +18,6 @@ function normalizeLanguage(lng: string): string {
   return 'ru';
 }
 
-/**
- * Получает дефолтное имя сценария на основе языка
- */
 function getDefaultPlaceName(language: string = 'ru'): string {
   const countryCode = getCountryCodeFromLocale();
   const country = countryNames[countryCode] || DEFAULT_COUNTRY_NAMES;
@@ -78,7 +72,6 @@ export function useSettings({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   
-  // Исходные значения для отслеживания изменений
   const [initialCurrency, setInitialCurrency] = useState<CurrencyCode | null>(null);
   const [initialPlaceName, setInitialPlaceName] = useState<string | null>(null);
   const [initialLanguage, setInitialLanguage] = useState<string | null>(null);
@@ -123,24 +116,20 @@ export function useSettings({
                 setCurrency(validCurrency.value);
                 setInitialCurrency(validCurrency.value);
               } else {
-                // Если валюта не найдена, используем первую из списка
                 setInitialCurrency(currencyOptions[0].value);
               }
             } else {
-              // Если валюта не задана, используем первую из списка
               setInitialCurrency(currencyOptions[0].value);
             }
             setPlaceName(scenarios.name);
             setInitialPlaceName(scenarios.name);
           } else {
-            // Если сценарий не найден, устанавливаем дефолтные значения
             const defaultPlaceName = getDefaultPlaceName('ru');
             setPlaceName(defaultPlaceName);
             setInitialPlaceName(defaultPlaceName);
             setInitialCurrency(currencyOptions[0].value);
           }
         } else {
-          // Если currentScenarioId отсутствует, устанавливаем дефолтные значения
           const defaultPlaceName = getDefaultPlaceName('ru');
           setPlaceName(defaultPlaceName);
           setInitialPlaceName(defaultPlaceName);
@@ -156,7 +145,6 @@ export function useSettings({
             changeLanguage(validLanguage.value);
           }
         } else {
-          // Если язык не загружен, устанавливаем дефолтный и сохраняем как исходный
           setInitialLanguage('ru');
         }
       }
@@ -184,14 +172,11 @@ export function useSettings({
     return !!placeName.trim();
   }, [placeName]);
 
-  // Проверка наличия изменений
   const hasChanges = useMemo(() => {
-    // Если исходные значения еще не загружены, считаем что изменений нет
     if (initialCurrency === null || initialPlaceName === null || initialLanguage === null) {
       return false;
     }
     
-    // Сравниваем текущие значения с исходными (с учетом санитизации для placeName)
     const sanitizedPlaceName = placeName.trimStart().trimEnd();
     const sanitizedInitialPlaceName = initialPlaceName.trimStart().trimEnd();
     
@@ -243,7 +228,6 @@ export function useSettings({
     setMessage(null);
 
     try {
-      // Санитизируем имя перед сохранением (защита от XSS)
       const scenarioNameToSave = sanitizeName(placeName) || getDefaultPlaceName(language);
       const oldSlug = scenarioSlug;
 
@@ -299,7 +283,6 @@ export function useSettings({
 
       setMessage(t('settingsForm.successMessage'));
       
-      // Обновляем исходные значения после успешного сохранения
       const sanitizedPlaceName = sanitizeName(placeName) || getDefaultPlaceName(language);
       setInitialCurrency(currency);
       setInitialPlaceName(sanitizedPlaceName);

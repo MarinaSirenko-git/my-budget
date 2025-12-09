@@ -29,7 +29,7 @@ export default function AuthPage() {
       <div className="flex-1 lg:bg-black dark:bg-black max-h-[45%] lg:max-h-full">
         <img src="/src/assets/auth-page-mouse1.webp" alt="Auth Background" className="w-full h-full object-contain" />
       </div>
-      <div className="flex-1 flex items-start lgitems-center justify-center bg-white dark:bg-white">
+      <div className="flex-1 flex items-start lg:items-center justify-center bg-white dark:bg-white">
         <div className="flex flex-col items-center gap-8 lg:gap-6 px-8 lg:p-8">
           <p className="text-3xl font-bold">{t('auth.appName')}</p>
           <p className="text-md text-textColor text-center max-w-[450px]">

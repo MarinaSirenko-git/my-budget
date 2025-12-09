@@ -218,36 +218,48 @@ export default function AuthCallback() {
           return;
         }
 
-        const { error: rpcError } = await supabase.rpc('set_currency_from_client', {
-          p_timezone: validatedTimezone,
-          p_locale: validatedLocale
-        });
+        // Check if currency is already set in the scenario
+        // Only call set_currency_from_client if currency is not set
+        const { data: scenarioData, error: scenarioCheckError } = await supabase
+          .from('scenarios')
+          .select('base_currency')
+          .eq('id', currentScenarioId)
+          .eq('user_id', user.id)
+          .single();
 
-        if (rpcError) {
-          await reportErrorToTelegram({
-            action: 'setCurrencyFromClient',
-            error: rpcError,
-            userId: user.id,
-            context: { 
-              timezone: validatedTimezone, 
-              locale: validatedLocale,
-              scenarioId: currentScenarioId 
-            },
+        // Only set currency if it's not already set
+        if (!scenarioCheckError && scenarioData && !scenarioData.base_currency) {
+          const { error: rpcError } = await supabase.rpc('set_currency_from_client', {
+            p_timezone: validatedTimezone,
+            p_locale: validatedLocale
           });
-          
-          const { error: fallbackError } = await supabase
-            .from('scenarios')
-            .update({ base_currency: 'USD' })
-            .eq('id', currentScenarioId)
-            .eq('user_id', user.id);
 
-          if (fallbackError) {
+          if (rpcError) {
             await reportErrorToTelegram({
-              action: 'setFallbackCurrency',
-              error: fallbackError,
+              action: 'setCurrencyFromClient',
+              error: rpcError,
               userId: user.id,
-              context: { scenarioId: currentScenarioId },
+              context: { 
+                timezone: validatedTimezone, 
+                locale: validatedLocale,
+                scenarioId: currentScenarioId 
+              },
             });
+            
+            const { error: fallbackError } = await supabase
+              .from('scenarios')
+              .update({ base_currency: 'USD' })
+              .eq('id', currentScenarioId)
+              .eq('user_id', user.id);
+
+            if (fallbackError) {
+              await reportErrorToTelegram({
+                action: 'setFallbackCurrency',
+                error: fallbackError,
+                userId: user.id,
+                context: { scenarioId: currentScenarioId },
+              });
+            }
           }
         }
 

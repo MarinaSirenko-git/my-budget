@@ -31,11 +31,7 @@ export default function ScenarioRouteGuard() {
       return;
     }
 
-    if (!currentScenarioSlug) {
-      navigate('/settings', { replace: true });
-      return;
-    }
-
+    if (!currentScenarioSlug) return;
     if (!user) return;
 
     const slug = scenarioSlug;

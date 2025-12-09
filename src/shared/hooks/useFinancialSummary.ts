@@ -65,7 +65,7 @@ export function useFinancialSummary(): UseFinancialSummaryReturn {
       });
       setTotalIncome(0);
     }
-  }, [user, scenarioId, settingsCurrency]);
+  }, [user, scenarioId, settingsCurrency, convertAmount]);
 
   const calculateTotalSavings = useCallback(async () => {
     if (!user || !scenarioId || !settingsCurrency) {
@@ -96,7 +96,7 @@ export function useFinancialSummary(): UseFinancialSummaryReturn {
       });
       setTotalSavings(0);
     }
-  }, [user, scenarioId, settingsCurrency]);
+  }, [user, scenarioId, settingsCurrency, convertAmount]);
 
   const calculateTotalExpenses = useCallback(async () => {
     if (!user || !scenarioId || !settingsCurrency) {
@@ -132,7 +132,7 @@ export function useFinancialSummary(): UseFinancialSummaryReturn {
       });
       setTotalExpenses(0);
     }
-  }, [user, scenarioId, settingsCurrency]);
+  }, [user, scenarioId, settingsCurrency, convertAmount]);
 
   const calculateTotalGoals = useCallback(async () => {
     if (!user || !scenarioId || !settingsCurrency) {
