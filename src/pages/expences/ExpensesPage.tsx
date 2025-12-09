@@ -133,7 +133,6 @@ export default function ExpensesPage() {
   const {
     monthlyTotal,
     annualTotal,
-    oneTimeTotal,
     pieChartData,
     tableColumns,
   } = useExpenseCalculations({
@@ -262,7 +261,7 @@ export default function ExpensesPage() {
 
   if (!expenses || expenses.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
+      <div className="flex h-full items-center justify-center lg:min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6">
           <EmptyState icon={<img src="/src/assets/expenses-page-mouse.webp" alt="Empty State" className="max-h-[200px] max-w-[200px]" />}>
             {t('expensesForm.emptyStateMessage')}
@@ -304,7 +303,7 @@ export default function ExpensesPage() {
             id: 'table',
             label: t('expensesForm.tabs.table'),
             content: (
-              <div className="space-y-2 px-12">
+              <div className="space-y-2 lg:px-12">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
                   <div className="flex flex-wrap gap-3">
                     <span>{t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
@@ -330,7 +329,7 @@ export default function ExpensesPage() {
             id: 'chart',
             label: t('expensesForm.tabs.chart'),
             content: (
-              <div className="space-y-2 px-12">
+              <div className="space-y-2 lg:px-12">
                 <div className="text-sm text-textColor dark:text-textColor text-right">
                   {t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong>
                 </div>

@@ -43,7 +43,7 @@ function LeftSidebar(){
         }`;
 
     return(
-        <div className="fixed top-0 left-0 flex flex-col h-screen w-[clamp(200px,18vw,260px)] bg-sidebarBg dark:bg-sidebarBg dark:text-mainTextColor border-r dark:border-borderColor p-2 pt-0 z-30">
+        <div className="hidden lg:flex fixed top-0 left-0 flex-col h-screen w-[clamp(200px,18vw,260px)] bg-sidebarBg dark:bg-sidebarBg dark:text-mainTextColor border-r dark:border-borderColor p-2 pt-0 z-30">
 
             
             <div className='flex items-center h-[70px]'>

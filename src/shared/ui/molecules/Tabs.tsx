@@ -68,7 +68,7 @@ const Tabs: React.FC<TabsProps> = ({
       <div 
         role="tablist" 
         aria-label="Tabs"
-        className="flex space-x-1 rounded-lg bg-contentBg dark:bg-cardColor p-1 px-12"
+        className="flex space-x-1 rounded-lg bg-contentBg dark:bg-cardColor p-1 lg:px-12"
       >
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;

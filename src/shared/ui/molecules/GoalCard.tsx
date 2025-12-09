@@ -86,41 +86,41 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = DE
     if (onDelete) onDelete();
   }
   return (
-    <div className="relative group rounded-xl bg-cardColor dark:bg-cardColor p-4 shadow flex flex-col gap-3 w-full max-w-md">
+    <div className="relative group rounded-xl bg-cardColor dark:bg-cardColor p-3 lg:p-4 shadow flex flex-col gap-2 lg:gap-3 w-full max-w-md">
       {/* Action buttons - only visible on hover */}
-      <div className="absolute top-3 right-3 flex gap-2 z-10 opacity-1 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
+      <div className="absolute top-2 right-2 lg:top-3 lg:right-3 flex gap-2 z-10 opacity-1 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-opacity">
         <IconButton aria-label="Edit goal" title="Edit goal" onClick={handleEdit}>
-          <PencilIcon className="w-5 h-5" />
+          <PencilIcon className="w-4 h-4 lg:w-5 lg:h-5" />
         </IconButton>
         <IconButton aria-label="Delete goal" title="Delete goal" onClick={handleDelete}>
-          <TrashIcon className="w-5 h-5" />
+          <TrashIcon className="w-4 h-4 lg:w-5 lg:h-5" />
         </IconButton>
       </div>
       <div className="flex items-baseline gap-2">
         <img 
           src="/src/assets/logo1.webp" 
           alt="Goal icon" 
-          className="w-6 h-6 object-contain"
+          className="w-5 h-5 lg:w-6 lg:h-6 object-contain"
         />
-        <div className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">{title}</div>
+        <div className="text-base lg:text-lg font-semibold text-mainTextColor dark:text-mainTextColor truncate">{title}</div>
       </div>
-      <div className="text-base font-medium text-mainTextColor dark:text-textColor">
+      <div className="text-sm lg:text-base font-medium text-mainTextColor dark:text-textColor">
         {formatMoney(saved, currency)} / {formatMoney(target, currency)}
 
       </div>
       {/* Progress bar */}
-      <div className="relative w-full h-3 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+      <div className="relative w-full h-2.5 lg:h-3 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
         <div 
           className="h-full bg-accentYellow rounded-full transition-all duration-300"
           style={{ width: `${target > 0 ? Math.min(100, (saved / target) * 100) : 0}%` }}
         />
       </div>
-      <div className="flex items-center gap-2 justify-between text-sm opacity-60 mt-1">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 justify-between text-xs lg:text-sm opacity-60 mt-1">
         {typeof monthsLeft === 'number' && (
           <div>Осталось {monthsLeft} месяцев</div>
         )}
        {baseCurrency && currency !== baseCurrency && convertedSaved !== null && convertedTarget !== null && (
-          <div>
+          <div className="text-xs lg:text-sm">
             {formatMoney(convertedSaved, baseCurrency)} / {formatMoney(convertedTarget, baseCurrency)}
           </div>
         )}

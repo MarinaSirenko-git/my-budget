@@ -1,19 +1,32 @@
 import { Fragment, useState } from 'react';
 import { Dialog, DialogPanel, Transition, TransitionChild } from '@headlessui/react';
-import { XMarkIcon, Bars3Icon } from '@heroicons/react/24/outline';
-import { SparklesIcon, ArrowRightEndOnRectangleIcon, ArrowRightStartOnRectangleIcon, DocumentMagnifyingGlassIcon } from '@heroicons/react/24/solid';
-import { NavLink } from 'react-router-dom';
+import { 
+  XMarkIcon, 
+  Bars3Icon,
+  DocumentTextIcon,
+  Cog6ToothIcon,
+  ArrowRightEndOnRectangleIcon,
+  ArrowRightStartOnRectangleIcon,
+  SparklesIcon,
+  BanknotesIcon,
+  ArrowDownTrayIcon
+} from '@heroicons/react/24/outline';
+import { NavLink, useParams } from 'react-router-dom';
 import ThemeSwitch from './ThemeSwitch';
-import ProfileMenu from './ProfileMenu';
 import Logo from './Logo';
+import ScenarioSwitch from './ScenarioSwitch';
 import { useTranslation } from '@/shared/i18n';
+import { useAuth } from '@/shared/store/auth';
 
 export default function MobileMenu() {
   const [open, setOpen] = useState(false);
   const { t } = useTranslation('components');
+  const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
+  const currentSlug = scenarioSlug;
+  const signOut = useAuth(s => s.signOut);
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) => 
-    `flex items-center font-normal gap-2 hover:bg-contentBg dark:hover:bg-cardColor ${isActive ? 'bg-contentBg dark:bg-cardColor' : ''}`;
+    `flex items-center font-normal gap-2 py-2 px-2 rounded-md hover:bg-contentBg dark:hover:bg-cardColor truncate ${isActive ? 'bg-contentBg dark:bg-cardColor' : ''}`;
 
   return (
     <>
@@ -51,51 +64,87 @@ export default function MobileMenu() {
                 leaveTo="-translate-x-full"
               >
                 <DialogPanel className="relative flex flex-col w-full max-w-xs bg-sidebarBg text-mainTextColor shadow-xl pointer-events-auto">
-                  {/* Header with Logo and Close Button */}
-                  <div className="flex items-center justify-between p-4 border-b border-borderColor">
-                    <Logo iconSize="lg" textColor="text-white" />
-                    <button
-                      onClick={() => setOpen(false)}
-                      className="p-2 rounded-md hover:bg-cardColor"
-                    >
-                      <XMarkIcon className="h-6 w-6" />
-                    </button>
+                  {/* Header with Logo, Theme Switch and Close Button */}
+                  <div className="flex items-center justify-between px-2 py-2 border-b border-borderColor">
+                    <Logo />
+                    <div className="flex items-center gap-3 mt-4">
+                      
+                      <button
+                        onClick={() => setOpen(false)}
+                        className="p-2 rounded-md hover:bg-cardColor"
+                      >
+                        <XMarkIcon className="h-6 w-6" />
+                      </button>
+                    </div>
                   </div>
-
-                  {/* Navigation */}
-                  <nav className="flex-1 py-4 px-2 overflow-y-auto">
-                    <ul className="space-y-1">
+                  <nav className="py-4 px-2 overflow-y-auto">
+                    <ul className="flex flex-col gap-4 space-y-1">
                       <li>
-                        <NavLink className={navLinkClass} to="/goals" onClick={() => setOpen(false)}>
-                          <SparklesIcon className="w-6 h-6" />
-                          {t('header.myFinancialGoals')}
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/income`} onClick={() => setOpen(false)}>
+                          <ArrowRightEndOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
+                          <span className="truncate">{t('sidebar.myIncome')}</span>
                         </NavLink>
                       </li>
                       <li>
-                        <NavLink className={navLinkClass} to="/income" onClick={() => setOpen(false)}>
-                          <ArrowRightEndOnRectangleIcon className="w-6 h-6" />
-                          {t('sidebar.myIncome')}
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/savings`} onClick={() => setOpen(false)}>
+                          <BanknotesIcon className="w-5 h-5 flex-shrink-0" />
+                          <span className="truncate">{t('sidebar.mySavings')}</span>
                         </NavLink>
                       </li>
                       <li>
-                        <NavLink className={navLinkClass} to="/expenses" onClick={() => setOpen(false)}>
-                          <ArrowRightStartOnRectangleIcon className="w-6 h-6" />
-                          {t('sidebar.myExpenses')}
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/expenses`} onClick={() => setOpen(false)}>
+                          <ArrowRightStartOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
+                          <span className="truncate">{t('sidebar.myExpenses')}</span>
                         </NavLink>
                       </li>
                       <li>
-                        <NavLink className={navLinkClass} to="/docs" onClick={() => setOpen(false)}>
-                          <DocumentMagnifyingGlassIcon className="w-6 h-6" />
-                          {t('header.documentation')}
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/goals`} onClick={() => setOpen(false)}>
+                          <SparklesIcon className="w-5 h-5 flex-shrink-0" />
+                          <span className="truncate">{t('sidebar.myGoals')}</span>
                         </NavLink>
                       </li>
                     </ul>
-                  </nav>
+                    <ul className="pt-4 mt-4 border-t border-borderColor space-y-1">
+                    <li>
+                        <ScenarioSwitch mobile={true} />
+                      </li>
+                    </ul>
+                    <ul className="flex flex-col gap-4 mt-4 pt-4 border-t border-borderColor space-y-1">
 
-                  {/* Footer with Theme Switch and Profile */}
-                  <div className="border-t border-borderColor p-4 flex items-center justify-between gap-4">
-                    <ThemeSwitch />
-                    <ProfileMenu />
+                      <li>
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/docs`} onClick={() => setOpen(false)}>
+                          <DocumentTextIcon className="w-5 h-5 flex-shrink-0" />
+                          <span className="truncate">{t('sidebar.howWillThisHelp')}</span>
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/settings`} onClick={() => setOpen(false)}>
+                          <Cog6ToothIcon className="w-5 h-5 flex-shrink-0" />
+                          <span className="truncate">{t('sidebar.settings')}</span>
+                        </NavLink>
+                      </li>
+                      <li>
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/report`} onClick={() => setOpen(false)}>
+                          <ArrowDownTrayIcon className="w-5 h-5 flex-shrink-0" />
+                          <span className="truncate">{t('sidebar.exportData')}</span>
+                        </NavLink>
+                      </li>
+                      <li>
+                        <button 
+                          onClick={() => {
+                            signOut();
+                            setOpen(false);
+                          }} 
+                          className="flex items-center font-normal gap-2 w-full py-2 px-2 hover:bg-contentBg dark:hover:bg-cardColor truncate"
+                        >
+                          <ArrowRightStartOnRectangleIcon className="w-5 h-5 flex-shrink-0" />
+                          <span className="truncate">{t('sidebar.signOut')}</span>
+                        </button>
+                      </li>
+                    </ul>
+                  </nav>
+                  <div className="border-t border-borderColor p-4 flex items-center justify-end">
+                  <ThemeSwitch />
                   </div>
                 </DialogPanel>
               </TransitionChild>

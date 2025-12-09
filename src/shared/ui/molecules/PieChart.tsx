@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 
 export interface PieChartData {
@@ -52,6 +52,22 @@ const PieChart: React.FC<PieChartProps> = ({
   label = false,
   className = '',
 }) => {
+  const [chartHeight, setChartHeight] = useState(300);
+  const [legendHeight, setLegendHeight] = useState(36);
+  const [legendFontSize, setLegendFontSize] = useState('14px');
+
+  useEffect(() => {
+    const updateSizes = () => {
+      const isDesktop = window.innerWidth >= 1024;
+      setChartHeight(isDesktop ? 300 : 250);
+      setLegendHeight(isDesktop ? 36 : 28);
+      setLegendFontSize(isDesktop ? '14px' : '12px');
+    };
+    updateSizes();
+    window.addEventListener('resize', updateSizes);
+    return () => window.removeEventListener('resize', updateSizes);
+  }, []);
+
   // Generate colors for data items that don't have custom colors
   const dataWithColors = data.map((item, index) => ({
     ...item,
@@ -119,16 +135,16 @@ const PieChart: React.FC<PieChartProps> = ({
       const data = payload[0];
       const percentage = percentages.get(data.name) ?? 0;
       return (
-        <div className="bg-cardColor dark:bg-cardColor border border-borderColor dark:border-borderColor rounded-lg shadow-lg p-3">
-          <p className="text-sm font-medium text-mainTextColor dark:text-mainTextColor">
+        <div className="bg-cardColor dark:bg-cardColor border border-borderColor dark:border-borderColor rounded-lg shadow-lg p-2 lg:p-3">
+          <p className="text-xs lg:text-sm font-medium text-mainTextColor dark:text-mainTextColor">
             {data.name}
           </p>
-          <p className="text-sm text-textColor dark:text-textColor">
+          <p className="text-xs lg:text-sm text-textColor dark:text-textColor">
             {typeof data.value === 'number' 
               ? data.value.toLocaleString() 
               : data.value}
           </p>
-          <p className="text-sm text-textColor dark:text-textColor">
+          <p className="text-xs lg:text-sm text-textColor dark:text-textColor">
             {percentage}%
           </p>
         </div>
@@ -140,11 +156,11 @@ const PieChart: React.FC<PieChartProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {title && (
-        <h3 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor mb-4 text-center">
+        <h3 className="text-base lg:text-lg font-semibold text-mainTextColor dark:text-mainTextColor mb-2 lg:mb-4 text-center">
           {title}
         </h3>
       )}
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={chartHeight}>
         <RechartsPieChart>
           <Pie
             data={dataWithColors}
@@ -165,11 +181,12 @@ const PieChart: React.FC<PieChartProps> = ({
           {showLegend && (
             <Legend
               verticalAlign="top"
-              height={36}
+              height={legendHeight}
+              wrapperStyle={{ fontSize: legendFontSize }}
               formatter={(value, entry: any) => {
                 const percentage = percentages.get(entry.payload.name) ?? 0;
                 return (
-                  <span className="text-mainTextColor dark:text-mainTextColor text-sm">
+                  <span className="text-mainTextColor dark:text-mainTextColor text-xs lg:text-sm">
                     {value} {percentage}%
                   </span>
                 );

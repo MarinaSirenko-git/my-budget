@@ -168,7 +168,7 @@ export default function GoalsPage() {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-8 text-mainTextColor dark:text-mainTextColor">
-          <EmptyState icon={<img src="/src/assets/goal-page-mouse.webp" alt="Empty State" className="max-h-[200px] max-w-[200px]" />}>
+          <EmptyState icon={<img src="/src/assets/goal-page-mouse.webp" alt="Empty State" className="max-h-[240px] max-w-[240px] lg:max-h-[200px] lg:max-w-[200px]" />}>
             <div style={{ whiteSpace: 'pre-line' }}>{safeMessage}</div>
           </EmptyState>
           <TextButton 
@@ -204,7 +204,7 @@ export default function GoalsPage() {
   }
 
   return (
-    <div className="flex flex-col p-6 gap-6 min-h-[calc(100vh-100px)]">
+    <div className="flex flex-col p-2 lg:p-6 gap-4 lg:gap-6 min-h-[calc(100vh-100px)]">
       <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('goalsForm.editTitle') : t('goalsForm.createTitle')}>
         <AddGoalForm
           handleSubmit={handleSubmit}
@@ -233,7 +233,7 @@ export default function GoalsPage() {
           {t('goalsForm.addNewButton')}
         </TextButton>
       </div>
-      <div className="grid grid-cols-1 px-6 md:grid-cols-2 xl:grid-cols-3 gap-6 w-full">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 lg:gap-6 w-full">
         {goals.map((goal: Goal) => {
           return (
             <GoalCard

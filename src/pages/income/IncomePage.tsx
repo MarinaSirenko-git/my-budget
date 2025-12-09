@@ -232,12 +232,12 @@ export default function IncomePage() {
   
   if (!incomes || incomes.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
+      <div className="flex h-full items-center justify-center pt-12 lg:pt-0 lg:min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6 text-mainTextColor dark:text-mainTextColor">
-          <EmptyState icon={<img src="/src/assets/income-page-mouse.webp" alt="Empty State" className="max-h-[110px] max-w-[110px]" />}>
+          <EmptyState icon={<img src="/src/assets/income-page-mouse.webp" alt="Empty State" className="max-h-[160px] max-w-[160px] lg:max-h-[110px] lg:max-w-[110px]" />}>
             {t('incomeForm.emptyStateMessage')}
           </EmptyState>
-          <div className="flex flex-wrap gap-2 justify-center max-w-2xl px-4 mt-4">
+          <div className="flex flex-wrap gap-4 lg:gap-2 justify-center max-w-2xl px-4 mt-4">
             {incomeTypes.map((type) => (
               <Tag 
                 key={type.id} 
@@ -277,7 +277,7 @@ export default function IncomePage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 min-h-[calc(100vh-100px)]">
+    <div className="flex flex-col gap-6 lg:min-h-[calc(100vh-100px)]">
       <div className="flex w-full justify-end">
         <TextButton 
           onClick={handleAddIncomeClick} 
@@ -294,9 +294,9 @@ export default function IncomePage() {
             id: 'table',
             label: t('incomeForm.tabs.table'),
             content: (
-              <div className="space-y-2 px-12">
-                <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
-                  <div className="flex gap-3">
+              <div className="lg:space-y-2 lg:px-12">
+                <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor mb-4 lg:mb-0">
+                  <div className="flex flex-wrap gap-3">
                     <span>{t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
                     <span>{t('incomeForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
                   </div>
@@ -320,7 +320,7 @@ export default function IncomePage() {
             id: 'chart',
             label: t('incomeForm.tabs.chart'),
             content: (
-              <div className="space-y-2 px-12">
+              <div className="lg:space-y-2 lg:px-12">
                 <div className="text-sm text-textColor dark:text-textColor text-right">
                   {t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong>
                 </div>

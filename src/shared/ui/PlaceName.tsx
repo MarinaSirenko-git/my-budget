@@ -99,8 +99,8 @@ export default function PlaceName() {
   }
 
   return (
-    <h1 className="text-md text-mainTextColor dark:text-white flex items-center gap-1">
-      <MapPinIcon className="w-5 h-5" />
+    <h1 className="text-sm lg:text-base text-mainTextColor dark:text-white flex items-center gap-1">
+      <MapPinIcon className="lg:w-5 lg:h-5 w-3 h-3" />
       {placeName}
     </h1>
   );

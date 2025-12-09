@@ -44,8 +44,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] p-6 gap-6">
-      <h1 className="text-2xl font-semibold text-mainTextColor dark:text-mainTextColor">{t('settingsForm.title')}</h1>
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] p-2 lg:p-6 gap-4 lg:gap-6">
+      <h1 className="text-xl lg:text-2xl font-semibold text-mainTextColor dark:text-mainTextColor">{t('settingsForm.title')}</h1>
       
       <div className="max-w-md w-full">
         <SettingsForm

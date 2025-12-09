@@ -63,7 +63,7 @@ function Table<T extends Record<string, any>>({
                 key={column.key}
                 scope="col"
                 className={`
-                  px-6 py-3 text-xs font-medium uppercase tracking-wider
+                  px-2 py-2 lg:px-6 lg:py-3 text-xs font-medium uppercase tracking-wider
                   text-textColor dark:text-textColor
                   ${getAlignClass(column.align)}
                   ${column.width || ''}
@@ -77,7 +77,7 @@ function Table<T extends Record<string, any>>({
         <tbody className="bg-cardColor dark:bg-sidebarBg divide-y divide-borderColor dark:divide-borderColor">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-12 text-sm text-textColor dark:text-textColor">
+              <td colSpan={columns.length} className="px-2 py-8 lg:px-6 lg:py-12 text-xs lg:text-sm text-textColor dark:text-textColor">
                 {emptyMessage}
               </td>
             </tr>
@@ -95,7 +95,7 @@ function Table<T extends Record<string, any>>({
                   <td
                     key={column.key}
                     className={`
-                      px-6 py-4 whitespace-nowrap text-sm
+                      px-2 py-3 lg:px-6 lg:py-4 whitespace-nowrap text-xs lg:text-sm
                       text-mainTextColor dark:text-mainTextColor
                       ${getAlignClass(column.align)}
                     `}

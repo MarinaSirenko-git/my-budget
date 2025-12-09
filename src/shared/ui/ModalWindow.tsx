@@ -25,7 +25,7 @@ const ModalWindow = React.forwardRef<HTMLDivElement, ModalWindowProps>(({ open, 
             as={Fragment}
             enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
             leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-            <Dialog.Panel ref={ref} className={`bg-cardColor dark:bg-cardColor rounded-xl shadow-xl p-6 max-w-md w-full relative ${className}`}>
+            <Dialog.Panel ref={ref} className={`bg-cardColor dark:bg-cardColor rounded-xl shadow-xl p-2 lg:p-6 max-w-md w-full relative ${className}`}>
               <button
                 onClick={onClose}
                 className="absolute top-4 right-4 text-textColor dark:text-textColor hover:text-mainTextColor dark:hover:text-mainTextColor transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full p-1"

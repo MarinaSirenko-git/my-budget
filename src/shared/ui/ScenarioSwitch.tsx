@@ -9,7 +9,12 @@ import { loadScenarioData, createScenario } from '@/shared/utils/scenarios';
 import ScenarioForm from '@/features/scenarios/ScenarioForm';
 import { sanitizeName } from '@/shared/utils/sanitize';
 
-export default function ScenarioSwitch() {
+interface ScenarioSwitchProps {
+  mobile?: boolean;
+  onMenuClose?: () => void;
+}
+
+export default function ScenarioSwitch({ mobile = false, onMenuClose }: ScenarioSwitchProps) {
   const { t } = useTranslation('components');
   const navigate = useNavigate();
   const { user, currentScenarioId, loadCurrentScenarioData, setCurrentScenarioId } = useAuth();
@@ -46,6 +51,9 @@ export default function ScenarioSwitch() {
   const handleAddScenario = () => {
     setOpen(true);
     setError(null);
+    if (onMenuClose) {
+      onMenuClose();
+    }
   };
 
   const handleClose = () => {
@@ -104,10 +112,13 @@ export default function ScenarioSwitch() {
     <>
       <button
         onClick={handleAddScenario}
-        className="text-md text-mainTextColor dark:text-[#F8FAFC] flex items-center gap-1"
+        className={mobile 
+          ? "lg:hidden text-md text-mainTextColor dark:text-[#F8FAFC] flex items-center gap-1 w-full py-2 px-2 hover:bg-contentBg dark:hover:bg-cardColor rounded-md truncate"
+          : "hidden lg:flex text-md text-mainTextColor dark:text-[#F8FAFC] items-center gap-1"
+        }
       >
-        <CurrencyDollarIcon className="w-5 h-5" />
-        {t('header.createAlternativeScenario')}
+        <CurrencyDollarIcon className="w-5 h-5 flex-shrink-0" />
+        <span className="truncate">{t('header.createAlternativeScenario')}</span>
       </button>
 
       <ModalWindow 

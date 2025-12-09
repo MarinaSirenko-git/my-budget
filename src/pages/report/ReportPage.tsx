@@ -412,9 +412,9 @@ export default function ReportPage() {
   ];
 
   return (
-    <div className="flex flex-col gap-6 px-6 min-h-[calc(100vh-100px)]">
-      <div className="flex w-full justify-between items-center">
-        <h1 className="text-lg font-bold text-mainTextColor dark:text-mainTextColor">
+    <div className="flex flex-col gap-4 lg:gap-6 p-2 lg:px-6 min-h-[calc(100vh-100px)]">
+      <div className="flex flex-col sm:flex-row w-full justify-between items-start sm:items-center gap-3 sm:gap-0">
+        <h1 className="text-base lg:text-lg font-bold text-mainTextColor dark:text-mainTextColor">
           {t('report.title')}
         </h1>
         <TextButton
@@ -422,15 +422,16 @@ export default function ReportPage() {
           disabled={exporting}
           variant="primary"
           aria-label={t('report.downloadButton')}
+          className="w-full sm:w-auto"
         >
-          <ArrowDownTrayIcon className="w-5 h-5 mr-2" />
+          <ArrowDownTrayIcon className="w-4 h-4 lg:w-5 lg:h-5 mr-2" />
           {exporting ? tComponents('export.loading') : t('report.downloadButton')}
         </TextButton>
       </div>
 
       {incomes.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
+          <h2 className="text-base lg:text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
             {t('report.sections.incomes')}
           </h2>
           <Table columns={incomeColumns} data={incomes} />
@@ -439,7 +440,7 @@ export default function ReportPage() {
 
      {savings.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
+          <h2 className="text-base lg:text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
             {t('report.sections.savings')}
           </h2>
           <Table columns={savingColumns} data={savings} />
@@ -448,7 +449,7 @@ export default function ReportPage() {
 
       {goals.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
+          <h2 className="text-base lg:text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
             {t('report.sections.goals')}
           </h2>
           <Table columns={goalColumns} data={goals} />
@@ -457,7 +458,7 @@ export default function ReportPage() {
 
       {expenses.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
+          <h2 className="text-base lg:text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
             {t('report.sections.expenses')}
           </h2>
           <Table columns={expenseColumns} data={expenses} />
@@ -466,7 +467,7 @@ export default function ReportPage() {
 
       {totals.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
+          <h2 className="text-base lg:text-lg font-semibold text-mainTextColor dark:text-mainTextColor">
             {t('report.sections.totals')}
           </h2>
           <Table columns={totalColumns} data={totals} />
@@ -474,8 +475,8 @@ export default function ReportPage() {
       )}
 
       {incomes.length === 0 && expenses.length === 0 && savings.length === 0 && goals.length === 0 && (
-        <div className="flex items-center justify-center min-h-[400px]">
-          <p className="text-textColor dark:text-textColor">{t('report.empty')}</p>
+        <div className="flex items-center justify-center min-h-[300px] lg:min-h-[400px]">
+          <p className="text-sm lg:text-base text-textColor dark:text-textColor">{t('report.empty')}</p>
         </div>
       )}
     </div>
