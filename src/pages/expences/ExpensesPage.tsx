@@ -50,7 +50,7 @@ import LoadingState from '@/shared/ui/atoms/LoadingState';
 import ErrorState from '@/shared/ui/atoms/ErrorState';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import SelectInput from '@/shared/ui/form/SelectInput';
-import TextButton from '@/shared/ui/atoms/TextButton';
+import AddButton from '@/shared/ui/atoms/AddButton';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
@@ -288,13 +288,12 @@ export default function ExpensesPage() {
   return (
     <div className="flex flex-col gap-6 min-h-[calc(100vh-100px)]">
       <div className="flex w-full justify-end">
-        <TextButton 
-          onClick={handleAddExpenseClick} 
-          aria-label={t('expensesForm.addNewAriaLabel')} 
-          variant="primary"
+        <AddButton
+          onClick={handleAddExpenseClick}
+          aria-label={t('expensesForm.addNewAriaLabel')}
         >
           {t('expensesForm.addNewButton')}
-        </TextButton>
+        </AddButton>
       </div>
       
       <Tabs
@@ -303,7 +302,7 @@ export default function ExpensesPage() {
             id: 'table',
             label: t('expensesForm.tabs.table'),
             content: (
-              <div className="space-y-2 lg:px-12">
+              <div className="space-y-2 lg:px-2">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
                   <div className="flex flex-wrap gap-3">
                     <span>{t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
@@ -329,7 +328,7 @@ export default function ExpensesPage() {
             id: 'chart',
             label: t('expensesForm.tabs.chart'),
             content: (
-              <div className="space-y-2 lg:px-12">
+              <div className="space-y-2 lg:px-2">
                 <div className="text-sm text-textColor dark:text-textColor text-right">
                   {t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong>
                 </div>

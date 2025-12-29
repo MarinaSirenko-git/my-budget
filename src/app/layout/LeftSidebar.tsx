@@ -42,43 +42,48 @@ function LeftSidebar(){
         }`;
 
     return(
-        <div className="hidden lg:flex fixed top-0 left-0 flex-col h-screen w-[clamp(200px,18vw,260px)] bg-white dark:bg-black border-r border-black dark:border-white p-2 pt-0 z-30">
+        <div className="hidden lg:flex fixed top-0 left-0 flex-col h-screen w-[clamp(200px,18vw,260px)] bg-white dark:bg-black border-r border-black dark:border-white p-0 pt-0 z-30">
 
             
-            <div className='flex items-center h-[70px]'>
-                <div className="-mt-[25px]">
-                  <Logo />
-                </div>
+            <div className='flex items-center h-[75px] border-b border-black dark:border-white px-2'>
+                <Logo />
             </div>
-            <ul className="w-full px-2 flex flex-col gap-2 text-md leading-loose">
-                <li> 
-                    <NavLink className={navLinkClass} to={`/${currentSlug}/income`}>
-                        <ArrowRightEndOnRectangleIcon className="w-5 h-5 text-black dark:text-white" />
-                        {t('sidebar.myIncome')}
-                    </NavLink>
-                </li>
-                <li> 
-                    <NavLink className={navLinkClass} to={`/${currentSlug}/savings`}>
-                        <BanknotesIcon className="w-5 h-5 text-black dark:text-white" />
-                        {t('sidebar.mySavings')}
-                    </NavLink>
-                </li>
-                <li> 
-                    <NavLink className={navLinkClass} to={`/${currentSlug}/expenses`}>
-                        <ArrowRightStartOnRectangleIcon className="w-5 h-5 text-black dark:text-white" />
-                        {t('sidebar.myExpenses')}
-                    </NavLink>
-                </li>
-                <li> 
-                    <NavLink className={navLinkClass} to={`/${currentSlug}/goals`}>
-                        <SparklesIcon className="w-5 h-5 text-black dark:text-white" />
-                        {t('sidebar.myGoals')}
-                    </NavLink>
-                </li>
-
-
-            </ul>
-            <ul className="pt-2 w-full mt-auto text-md leading-loose">
+            <div className="flex flex-col justify-between flex-1">
+                <ul className="w-full px-4 flex flex-col gap-2 text-md leading-loose pt-6">
+                    <li> 
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/income`}>
+                            <ArrowRightEndOnRectangleIcon className="w-5 h-5 text-black dark:text-white" />
+                            {t('sidebar.myIncome')}
+                        </NavLink>
+                    </li>
+                    <li> 
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/savings`}>
+                            <BanknotesIcon className="w-5 h-5 text-black dark:text-white" />
+                            {t('sidebar.mySavings')}
+                        </NavLink>
+                    </li>
+                    <li> 
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/expenses`}>
+                            <ArrowRightStartOnRectangleIcon className="w-5 h-5 text-black dark:text-white" />
+                            {t('sidebar.myExpenses')}
+                        </NavLink>
+                    </li>
+                    <li> 
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/goals`}>
+                            <SparklesIcon className="w-5 h-5 text-black dark:text-white" />
+                            {t('sidebar.myGoals')}
+                        </NavLink>
+                    </li>
+                </ul>
+                <FinancialSummary
+                    totalIncome={totalIncome}
+                    totalExpenses={totalExpenses}
+                    totalSavings={totalSavings}
+                    totalGoals={totalGoals}
+                    remainder={remainder}
+                    t={t}
+                />
+                <ul className="pt-2 px-4 w-full text-md leading-loose">
                 <li> 
                     <NavLink className={bottomNavLinkClass} to={`/${currentSlug}/docs`}>
                         <DocumentTextIcon className="w-5 h-5 text-black dark:text-white" />
@@ -98,14 +103,7 @@ function LeftSidebar(){
                     </button>
                 </li>
             </ul>
-            <FinancialSummary
-                totalIncome={totalIncome}
-                totalExpenses={totalExpenses}
-                totalSavings={totalSavings}
-                totalGoals={totalGoals}
-                remainder={remainder}
-                t={t}
-            />
+            </div>
         </div>
     )
 }

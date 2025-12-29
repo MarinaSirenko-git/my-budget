@@ -130,7 +130,7 @@
     },
     "tabs": {
       "table": "Table",
-      "chart": "Chart"
+      "chart": "Diagram"
     },
     "totals": {
       "monthly": "Monthly total:",
@@ -186,7 +186,7 @@
     },
     "tabs": {
       "table": "Table",
-      "chart": "Chart"
+      "chart": "Diagram"
     },
     "totals": {
       "monthly": "Monthly total:",
@@ -256,7 +256,7 @@
     },
     "tabs": {
       "table": "Table",
-      "chart": "Chart"
+      "chart": "Diagram"
     },
     "totals": {
       "total": "Total savings:"

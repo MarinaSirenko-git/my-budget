@@ -258,7 +258,7 @@ export default function SavingsPage() {
             id: 'table',
             label: t('savingsForm.tabs.table'),
             content: (
-              <div className="space-y-2 lg:px-12">
+              <div className="space-y-2 lg:px-2">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
                   <div>
                     <span>{t('savingsForm.totals.total')} <strong className="text-mainTextColor dark:text-mainTextColor">{totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
@@ -282,7 +282,7 @@ export default function SavingsPage() {
             id: 'chart',
             label: t('savingsForm.tabs.chart'),
             content: (
-              <div className="space-y-2 lgpx-12">
+              <div className="space-y-2 lg:px-2">
                 <div className="text-sm text-textColor dark:text-textColor text-right">
                   {t('savingsForm.totals.total')} <strong className="text-mainTextColor dark:text-mainTextColor">{totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong>
                 </div>

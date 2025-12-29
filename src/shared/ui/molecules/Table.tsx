@@ -54,17 +54,18 @@ function Table<T extends Record<string, any>>({
   };
 
   return (
-    <div className={`overflow-x-auto rounded-lg border border-borderColor dark:border-borderColor ${className}`}>
-      <table className="min-w-full divide-y divide-borderColor dark:divide-borderColor">
-        <thead className="bg-contentBg dark:bg-cardColor">
+    <div className={`overflow-x-auto border border-black dark:border-white ${className}`}>
+      <table className="min-w-full">
+        <thead className="bg-white dark:bg-black border-b border-black dark:border-white">
           <tr>
             {columns.map((column) => (
               <th
                 key={column.key}
                 scope="col"
                 className={`
-                  px-2 py-2 lg:px-6 lg:py-3 text-xs font-medium uppercase tracking-wider
-                  text-textColor dark:text-textColor
+                  px-2 py-2 lg:px-6 lg:py-3 text-xs font-bold uppercase tracking-wider
+                  text-black dark:text-white
+                  border-r border-black dark:border-white last:border-r-0
                   ${getAlignClass(column.align)}
                   ${column.width || ''}
                 `}
@@ -74,10 +75,10 @@ function Table<T extends Record<string, any>>({
             ))}
           </tr>
         </thead>
-        <tbody className="bg-cardColor dark:bg-sidebarBg divide-y divide-borderColor dark:divide-borderColor">
+        <tbody className="bg-white dark:bg-black">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-2 py-8 lg:px-6 lg:py-12 text-xs lg:text-sm text-textColor dark:text-textColor">
+              <td colSpan={columns.length} className="px-2 py-8 lg:px-6 lg:py-12 text-xs lg:text-sm text-black dark:text-white font-light text-center">
                 {emptyMessage}
               </td>
             </tr>
@@ -87,8 +88,9 @@ function Table<T extends Record<string, any>>({
                 key={rowIndex}
                 onClick={() => onRowClick?.(row, rowIndex)}
                 className={`
+                  border-b border-black dark:border-white last:border-b-0
                   transition-colors
-                  ${onRowClick ? 'cursor-pointer hover:bg-contentBg dark:hover:bg-cardColor' : ''}
+                  ${onRowClick ? 'cursor-pointer hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black' : ''}
                 `}
               >
                 {columns.map((column) => (
@@ -96,7 +98,8 @@ function Table<T extends Record<string, any>>({
                     key={column.key}
                     className={`
                       px-2 py-3 lg:px-6 lg:py-4 whitespace-nowrap text-xs lg:text-sm
-                      text-mainTextColor dark:text-mainTextColor
+                      text-black dark:text-white font-light
+                      border-r border-black dark:border-white last:border-r-0
                       ${getAlignClass(column.align)}
                     `}
                   >

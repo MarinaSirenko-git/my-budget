@@ -28,17 +28,18 @@ interface PieChartProps {
   className?: string;
 }
 
+// Monochrome colors: soft gray shades
 const DEFAULT_COLORS = [
-  '#3B82F6', // blue
-  '#10B981', // green
-  '#F59E0B', // amber
-  '#EF4444', // red
-  '#8B5CF6', // purple
-  '#EC4899', // pink
-  '#06B6D4', // cyan
-  '#84CC16', // lime
-  '#F97316', // orange
-  '#6366F1', // indigo
+  '#E5E5E5', // very light gray
+  '#D0D0D0', // light gray
+  '#B0B0B0', // medium-light gray
+  '#909090', // medium gray
+  '#707070', // medium-dark gray
+  '#505050', // dark gray
+  '#C5C5C5', // light-medium gray
+  '#A5A5A5', // medium-light gray
+  '#858585', // medium gray
+  '#656565', // medium-dark gray
 ];
 
 const PieChart: React.FC<PieChartProps> = ({
@@ -135,16 +136,16 @@ const PieChart: React.FC<PieChartProps> = ({
       const data = payload[0];
       const percentage = percentages.get(data.name) ?? 0;
       return (
-        <div className="bg-cardColor dark:bg-cardColor border border-borderColor dark:border-borderColor rounded-lg shadow-lg p-2 lg:p-3">
-          <p className="text-xs lg:text-sm font-medium text-mainTextColor dark:text-mainTextColor">
+        <div className="bg-white dark:bg-black border border-black dark:border-white p-2 lg:p-3">
+          <p className="text-xs lg:text-sm font-bold text-black dark:text-white">
             {data.name}
           </p>
-          <p className="text-xs lg:text-sm text-textColor dark:text-textColor">
+          <p className="text-xs lg:text-sm font-light text-black dark:text-white">
             {typeof data.value === 'number' 
               ? data.value.toLocaleString() 
               : data.value}
           </p>
-          <p className="text-xs lg:text-sm text-textColor dark:text-textColor">
+          <p className="text-xs lg:text-sm font-light text-black dark:text-white">
             {percentage}%
           </p>
         </div>
@@ -156,7 +157,7 @@ const PieChart: React.FC<PieChartProps> = ({
   return (
     <div className={`w-full ${className}`}>
       {title && (
-        <h3 className="text-base lg:text-lg font-semibold text-mainTextColor dark:text-mainTextColor mb-2 lg:mb-4 text-center">
+        <h3 className="text-base lg:text-lg font-bold text-black dark:text-white mb-2 lg:mb-4 text-center tracking-tight">
           {title}
         </h3>
       )}
@@ -170,11 +171,18 @@ const PieChart: React.FC<PieChartProps> = ({
             label={label ? (renderLabel as any) : false}
             outerRadius={outerRadius}
             innerRadius={innerRadius}
-            fill="#8884d8"
+            fill="#909090"
             dataKey="value"
+            stroke="#000000"
+            strokeWidth={1}
           >
             {dataWithColors.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.color} 
+                stroke="#000000"
+                strokeWidth={1}
+              />
             ))}
           </Pie>
           {showTooltip && <Tooltip content={<CustomTooltip />} />}
@@ -186,7 +194,7 @@ const PieChart: React.FC<PieChartProps> = ({
               formatter={(value, entry: any) => {
                 const percentage = percentages.get(entry.payload.name) ?? 0;
                 return (
-                  <span className="text-mainTextColor dark:text-mainTextColor text-xs lg:text-sm">
+                  <span className="text-black dark:text-white text-xs lg:text-sm font-light">
                     {value} {percentage}%
                   </span>
                 );

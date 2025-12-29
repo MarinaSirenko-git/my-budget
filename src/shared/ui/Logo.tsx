@@ -1,12 +1,15 @@
+import { EnvelopeIcon, BanknotesIcon } from '@heroicons/react/24/outline';
+
 export default function Logo() {
 
-  const containerClass = `pl-1 flex items-end font-bold gap-2`;
+  const containerClass = `pl-1 flex items-center font-bold`;
 
   const content = (
     <>
-      <img src="/src/assets/logo1.webp" alt="Logo" className='w-12 h-12' />
-      <p className='text-xl text-mainTextColor dark:text-mainTextColor leading-none'>Mousie</p>
-      
+      <div className="flex items-center gap-1">
+        <EnvelopeIcon className='w-8 h-8 text-black dark:text-white' />
+        <BanknotesIcon className='w-8 h-8 text-black dark:text-white' />
+      </div>
     </>
   );
 

@@ -68,7 +68,7 @@ const Tabs: React.FC<TabsProps> = ({
       <div 
         role="tablist" 
         aria-label="Tabs"
-        className="flex space-x-1 rounded-lg bg-contentBg dark:bg-cardColor p-1 lg:px-12"
+        className="flex dark:border-white bg-white dark:bg-black p-1 lg:px-2"
       >
         {tabs.map((tab) => {
           const isActive = tab.id === activeTabId;
@@ -84,13 +84,13 @@ const Tabs: React.FC<TabsProps> = ({
               onClick={() => handleTabChange(tab.id)}
               onKeyDown={(e) => handleKeyDown(e, tab.id)}
               className={`
-                w-full rounded-md px-3 py-2 text-sm font-medium leading-5
+                w-full px-3 py-2 text-sm leading-5
                 transition-all duration-150
-                focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2
+                focus:outline-none focus:ring-0
                 ${
                   isActive
-                    ? 'bg-presenting dark:bg-cardColor text-white dark:text-mainTextColor shadow-sm'
-                    : 'bg-sidebarBg text-textColor hover:opacity-80'
+                    ? 'border-b border-black dark:border-white dark:bg-white text-black dark:text-black font-bold'
+                    : 'bg-white dark:bg-black text-black dark:text-white font-light dark:hover:bg-white dark:hover:text-black'
                 }
                 ${tab.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
               `}
@@ -104,7 +104,7 @@ const Tabs: React.FC<TabsProps> = ({
         role="tabpanel"
         id={`tab-panel-${activeTabId}`}
         aria-labelledby={`tab-${activeTabId}`}
-        className="mt-4 rounded-lg bg-cardColor dark:bg-cardColor focus:outline-none"
+        className="mt-4 dark:border-white bg-white dark:bg-black focus:outline-none"
       >
         {activeTab?.content}
       </div>

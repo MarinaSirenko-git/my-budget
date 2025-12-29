@@ -50,7 +50,7 @@ import ErrorState from '@/shared/ui/atoms/ErrorState';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import Tag from '@/shared/ui/atoms/Tag';
-import TextButton from '@/shared/ui/atoms/TextButton';
+import AddButton from '@/shared/ui/atoms/AddButton';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
@@ -279,13 +279,12 @@ export default function IncomePage() {
   return (
     <div className="flex flex-col gap-6 lg:min-h-[calc(100vh-100px)]">
       <div className="flex w-full justify-end">
-        <TextButton 
-          onClick={handleAddIncomeClick} 
-          aria-label={t('incomeForm.addNewAriaLabel')} 
-          variant="primary"
+        <AddButton
+          onClick={handleAddIncomeClick}
+          aria-label={t('incomeForm.addNewAriaLabel')}
         >
           {t('incomeForm.addNewButton')}
-        </TextButton>
+        </AddButton>
       </div>
       
       <Tabs
@@ -294,7 +293,7 @@ export default function IncomePage() {
             id: 'table',
             label: t('incomeForm.tabs.table'),
             content: (
-              <div className="lg:space-y-2 lg:px-12">
+              <div className="lg:space-y-2 lg:px-2">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor mb-4 lg:mb-0">
                   <div className="flex flex-wrap gap-3">
                     <span>{t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
@@ -320,7 +319,7 @@ export default function IncomePage() {
             id: 'chart',
             label: t('incomeForm.tabs.chart'),
             content: (
-              <div className="lg:space-y-2 lg:px-12">
+              <div className="lg:space-y-2 lg:px-2">
                 <div className="text-sm text-textColor dark:text-textColor text-right">
                   {t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong>
                 </div>
