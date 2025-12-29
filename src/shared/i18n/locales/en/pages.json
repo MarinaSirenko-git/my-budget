@@ -35,83 +35,40 @@
   "docs": {
     "title": "Documentation",
     "header": {
-      "title": "How it works and why it helps",
-      "description": "The method «<strong>enter income → set goals → categorize expenses → use envelopes</strong>» turns money from an abstraction into a clear plan: you see how much comes in, where it goes, which goals are more important, and what limits each category has. This reduces anxiety, eliminates «leaks» and gives a sense of control."
+      "title": "How does it work?",
+      "subtitle": "What is the envelope method?",
+      "description": "Imagine you have several envelopes, and you put money in each one for specific purposes: groceries, entertainment, transportation. The envelope method works exactly like that — you decide in advance how much you'll spend on each category and stick to that plan. This helps you avoid spending more than planned and always know how much money is left for this or that goal. Simple, clear, and very effective!"
     },
-    "section1": {
-      "title": "1) Enter income and savings → understand the real base",
-      "why": "without honest income accounting, any plans are «in the air».",
-      "what": "a fixed framework (monthly/annual) from which limits and goal deadlines are calculated.",
-      "result": "illusions of «seems like enough» disappear, real numbers appear.",
-      "inAppTitle": "In the app:",
-      "inAppItem1": "Enter all sources (salary, freelance, cashback, interest, rent, etc.).",
-      "inAppItem2": "Mark regularity (month/quarter/year) so calculations are correct."
-    },
-    "section2": {
-      "title": "2) Enter goals → give money direction",
-      "why": "money without a goal «dissolves».",
-      "what": "priorities (cushion, vacation, down payment), deadlines and the required amount.",
-      "result": "motivation and success criteria appear («on track / behind schedule»).",
-      "inAppTitle": "In the app:",
-      "inAppItem1": "Add a goal (amount + deadline + priority).",
-      "inAppItem2": "The system will compare goals with the remainder after expenses and suggest what's realistic."
-    },
-    "section3": {
-      "title": "3) Categorize expenses → find «black holes»",
-      "why": "«expenses in general» can't be cut; specific categories can.",
-      "what": "visibility of «where it flows», quick wins in several categories.",
-      "result": "find 2–3 areas for optimization without feeling deprived.",
-      "inAppTitle": "In the app:",
-      "inAppItem1": "Use ready-made categories (food, transport, housing, communication, etc.) or add your own."
-    },
-    "section4": {
-      "title": "4) Envelope method → turn plan into behavior",
-      "why": "an «envelope» (category limit) turns intention into action.",
-      "how": "each category is assigned a strict limit; you can't spend beyond it, but you can consciously redistribute between envelopes.",
-      "result": "the budget becomes a self-limiting system — no need to «calculate in your head» all the time.",
-      "inAppTitle": "In the app:",
-      "inAppItem1": "Set limits by category (envelopes).",
-      "inAppItem2": "Track the envelope balance and the overall monthly balance.",
-      "inAppItem3": "If you don't fit — review the limit or goal priorities (the plan becomes more realistic)."
-    },
-    "whyItHelps": {
-      "title": "Why it really helps",
-      "item1": "From abstractions to structure: income → goals → categories → limits. The brain loves clear steps.",
-      "item2": "Priorities are visible: money «works» for goals, not «disappears» randomly.",
-      "item3": "Less stress: decisions are made during planning, not at the checkout.",
-      "item4": "Flexibility without self-deception: limits can be changed, but consciously — the trade-off is visible.",
-      "item5": "Feedback: progress and lag are visible immediately; the app suggests adjustments."
+    "alwaysAvailable": {
+      "title": "Always at hand",
+      "description": "The app is your digital envelopes that are always with you. Open the app at any time and immediately see how much money you have, where it's going, and how much is left for your goals. No need to keep notes in a notebook or remember numbers — everything is stored in the cloud and accessible from your phone, tablet, or computer. Your budget is always in view!"
     },
     "whatAppDoes": {
-      "title": "What the app does for you",
-      "item1": "Converts currencies and provides a unified picture.",
-      "item2": "Automatically allocates part of income to expenses (taxes, depreciation for rent).",
-      "item3": "Visualizes income/savings/expenses/goals (charts, goal progress).",
-      "item4": "Warns about overspending.",
-      "item5": "Saves scenarios (e.g., different city/suburb)."
-    },
-    "howToUse": {
-      "title": "How to use it to make it work",
-      "item1": "Record all income (monthly + annual, bonuses, seasonal).",
-      "item2": "Add 2–3 main goals with amount and deadline.",
-      "item3": "Break down expenses by category and set envelope limits.",
-      "item4": "Live within limits: if there's not enough — change the limit or goal, don't ignore the plan.",
-      "item5": "Review once a month: the plan works when it's alive."
-    },
-    "faq": {
-      "title": "Frequently asked questions",
-      "q1": "What if income is unstable?",
-      "a1": "Create a «base» scenario (minimum income) and an «optimistic» one. The app will show how to account for both.",
-      "q2": "What if the goal «doesn't work»?",
-      "a2": "Recalculate the deadline or reduce the amount. A realistic plan is better than a perfect one on paper.",
-      "q3": "Can I spend beyond the envelope?",
-      "a3": "Yes, but only through explicit redistribution from another envelope — this shows the compromise and reduces impulsive spending."
-    },
-    "labels": {
-      "why": "Why:",
-      "what": "What it gives:",
-      "result": "Result:",
-      "how": "How it works:"
+      "title": "What can the app do?",
+      "item1": {
+        "title": "Working with different currencies",
+        "description": "Getting paid in dollars but spending in rubles? No problem! Add income and expenses in any currency, and the app will automatically convert everything to one currency so you can see the big picture."
+      },
+      "item2": {
+        "title": "Comparing options",
+        "description": "Want to understand if it's better to take a loan or save up? Create several budget scenarios and compare them. This way you'll immediately see which option is better for your wallet."
+      },
+      "item3": {
+        "title": "Automatic calculation",
+        "description": "The app automatically calculates your savings, even if you top them up in different currencies and with different frequencies. Just add the information, and we'll do the calculations for you."
+      },
+      "item4": {
+        "title": "Progress toward goals",
+        "description": "Set a goal to save for a vacation or a new car? The app will show how much you've already saved and how much is left. You'll always see how close you are to your goal."
+      },
+      "item5": {
+        "title": "Your data is secure",
+        "description": "All information about your finances is encrypted before saving. Your data is protected and accessible only to you — no one else will see it."
+      },
+      "item6": {
+        "title": "Share with family",
+        "description": "Need to show your spouse the current budget status? Take a screenshot and send it so everyone is aware of the family's financial situation."
+      }
     }
   },
   "notFound": {

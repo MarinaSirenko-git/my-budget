@@ -1,0 +1,1 @@
+Generate the commit name for all changes from this chat
