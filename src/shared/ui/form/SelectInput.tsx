@@ -94,7 +94,7 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
 
     return (
       <div className={`w-full ${className}`}>
-        {label && <span className="block mb-1 text-sm font-medium text-textColor dark:text-textColor">{label}</span>}
+        {label && <span className="block mb-2 text-sm font-bold text-black dark:text-white tracking-tight">{label}</span>}
         <Listbox value={value} onChange={handleOptionChange} disabled={disabled}>
           {({ open }) => (
             <div className="relative">
@@ -109,13 +109,13 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
                 }} 
                 name={name} 
                 className={`
-                  relative w-full cursor-pointer rounded border bg-cardColor dark:bg-sidebarBg py-2 pl-3 pr-10 text-left shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary text-mainTextColor dark:text-mainTextColor
+                  relative w-full cursor-pointer border border-black dark:border-white bg-white dark:bg-black py-2 pl-3 pr-10 text-left font-light text-black dark:text-white focus:outline-none focus:ring-0
                   disabled:opacity-50 disabled:cursor-not-allowed
                 `}
               >
                 <span className="block truncate">{selectedOption?.label || value}</span>
                 <span className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                  <ChevronUpDownIcon className="w-5 h-5 text-textColor dark:text-textColor" aria-hidden="true" />
+                  <ChevronUpDownIcon className="w-5 h-5 text-black dark:text-white" aria-hidden="true" />
                 </span>
               </Listbox.Button>
               <Transition
@@ -124,16 +124,16 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
                 leave="transition ease-in duration-100"
                 leaveFrom="opacity-100"
                 leaveTo="opacity-0">
-                <Listbox.Options static className="absolute z-50 mt-1 w-full overflow-auto rounded bg-cardColor dark:bg-sidebarBg shadow-lg max-h-56 py-1 text-base ring-1 ring-black/5 focus:outline-none">
+                <Listbox.Options static className="absolute z-50 mt-1 w-full overflow-auto border border-black dark:border-white bg-white dark:bg-black max-h-56 py-1 text-base focus:outline-none">
                   {creatable && (
-                    <div className="px-2 py-1 border-b border-borderColor">
+                    <div className="px-2 py-1 border-b border-black dark:border-white">
                       <input
                         ref={searchInputRef}
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Поиск или создание..."
-                        className="w-full px-2 py-1 rounded border bg-contentBg dark:bg-sidebarBg text-mainTextColor dark:text-mainTextColor text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full px-2 py-1 border border-black dark:border-white bg-white dark:bg-black text-black dark:text-white text-sm font-light focus:outline-none focus:ring-0"
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
@@ -168,32 +168,31 @@ const SelectInput = React.forwardRef<HTMLButtonElement, SelectInputProps>(
                           handleCreateOption();
                         }
                       }}
-                      className="relative cursor-pointer select-none py-2 pl-10 pr-4 text-primary hover:bg-contentBg dark:hover:bg-cardColor flex items-center gap-2"
+                      className="relative cursor-pointer select-none py-2 pl-10 pr-4 text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black flex items-center gap-2 font-light"
                       tabIndex={0}
                     >
                       <PlusIcon className="w-5 h-5 absolute left-3" />
-                      <span className="font-medium">Создать "{searchQuery.trim()}"</span>
+                      <span>Создать "{searchQuery.trim()}"</span>
                     </div>
                   )}
                   {filteredOptions.map((option) => {
-                    const isSelected = option.value === value;
                     return (
                       <Listbox.Option
                         key={option.value}
                         value={option.value}
                         disabled={option.disabled}
                         className={({ active, selected }) => `
-                          relative cursor-pointer select-none py-2 pl-10 pr-4 text-mainTextColor dark:text-mainTextColor
-                          ${selected ? 'bg-primary text-white' : active ? 'bg-contentBg dark:bg-cardColor' : ''}
+                          relative cursor-pointer select-none py-2 pl-10 pr-4 font-light
+                          ${selected ? 'bg-black text-white dark:bg-white dark:text-black' : active ? 'bg-black text-white dark:bg-white dark:text-black' : 'text-black dark:text-white'}
                           ${option.disabled ? 'opacity-50 cursor-not-allowed' : ''}
                         `}
                       >
                         {({ selected }) => (
                           <>
-                            <span className={`block truncate ${selected ? 'font-semibold' : 'font-normal'}`}>{option.label}</span>
+                            <span className={`block truncate ${selected ? 'font-bold' : 'font-light'}`}>{option.label}</span>
                             {selected ? (
                               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                                <CheckIcon className="w-5 h-5 text-white" aria-hidden="true" />
+                                <CheckIcon className="w-5 h-5 text-white dark:text-black" aria-hidden="true" />
                               </span>
                             ) : null}
                           </>

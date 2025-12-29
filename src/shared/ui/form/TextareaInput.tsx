@@ -17,21 +17,21 @@ const TextareaInput = React.forwardRef<HTMLTextAreaElement, TextareaInputProps>(
         {label && (
           <label 
             htmlFor={textareaId}
-            className="block mb-1 text-sm font-medium text-mainTextColor dark:text-textColor"
+            className="block mb-2 text-sm font-bold text-black dark:text-white tracking-tight"
           >
             {label}
-            {required && <span className="text-accentRed dark:text-accentRed ml-1">*</span>}
+            {required && <span className="text-black dark:text-white ml-1">*</span>}
           </label>
         )}
         <textarea
           ref={ref}
           id={textareaId}
           required={required}
-          className={`border rounded px-3 py-2 bg-cardColor dark:bg-sidebarBg text-mainTextColor dark:text-mainTextColor w-full resize-y min-h-[100px] ${className}`}
+          className={`border border-black dark:border-white px-3 py-2 bg-white dark:bg-black text-black dark:text-white w-full resize-y min-h-[100px] font-light focus:outline-none focus:ring-0 ${className}`}
           {...props}
         />
         {description && (
-          <p className="mt-1 text-xs text-textColor dark:text-textColor">
+          <p className="mt-2 text-xs text-black dark:text-white font-light">
             {description}
           </p>
         )}

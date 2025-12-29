@@ -16,10 +16,10 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(
         {label && (
           <label 
             htmlFor={inputId}
-            className="block mb-1 text-sm font-medium text-mainTextColor dark:text-textColor"
+            className="block mb-2 text-sm font-bold text-black dark:text-white tracking-tight"
           >
             {label}
-            {required && <span className="text-accentRed dark:text-accentRed ml-1">*</span>}
+            {required && <span className="text-black dark:text-white ml-1">*</span>}
           </label>
         )}
         <input
@@ -27,7 +27,7 @@ const TextInput = React.forwardRef<HTMLInputElement, TextInputProps>(
           id={inputId}
           type="text"
           required={required}
-          className={`border rounded px-3 py-2 bg-cardColor dark:bg-sidebarBg text-mainTextColor dark:text-mainTextColor w-full ${className}`}
+          className={`border border-black dark:border-white px-3 py-2 bg-white dark:bg-black text-black dark:text-white w-full font-light focus:outline-none focus:ring-0 ${className}`}
           {...props}
         />
       </div>

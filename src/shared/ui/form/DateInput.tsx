@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useMemo } from 'react';
-import { DayPicker, useNavigation } from 'react-day-picker';
+import { DayPicker, useNavigation, type CustomComponents } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { useLanguage } from '@/shared/i18n';
 
@@ -48,7 +48,7 @@ function CustomCaption(props: { displayMonth: Date; onMonthChange?: (month: Date
         type="button"
         onClick={() => previousMonth && goToMonth(previousMonth)}
         disabled={!previousMonth}
-        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="p-1 border border-black dark:border-white bg-white dark:bg-black text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-0"
         aria-label="Previous month"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -60,7 +60,7 @@ function CustomCaption(props: { displayMonth: Date; onMonthChange?: (month: Date
         <select
           value={currentMonth}
           onChange={handleMonthChange}
-          className="px-2 py-1 rounded border bg-cardColor dark:bg-sidebarBg text-mainTextColor dark:text-mainTextColor border-gray-300 dark:border-gray-600 cursor-pointer"
+          className="px-2 py-1 border border-black dark:border-white bg-white dark:bg-black text-black dark:text-white cursor-pointer font-light focus:outline-none focus:ring-0"
           aria-label="Select month"
         >
           {months.map((month, index) => (
@@ -72,7 +72,7 @@ function CustomCaption(props: { displayMonth: Date; onMonthChange?: (month: Date
         <select
           value={currentYear}
           onChange={handleYearChange}
-          className="px-2 py-1 rounded border bg-cardColor dark:bg-sidebarBg text-mainTextColor dark:text-mainTextColor border-gray-300 dark:border-gray-600 cursor-pointer"
+          className="px-2 py-1 border border-black dark:border-white bg-white dark:bg-black text-black dark:text-white cursor-pointer font-light focus:outline-none focus:ring-0"
           aria-label="Select year"
         >
           {years.map((year) => (
@@ -87,7 +87,7 @@ function CustomCaption(props: { displayMonth: Date; onMonthChange?: (month: Date
         type="button"
         onClick={() => nextMonth && goToMonth(nextMonth)}
         disabled={!nextMonth}
-        className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="p-1 border border-black dark:border-white bg-white dark:bg-black text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-0"
         aria-label="Next month"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +204,7 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
       // For partial input, we keep it in local state but don't update parent yet
     }
 
-    function handleInputBlur(e: React.FocusEvent<HTMLInputElement>) {
+    function handleInputBlur() {
       const trimmedValue = inputValue.trim();
       
       if (trimmedValue === '') {
@@ -261,7 +261,7 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block mb-1 text-sm font-medium text-mainTextColor dark:text-textColor">
+          <label className="block mb-2 text-sm font-bold text-black dark:text-white tracking-tight">
             {label}
           </label>
         )}
@@ -274,7 +274,7 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
             }}
             type="text"
             inputMode="numeric"
-            className={`border rounded px-3 py-2 bg-cardColor dark:bg-sidebarBg text-mainTextColor dark:text-mainTextColor w-full ${className}`}
+            className={`border border-black dark:border-white px-3 py-2 bg-white dark:bg-black text-black dark:text-white w-full font-light focus:outline-none focus:ring-0 ${className}`}
             value={inputValue}
             onChange={handleInputChange}
             onFocus={handleInputFocus}
@@ -287,7 +287,7 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
           {open && (
             <div 
               ref={calendarRef}
-              className="absolute left-0 z-50 mt-2 w-max min-w-[260px] rounded-xl bg-cardColor dark:bg-sidebarBg shadow-lg border p-4"
+              className="absolute left-0 z-50 mt-2 w-max min-w-[260px] border border-black dark:border-white bg-white dark:bg-black p-4"
             >
               <DayPicker
                 mode="single"
@@ -298,8 +298,8 @@ const DateInput = React.forwardRef<HTMLInputElement, DateInputProps>(
                 showOutsideDays
                 components={{
                   Caption: CustomCaption
-                }}
-                className=""
+                } as unknown as CustomComponents}
+                className="rdp-monochrome"
               />
             </div>
           )}
