@@ -10,7 +10,7 @@ interface TextButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElem
   /** Click handler */
   onClick?: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
   /** Button variant style */
-  variant?: 'default' | 'primary' | 'yellow';
+  variant?: 'default' | 'primary' | 'inverse';
 }
 
 const TextButton = React.forwardRef<HTMLButtonElement, TextButtonProps>(
@@ -19,19 +19,19 @@ const TextButton = React.forwardRef<HTMLButtonElement, TextButtonProps>(
     
     const variantStyles = {
       default: `
-        bg-cardColor text-primary
-        hover:bg-contentBg dark:hover:bg-cardColor
-        active:bg-contentBg dark:active:bg-cardColor
+        border border-black dark:border-white bg-white dark:bg-black text-black dark:text-white
+        hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black
+        active:bg-black active:text-white dark:active:bg-white dark:active:text-black
       `,
       primary: `
-        bg-primary text-white
-        hover:bg-primary/80 dark:hover:bg-primary/80
-        active:bg-primary/90 dark:active:bg-primary/90
+        border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black
+        hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white
+        active:bg-white active:text-black dark:active:bg-black dark:active:text-white
       `,
-      yellow: `
-        bg-accentYellow text-gray-900 dark:text-gray-900
-        hover:bg-accentYellow/80 dark:hover:bg-accentYellow/80
-        active:bg-accentYellow/90 dark:active:bg-accentYellow/90
+      inverse: `
+        border border-black dark:border-white bg-white dark:bg-black text-black dark:text-white
+        hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black
+        active:bg-black active:text-white dark:active:bg-white dark:active:text-black
       `,
     };
 
@@ -45,9 +45,9 @@ const TextButton = React.forwardRef<HTMLButtonElement, TextButtonProps>(
         disabled={disabled}
         onClick={onClick}
         className={`
-          inline-flex items-center justify-center font-medium rounded-full px-3 py-2 lg:px-4 lg:py-3 transition-all text-sm lg:text-base
+          inline-flex items-center justify-center font-bold px-3 py-2 lg:px-4 lg:py-3 transition-all text-sm lg:text-base
           ${variantStyles[variant ? variant : 'default']}
-          focus-visible:ring-2 focus-visible:ring-primary focus-visible:z-10
+          focus:outline-none focus:ring-0
           disabled:opacity-50 disabled:pointer-events-none
           ${className}
         `}

@@ -34,17 +34,18 @@ export default function FeedbackForm({
       />
 
       {message && (
-        <div className={`text-sm ${message.includes(t('feedbackForm.errorMessage')) ? 'text-accentRed dark:text-accentRed' : 'text-success dark:text-success'}`}>
+        <div className="text-sm text-black dark:text-white font-light">
           {message}
         </div>
       )}
 
-      <div className="flex gap-2 justify-end pt-2">
+      <div className="flex gap-2 pt-2">
         <TextButton
           type="button"
           onClick={handleClose}
           variant="default"
           disabled={submitting}
+          className="flex-1"
         >
           {t('feedbackForm.cancelButton')}
         </TextButton>
@@ -53,6 +54,7 @@ export default function FeedbackForm({
           variant="primary"
           disabled={!feedback.trim() || submitting}
           aria-label={t('feedbackForm.submitAriaLabel')}
+          className="flex-1"
         >
           {submitting ? t('feedbackForm.submittingButton') : t('feedbackForm.submitButton')}
         </TextButton>

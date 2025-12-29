@@ -9,7 +9,6 @@ import {
   ArrowRightStartOnRectangleIcon,
   SparklesIcon,
   BanknotesIcon,
-  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { NavLink, useParams } from 'react-router-dom';
 import ThemeSwitch from './ThemeSwitch';
@@ -121,12 +120,6 @@ export default function MobileMenu() {
                         <NavLink className={navLinkClass} to={`/${currentSlug}/settings`} onClick={() => setOpen(false)}>
                           <Cog6ToothIcon className="w-5 h-5 flex-shrink-0" />
                           <span className="truncate">{t('sidebar.settings')}</span>
-                        </NavLink>
-                      </li>
-                      <li>
-                        <NavLink className={navLinkClass} to={`/${currentSlug}/report`} onClick={() => setOpen(false)}>
-                          <ArrowDownTrayIcon className="w-5 h-5 flex-shrink-0" />
-                          <span className="truncate">{t('sidebar.exportData')}</span>
                         </NavLink>
                       </li>
                       <li>

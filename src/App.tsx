@@ -10,7 +10,6 @@ import GoalsPage from "./pages/goals/GoalsPage";
 import SavingsPage from "./pages/savings/SavingsPage";
 import DocsPage from "./pages/docs/DocsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
-import ReportPage from "./pages/report/ReportPage";
 import { useEffect, useState } from 'react';
 import { useTheme } from './shared/store/theme';
 import { useAuth } from './shared/store/auth'
@@ -53,7 +52,6 @@ function App() {
               <Route path="savings" element={<SavingsPage />} />
               <Route path="docs" element={<DocsPage />} />
               <Route path="settings" element={<SettingsPage />} />
-              <Route path="report" element={<ReportPage />} />
             </Route>
           </Route>
         </Route>

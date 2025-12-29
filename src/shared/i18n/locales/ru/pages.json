@@ -74,43 +74,6 @@
   "notFound": {
     "title": "Страница не найдена",
     "message": "Запрашиваемая страница не существует"
-  },
-  "report": {
-    "title": "Финансовый отчет",
-    "loading": "Загрузка данных отчета...",
-    "errorPrefix": "Ошибка загрузки отчета:",
-    "empty": "Нет данных для экспорта",
-    "downloadButton": "Скачать CSV",
-    "sections": {
-      "incomes": "Доходы",
-      "expenses": "Расходы",
-      "savings": "Накопления",
-      "goals": "Цели",
-      "totals": "Итоги"
-    },
-    "columns": {
-      "amount": "Сумма",
-      "source": "Источник",
-      "frequency": "Частота",
-      "currency": "Валюта",
-      "converted": "Сумма в {{currency}}",
-      "comment": "Комментарий",
-      "category": "Категория",
-      "period": "Период",
-      "type": "Тип",
-      "originalAmount": "Сумма в валюте ввода",
-      "originalCurrency": "Валюта ввода",
-      "convertedAmount": "Сумма в дефолтной валюте",
-      "defaultCurrency": "Дефолтная валюта"
-    },
-    "totals": {
-      "month": "За месяц",
-      "year": "За год",
-      "income": "Доходы",
-      "expense": "Расходы",
-      "savings": "Накопления",
-      "goals": "Цели"
-    }
   }
 }
 

@@ -74,43 +74,6 @@
   "notFound": {
     "title": "Page Not Found",
     "message": "The requested page does not exist"
-  },
-  "report": {
-    "title": "Financial Report",
-    "loading": "Loading report data...",
-    "errorPrefix": "Error loading report:",
-    "empty": "No data available for export",
-    "downloadButton": "Download CSV",
-    "sections": {
-      "incomes": "Incomes",
-      "expenses": "Expenses",
-      "savings": "Savings",
-      "goals": "Goals",
-      "totals": "Totals"
-    },
-    "columns": {
-      "amount": "Amount",
-      "source": "Source",
-      "frequency": "Frequency",
-      "currency": "Currency",
-      "converted": "Amount in {{currency}}",
-      "comment": "Comment",
-      "category": "Category",
-      "period": "Period",
-      "type": "Type",
-      "originalAmount": "Amount in Input Currency",
-      "originalCurrency": "Input Currency",
-      "convertedAmount": "Amount in Default Currency",
-      "defaultCurrency": "Default Currency"
-    },
-    "totals": {
-      "month": "Month",
-      "year": "Year",
-      "income": "Income",
-      "expense": "Expenses",
-      "savings": "Savings",
-      "goals": "Goals"
-    }
   }
 }
 
