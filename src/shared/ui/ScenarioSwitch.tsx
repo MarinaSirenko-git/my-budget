@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { CurrencyDollarIcon } from '@heroicons/react/24/outline';
+import { PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/shared/i18n';
 import { useAuth } from '@/shared/store/auth';
 import { useNavigate } from 'react-router-dom';
@@ -113,11 +113,11 @@ export default function ScenarioSwitch({ mobile = false, onMenuClose }: Scenario
       <button
         onClick={handleAddScenario}
         className={mobile 
-          ? "lg:hidden text-md text-mainTextColor dark:text-[#F8FAFC] flex items-center gap-1 w-full py-2 px-2 hover:bg-contentBg dark:hover:bg-cardColor rounded-md truncate"
-          : "hidden lg:flex text-md text-mainTextColor dark:text-[#F8FAFC] items-center gap-1"
+          ? "lg:hidden border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black flex items-center gap-2 w-full py-2 px-3 font-normal hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-colors focus:outline-none focus:ring-0"
+          : "hidden lg:flex border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black items-center gap-2 font-normal px-3 py-2 hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-colors focus:outline-none focus:ring-0"
         }
       >
-        <CurrencyDollarIcon className="w-5 h-5 flex-shrink-0" />
+        <PlusIcon className="w-5 h-5 flex-shrink-0" />
         <span className="truncate">{t('header.createAlternativeScenario')}</span>
       </button>
 

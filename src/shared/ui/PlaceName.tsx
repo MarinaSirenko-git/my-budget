@@ -78,7 +78,6 @@ export default function PlaceName() {
   if (loading) {
     return (
       <h1 className="text-md text-mainTextColor dark:text-white flex items-center gap-1">
-        <MapPinIcon className="w-5 h-5" />
         {placeName}
       </h1>
     );
@@ -87,7 +86,6 @@ export default function PlaceName() {
   if (hasMultipleScenarios) {
     return (
       <div className="flex items-center gap-1">
-        <MapPinIcon className="w-5 h-5 text-mainTextColor dark:text-white" />
         <SelectInput
           value={currentScenarioId || ''}
           options={scenarioOptions}

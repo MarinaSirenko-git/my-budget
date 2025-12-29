@@ -18,9 +18,9 @@ function Header(){
 
     return(
         <>
-            <div className="sticky top-0 z-20 flex flex-col bg-sidebarBg dark:bg-sidebarBg shadow-xs">
+            <div className="sticky top-0 z-20 flex flex-col bg-white dark:bg-black border-b border-black dark:border-white">
                 {/* Main Header */}
-                <div className="navbar font-normal font-base border-b dark:border-borderColor flex items-center justify-between py-2 lg:py-4 px-2 lg:px-4">
+                <div className="navbar font-normal font-base flex items-center justify-between py-2 lg:py-4 px-2 lg:px-4">
                     <div className="flex justify-between lg:justify-start items-center gap-4 w-full">
                         <MobileMenu />
                         <div className="flex items-center justify-between gap-4 lg:w-full">
@@ -35,7 +35,7 @@ function Header(){
                     </div>
                 </div>
                 
-                <div className="lg:hidden bg-sidebarBg border-b dark:border-borderColor px-0 py-2 overflow-x-auto">
+                <div className="lg:hidden bg-white dark:bg-black border-b border-black dark:border-white px-0 py-2 overflow-x-auto">
                     <FinancialSummary
                         totalIncome={totalIncome}
                         totalExpenses={totalExpenses}
