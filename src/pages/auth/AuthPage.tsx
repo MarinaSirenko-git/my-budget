@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { useTranslation } from '@/shared/i18n';
 import TextButton from '@/shared/ui/atoms/TextButton';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
+import { EnvelopeIcon, BanknotesIcon } from '@heroicons/react/24/outline';
 
 export default function AuthPage() {
   const { t } = useTranslation('pages');
@@ -26,8 +27,11 @@ export default function AuthPage() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen w-full">
-      <div className="flex-1 lg:bg-black dark:bg-black max-h-[45%] lg:max-h-full">
-        <img src="/src/assets/auth-page-mouse1.webp" alt="Auth Background" className="w-full h-full object-contain" />
+      <div className="flex-1 lg:bg-black dark:bg-black max-h-[45%] lg:max-h-full flex items-center justify-center">
+        <div className="flex items-center gap-8 lg:gap-12">
+          <EnvelopeIcon className="w-16 h-16 lg:w-24 lg:h-24 text-white" />
+          <BanknotesIcon className="w-16 h-16 lg:w-24 lg:h-24 text-white" />
+        </div>
       </div>
       <div className="flex-1 flex items-start lg:items-center justify-center bg-white dark:bg-white">
         <div className="flex flex-col items-center gap-8 lg:gap-6 px-8 lg:p-8">
