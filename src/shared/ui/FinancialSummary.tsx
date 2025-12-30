@@ -28,8 +28,8 @@ export default function FinancialSummary({
     ? 'flex-shrink-0 min-w-[80px] px-2 py-1.5 border border-black dark:border-white'
     : 'min-w-[100px] px-4 py-2 border-x-transparent';
 
-  const labelTextClass = isMobile ? 'text-[10px]' : 'text-xs';
-  const valueTextClass = isMobile ? 'text-xs' : 'text-sm';
+  const labelTextClass = isMobile ? 'text-[10px]' : 'text-base';
+  const valueTextClass = isMobile ? 'text-xs' : 'text-base';
 
   return (
     <div className={containerClass}>

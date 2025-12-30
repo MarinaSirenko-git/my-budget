@@ -27,11 +27,12 @@ const Tag: React.FC<TagProps> = ({
   return (
     <button
       className={`
-        inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium
-        transition-colors hover:opacity-80
+        inline-flex items-center gap-2 border border-black dark:border-white
+        px-3 py-1.5 text-xs font-mono uppercase tracking-wide
+        transition-all
         ${isCustom 
-          ? 'bg-primary dark:bg-primary text-white dark:text-mainTextColor hover:bg-primary dark:hover:bg-primary' 
-          : 'bg-sidebarBg dark:bg-cardColor text-mainTextColor dark:text-mainTextColor hover:bg-sidebarBg dark:hover:bg-cardColor'}
+          ? 'bg-black dark:bg-white text-white dark:text-black hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white' 
+          : 'bg-white dark:bg-black text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black'}
         ${onClick && !disabled ? 'cursor-pointer' : ''}
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
         ${className}
@@ -48,11 +49,11 @@ const Tag: React.FC<TagProps> = ({
             e.stopPropagation();
             onRemove();
           }}
-          className="ml-1 rounded-full bg-sidebarBg hover:bg-sidebarBg dark:hover:bg-cardColor p-0.5 transition-colors"
+          className="ml-1 border border-black dark:border-white bg-white dark:bg-black text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black p-0.5 transition-all"
           aria-label={`Remove ${title}`}
           type="button"
         >
-          <XMarkIcon className="w-3.5 h-3.5" />
+          <XMarkIcon className="w-3 h-3" />
         </button>
       )}
     </button>

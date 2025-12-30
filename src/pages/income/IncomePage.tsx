@@ -234,7 +234,7 @@ export default function IncomePage() {
     return (
       <div className="flex h-full items-center justify-center pt-12 lg:pt-0 lg:min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6 text-mainTextColor dark:text-mainTextColor">
-          <EmptyState icon={<img src="/src/assets/income-page-mouse.webp" alt="Empty State" className="max-h-[160px] max-w-[160px] lg:max-h-[110px] lg:max-w-[110px]" />}>
+          <EmptyState>
             {t('incomeForm.emptyStateMessage')}
           </EmptyState>
           <div className="flex flex-wrap gap-4 lg:gap-2 justify-center max-w-2xl px-4 mt-4">

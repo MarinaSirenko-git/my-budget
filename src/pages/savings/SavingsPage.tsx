@@ -43,7 +43,7 @@
 import { useState } from 'react';
 // reusable global components
 import EmptyState from '@/shared/ui/atoms/EmptyState';
-import TextButton from '@/shared/ui/atoms/TextButton';
+import AddButton from '@/shared/ui/atoms/AddButton';
 import LoadingState from '@/shared/ui/atoms/LoadingState';
 import ErrorState from '@/shared/ui/atoms/ErrorState';
 import ModalWindow from '@/shared/ui/ModalWindow';
@@ -207,17 +207,16 @@ export default function SavingsPage() {
     return (
       <div className="flex h-full items-center justify-center min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-8 text-mainTextColor dark:text-mainTextColor">
-          <EmptyState icon={<img src="/src/assets/savings-page-mouse.webp" alt="Empty State" className="max-h-[200px] max-w-[200px]" />}>
+          <EmptyState>
             <div style={{ whiteSpace: 'pre-line' }}>{safeMessage}</div>
           </EmptyState>
-          <TextButton 
+          <AddButton 
             onClick={handleCreateSavingClick} 
             aria-label={t('savingsForm.createAriaLabel')} 
-            variant="primary"
             className="mt-3"
           >
             {t('savingsForm.createButton')}
-          </TextButton>
+          </AddButton>
           <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('savingsForm.editTitle') : t('savingsForm.createTitle')}>
             <AddSavingForm
               handleSubmit={handleSubmit}
@@ -243,13 +242,12 @@ export default function SavingsPage() {
   return (
     <div className="flex flex-col gap-6 min-h-[calc(100vh-100px)]">
       <div className="flex w-full justify-end">
-        <TextButton 
+        <AddButton 
           onClick={handleCreateSavingClick} 
-          aria-label={t('savingsForm.addNewAriaLabel')} 
-          variant="primary"
+          aria-label={t('savingsForm.addNewAriaLabel')}
         >
           {t('savingsForm.addNewButton')}
-        </TextButton>
+        </AddButton>
       </div>
       
       <Tabs

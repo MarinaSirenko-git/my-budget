@@ -5,7 +5,8 @@ module.exports = {
   theme: { 
     extend: {      
       fontFamily: {
-        base: ['Inter', 'system-ui', 'Segoe UI', 'Roboto', 'Arial', 'sans-serif'],
+        sans: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
+        base: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', 'monospace'],
       },
       colors: {
         sidebarBg:      'rgb(var(--sidebar-bg) / <alpha-value>)',

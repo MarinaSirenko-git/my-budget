@@ -53,6 +53,7 @@ html, body {
   background-color: rgb(var(--content-bg));
   color: rgb(var(--main-text-color));
   color-scheme: light dark;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
 }
 
 #root {

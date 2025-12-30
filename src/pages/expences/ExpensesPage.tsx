@@ -263,7 +263,7 @@ export default function ExpensesPage() {
     return (
       <div className="flex h-full items-center justify-center lg:min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6">
-          <EmptyState icon={<img src="/src/assets/expenses-page-mouse.webp" alt="Empty State" className="max-h-[200px] max-w-[200px]" />}>
+          <EmptyState>
             {t('expensesForm.emptyStateMessage')}
           </EmptyState>
            <p className="max-w-[600px] text-center text-textColor dark:text-mainTextColor">{t('expensesForm.emptyStateDescription')}</p>
