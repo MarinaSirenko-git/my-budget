@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
 import { useTranslation } from '@/shared/i18n';
 import { useAuth } from '@/shared/store/auth';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +7,7 @@ import { currencyOptions } from '@/shared/constants/currencies';
 import { loadScenarioData, createScenario } from '@/shared/utils/scenarios';
 import ScenarioForm from '@/features/scenarios/ScenarioForm';
 import { sanitizeName } from '@/shared/utils/sanitize';
+import AddButton from '@/shared/ui/atoms/AddButton';
 
 interface ScenarioSwitchProps {
   mobile?: boolean;
@@ -110,16 +110,25 @@ export default function ScenarioSwitch({ mobile = false, onMenuClose }: Scenario
 
   return (
     <>
-      <button
-        onClick={handleAddScenario}
-        className={mobile 
-          ? "lg:hidden border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black flex items-center gap-2 w-full py-2 px-3 font-normal hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-colors focus:outline-none focus:ring-0"
-          : "hidden lg:flex border border-black dark:border-white bg-black dark:bg-white text-white dark:text-black items-center gap-2 font-normal px-3 py-2 hover:bg-white hover:text-black dark:hover:bg-black dark:hover:text-white transition-colors focus:outline-none focus:ring-0"
-        }
-      >
-        <PlusIcon className="w-5 h-5 flex-shrink-0" />
-        <span className="truncate">{t('header.createAlternativeScenario')}</span>
-      </button>
+      {mobile ? (
+        <AddButton
+          onClick={handleAddScenario}
+          aria-label={t('header.createAlternativeScenario')}
+          className="lg:hidden w-full !bg-black dark:!bg-white !text-white dark:!text-black hover:!bg-white hover:!text-black dark:hover:!bg-black dark:hover:!text-white border border-black dark:border-white"
+          inverted={true}
+        >
+          {t('header.createAlternativeScenario')}
+        </AddButton>
+      ) : (
+        <AddButton
+          onClick={handleAddScenario}
+          aria-label={t('header.createAlternativeScenario')}
+          className="hidden lg:flex !bg-black dark:!bg-white !text-white dark:!text-black hover:!bg-white hover:!text-black dark:hover:!bg-black dark:hover:!text-white border border-black dark:border-white"
+          inverted={true}
+        >
+          {t('header.createAlternativeScenario')}
+        </AddButton>
+      )}
 
       <ModalWindow 
         open={open} 

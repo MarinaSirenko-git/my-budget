@@ -81,8 +81,11 @@ export default function MobileMenu() {
                       <XMarkIcon className="h-5 w-5" />
                     </button>
                   </div>
-                  <nav className="py-4 px-4 overflow-y-auto flex-1">
-                    <ul className="flex flex-col gap-2 text-base leading-loose">
+                  <div className="px-4 py-4 border-b border-black dark:border-white">
+                    <ScenarioSwitch mobile={true} onMenuClose={() => setOpen(false)} />
+                  </div>
+                  <nav className="px-4 overflow-y-auto flex-1 flex flex-col justify-between py-4">
+                    <ul className="flex flex-col gap-2 text-base leading-loose pt-4">
                       <li>
                         <NavLink className={navLinkClass} to={`/${currentSlug}/income`} onClick={() => setOpen(false)}>
                           {t('sidebar.myIncome')}
@@ -104,18 +107,18 @@ export default function MobileMenu() {
                         </NavLink>
                       </li>
                     </ul>
-                    <FinancialSummary
-                      totalIncome={totalIncome}
-                      totalExpenses={totalExpenses}
-                      totalSavings={totalSavings}
-                      totalGoals={totalGoals}
-                      remainder={remainder}
-                      t={t}
-                    />
-                    <div className="pt-4 mt-4 border-t border-black dark:border-white">
-                      <ScenarioSwitch mobile={true} />
+                    <div className="border border-black dark:border-white">
+                      <FinancialSummary
+                        totalIncome={totalIncome}
+                        totalExpenses={totalExpenses}
+                        totalSavings={totalSavings}
+                        totalGoals={totalGoals}
+                        remainder={remainder}
+                        t={t}
+                        variant="mobile"
+                      />
                     </div>
-                    <ul className="flex flex-col gap-2 text-base leading-loose mt-4 pt-4 border-t border-black dark:border-white">
+                    <ul className="flex flex-col gap-2 text-base leading-loose">
                       <li>
                         <NavLink className={navLinkClass} to={`/${currentSlug}/docs`} onClick={() => setOpen(false)}>
                           {t('sidebar.howWillThisHelp')}
