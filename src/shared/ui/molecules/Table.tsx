@@ -53,64 +53,123 @@ function Table<T extends Record<string, any>>({
     }
   };
 
-  return (
-    <div className={`overflow-x-auto border border-black dark:border-white ${className}`}>
-      <table className="min-w-full">
-        <thead className="bg-white dark:bg-black border-b border-black dark:border-white">
-          <tr>
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                className={`
-                  px-2 py-2 lg:px-6 lg:py-3 text-xs font-bold uppercase tracking-wider
-                  text-black dark:text-white
-                  border-r border-black dark:border-white last:border-r-0
-                  ${getAlignClass(column.align)}
-                  ${column.width || ''}
-                `}
-              >
-                {column.label}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="bg-white dark:bg-black">
-          {data.length === 0 ? (
-            <tr>
-              <td colSpan={columns.length} className="px-2 py-8 lg:px-6 lg:py-12 text-xs lg:text-sm text-black dark:text-white font-light text-center">
-                {emptyMessage}
-              </td>
-            </tr>
-          ) : (
-            data.map((row, rowIndex) => (
-              <tr
-                key={rowIndex}
-                onClick={() => onRowClick?.(row, rowIndex)}
-                className={`
-                  border-b border-black dark:border-white last:border-b-0
-                  transition-colors
-                  ${onRowClick ? 'cursor-pointer hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black' : ''}
-                `}
-              >
-                {columns.map((column) => (
-                  <td
-                    key={column.key}
-                    className={`
-                      px-2 py-3 lg:px-6 lg:py-4 whitespace-nowrap text-xs lg:text-sm
-                      text-black dark:text-white font-light
-                      border-r border-black dark:border-white last:border-r-0
-                      ${getAlignClass(column.align)}
-                    `}
-                  >
+  // Mobile card view
+  const renderMobileCards = () => {
+    if (data.length === 0) {
+      return (
+        <div className="px-4 py-8 text-sm text-black dark:text-white font-light text-center border border-black dark:border-white">
+          {emptyMessage}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2">
+        {data.map((row, rowIndex) => (
+          <div
+            key={rowIndex}
+            onClick={() => onRowClick?.(row, rowIndex)}
+            className={`
+              border border-black dark:border-white bg-white dark:bg-black p-4
+              transition-colors
+              ${onRowClick ? 'cursor-pointer hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black' : ''}
+            `}
+          >
+            <div className="space-y-2">
+              {columns.map((column) => (
+                <div
+                  key={column.key}
+                  className={`
+                    flex justify-between items-start gap-2
+                    ${column.align === 'right' ? 'flex-row-reverse' : ''}
+                    ${column.align === 'center' ? 'flex-col items-center text-center' : ''}
+                  `}
+                >
+                  <div className="text-xs font-bold uppercase tracking-wide text-black dark:text-white">
+                    {column.label}:
+                  </div>
+                  <div className={`
+                    text-sm font-light text-black dark:text-white
+                    ${column.align === 'right' ? 'text-right' : ''}
+                    ${column.align === 'center' ? 'text-center' : ''}
+                  `}>
                     {getCellValue(column, row)}
-                  </td>
-                ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  return (
+    <div className={className}>
+      {/* Mobile Card View */}
+      <div className="lg:hidden">
+        {renderMobileCards()}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className={`hidden lg:block overflow-x-auto border border-black dark:border-white`}>
+        <table className="min-w-full">
+          <thead className="bg-white dark:bg-black border-b border-black dark:border-white">
+            <tr>
+              {columns.map((column) => (
+                <th
+                  key={column.key}
+                  scope="col"
+                  className={`
+                    px-6 py-3 text-xs font-bold uppercase tracking-wider
+                    text-black dark:text-white
+                    border-r border-black dark:border-white last:border-r-0
+                    ${getAlignClass(column.align)}
+                    ${column.width || ''}
+                  `}
+                >
+                  {column.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="bg-white dark:bg-black">
+            {data.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-6 py-12 text-sm text-black dark:text-white font-light text-center">
+                  {emptyMessage}
+                </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              data.map((row, rowIndex) => (
+                <tr
+                  key={rowIndex}
+                  onClick={() => onRowClick?.(row, rowIndex)}
+                  className={`
+                    border-b border-black dark:border-white last:border-b-0
+                    transition-colors
+                    ${onRowClick ? 'cursor-pointer hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black' : ''}
+                  `}
+                >
+                  {columns.map((column) => (
+                    <td
+                      key={column.key}
+                      className={`
+                        px-6 py-4 whitespace-nowrap text-sm
+                        text-black dark:text-white font-light
+                        border-r border-black dark:border-white last:border-r-0
+                        ${getAlignClass(column.align)}
+                      `}
+                    >
+                      {getCellValue(column, row)}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

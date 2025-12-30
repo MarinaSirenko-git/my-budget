@@ -278,10 +278,11 @@ export default function IncomePage() {
 
   return (
     <div className="flex flex-col gap-6 lg:min-h-[calc(100vh-100px)]">
-      <div className="flex w-full justify-end">
+      <div className="flex w-full justify-center lg:justify-end px-4 lg:px-0 py-4 lg:py-0">
         <AddButton
           onClick={handleAddIncomeClick}
           aria-label={t('incomeForm.addNewAriaLabel')}
+          className="w-full lg:w-auto justify-center lg:justify-start"
         >
           {t('incomeForm.addNewButton')}
         </AddButton>

@@ -241,10 +241,11 @@ export default function SavingsPage() {
 
   return (
     <div className="flex flex-col gap-6 min-h-[calc(100vh-100px)]">
-      <div className="flex w-full justify-end">
+      <div className="flex w-full justify-center lg:justify-end px-4 lg:px-0 py-4 lg:py-0">
         <AddButton 
           onClick={handleCreateSavingClick} 
           aria-label={t('savingsForm.addNewAriaLabel')}
+          className="w-full lg:w-auto justify-center lg:justify-start"
         >
           {t('savingsForm.addNewButton')}
         </AddButton>

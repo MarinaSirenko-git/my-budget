@@ -223,10 +223,11 @@ export default function GoalsPage() {
           t={t}
         />
       </ModalWindow>
-      <div className="flex w-full justify-end">
+      <div className="flex w-full justify-center lg:justify-end px-4 lg:px-0 py-4 lg:py-0">
         <AddButton 
           onClick={handleCreateGoalClick} 
           aria-label={t('goalsForm.addNewAriaLabel')}
+          className="w-full lg:w-auto justify-center lg:justify-start"
         >
           {t('goalsForm.addNewButton')}
         </AddButton>

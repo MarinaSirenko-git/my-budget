@@ -85,7 +85,7 @@ function ScenarioIndexRedirect() {
 
   if (loading || !targetPath) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center min-h-screen bg:white dark:bg-black">
         <div className="text-textColor dark:text-textColor">Loading scenarios...</div>
       </div>
     );

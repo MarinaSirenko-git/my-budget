@@ -2,20 +2,8 @@ import ScenarioSwitch from '@/shared/ui/ScenarioSwitch';
 import MobileMenu from '@/shared/ui/MobileMenu';
 import ThemeSwitch from '@/shared/ui/ThemeSwitch';
 import PlaceName from '@/shared/ui/PlaceName';
-import FinancialSummary from '@/shared/ui/FinancialSummary';
-import { useTranslation } from '@/shared/i18n';
-import { useFinancialSummary } from '@/shared/hooks/useFinancialSummary';
 
 function Header(){
-    const { t } = useTranslation('components');
-    const {
-        totalIncome,
-        totalExpenses,
-        totalSavings,
-        totalGoals,
-        remainder,
-    } = useFinancialSummary();
-
     return(
         <>
             <div className="sticky top-0 z-20 flex flex-col bg-white dark:bg-black border-b border-black dark:border-white">
@@ -33,18 +21,6 @@ function Header(){
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div className="lg:hidden bg-white dark:bg-black border-b border-black dark:border-white px-0 py-2 overflow-x-auto">
-                    <FinancialSummary
-                        totalIncome={totalIncome}
-                        totalExpenses={totalExpenses}
-                        totalSavings={totalSavings}
-                        totalGoals={totalGoals}
-                        remainder={remainder}
-                        t={t}
-                        variant="mobile"
-                    />
                 </div>
             </div>
         </>
