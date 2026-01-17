@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
+import { useScenario } from '@/shared/hooks/useScenario';
 import { useTranslation } from '@/shared/i18n';
 import { supabase } from '@/lib/supabase';
 import { loadExportData, generateCSV, downloadCSV } from '@/shared/utils/csvExport';
@@ -12,7 +12,8 @@ export default function ExportButton() {
   const { t: tPages } = useTranslation('pages');
   const queryClient = useQueryClient();
   const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
-  const { scenarioId } = useScenarioRoute();
+  const { currentScenario } = useScenario();
+  const scenarioId = currentScenario?.id ?? null;
   const [loading, setLoading] = useState(false);
 
   const handleExport = async (userId: string) => {

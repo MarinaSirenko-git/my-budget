@@ -1,85 +1,61 @@
-import { useMemo, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
-import { useLanguage, useTranslation } from '@/shared/i18n';
+import { useState, useMemo } from 'react';
+import type { FormEvent, ChangeEvent } from 'react';
+import { useTranslation } from '@/shared/i18n';
 import SettingsForm from '@/features/settings/SettingsForm';
 import LoadingState from '@/shared/ui/atoms/LoadingState';
-import { currencyOptions } from '@/shared/constants/currencies';
+import { currencyOptions, type CurrencyCode } from '@/shared/constants/currencies';
 import { getLanguageOptions } from '@/shared/utils/categories';
-import { useSettings } from '@/shared/hooks';
 import { MAX_TEXT_FIELD_LENGTH } from '@/shared/constants/validation';
-import { supabase } from '@/lib/supabase';
 
 export default function SettingsPage() {
   const { t } = useTranslation('components');
-  const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
-  const queryClient = useQueryClient();
-  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
-  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
-    id?: string | null; 
-    slug?: string | null; 
-    baseCurrency?: string | null;
-  } | null;
-  const currentScenarioId = currentScenario?.id ?? null;
   
-  const loadCurrentScenarioData = useCallback(async () => {
-    if (!user?.id) return;
-    
-    const { data: profileCtx } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        language,
-        current_scenario_id,
-        current_scenario_slug,
-        current_scenario:scenarios!profiles_current_scenario_fkey (
-          id,
-          slug,
-          base_currency
-        )
-      `)
-      .eq('id', user.id)
-      .maybeSingle();
-    
-    if (profileCtx) {
-      queryClient.setQueryData(['profile'], profileCtx);
-      
-      const currentScenarioData = Array.isArray(profileCtx.current_scenario)
-        ? profileCtx.current_scenario[0] ?? null
-        : profileCtx.current_scenario ?? null;
-      
-      queryClient.setQueryData(['currentScenario'], {
-        id: profileCtx.current_scenario_id ?? null,
-        slug: profileCtx.current_scenario_slug ?? null,
-        baseCurrency: currentScenarioData?.base_currency ?? null,
-      });
-    }
-  }, [user?.id, queryClient]);
-  const { changeLanguage } = useLanguage();
+  // Form state
+  const [currency, setCurrency] = useState<CurrencyCode>(currencyOptions[0].value);
+  const [placeName, setPlaceName] = useState('');
+  const [language, setLanguage] = useState('ru');
+  
+  // Data placeholders
+  const loading = false;
+  const saving = false;
+  const message: string | null = null;
+  const userEmail: string | undefined = undefined;
+  
   const languageOptions = useMemo(() => getLanguageOptions(t), [t]);
-  
-  const {
-    currency,
-    placeName,
-    language,
-    loading,
-    saving,
-    message,
-    isFormValid,
-    hasChanges,
-    handleSave,
-    handleCurrencyChange,
-    handleLanguageChange,
-    handlePlaceNameChange,
-  } = useSettings({
-    userId: user?.id,
-    currentScenarioId,
-    changeLanguage,
-    languageOptions,
-    scenarioSlug,
-    loadCurrentScenarioData,
-    t,
-  });
+
+  // Form validation
+  const isFormValid = useMemo(() => {
+    return !!placeName.trim();
+  }, [placeName]);
+
+  const hasChanges = true; // Always true for now since we don't track original values
+
+  // Event handlers
+  function handleSave(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // Empty stub - no business logic
+  }
+
+  function handleCurrencyChange(newCurrency: string) {
+    const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
+    if (validCurrency) {
+      setCurrency(validCurrency.value);
+    }
+  }
+
+  function handleLanguageChange(newLanguage: string) {
+    const validLanguage = languageOptions.find(opt => opt.value === newLanguage);
+    if (validLanguage) {
+      setLanguage(validLanguage.value);
+    }
+  }
+
+  function handlePlaceNameChange(e: ChangeEvent<HTMLInputElement>) {
+    const value = e.target.value.replace(/[<>]/g, '');
+    if (value.length <= MAX_TEXT_FIELD_LENGTH) {
+      setPlaceName(value);
+    }
+  }
 
   if (loading) {
     return <LoadingState message={t('settingsForm.loading')} className="flex-col p-6" />;
@@ -92,7 +68,7 @@ export default function SettingsPage() {
       <div className="max-w-md w-full">
         <SettingsForm
           handleSubmit={handleSave}
-          userEmail={user?.email}
+          userEmail={userEmail}
           placeName={placeName}
           handlePlaceNameChange={handlePlaceNameChange}
           currency={currency}
@@ -112,4 +88,3 @@ export default function SettingsPage() {
     </div>
   );
 }
-

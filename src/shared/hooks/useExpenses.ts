@@ -1,7 +1,7 @@
-export function useGoals() {
+export function useExpenses() {
   // Logic will be added later
   return {
-    goals: [],
+    expenses: [],
     loading: false,
   };
 }

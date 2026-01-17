@@ -1,14 +1,15 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from '@/shared/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import { currencyOptions } from '@/shared/constants/currencies';
-import { loadScenarioData, createScenario } from '@/shared/utils/scenarios';
+import { createScenario } from '@/shared/utils/scenarios';
 import ScenarioForm from '@/features/scenarios/ScenarioForm';
 import { sanitizeName } from '@/shared/utils/sanitize';
 import AddButton from '@/shared/ui/atoms/AddButton';
-import { supabase } from '@/lib/supabase';
+import { useUser } from '@/shared/hooks/useUser';
+import { useScenario } from '@/shared/hooks/useScenario';
 
 interface ScenarioSwitchProps {
   mobile?: boolean;
@@ -19,12 +20,8 @@ export default function ScenarioSwitch({ mobile = false, onMenuClose }: Scenario
   const { t } = useTranslation('components');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
-  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
-    id?: string | null; 
-    slug?: string | null; 
-    baseCurrency?: string | null;
-  } | null;
+  const { user } = useUser();
+  const { currentScenario } = useScenario();
   const currentScenarioId = currentScenario?.id ?? null;
   
   const [open, setOpen] = useState(false);
@@ -33,65 +30,21 @@ export default function ScenarioSwitch({ mobile = false, onMenuClose }: Scenario
   const [scenarioName, setScenarioName] = useState('');
   const [currency, setCurrency] = useState(currencyOptions[0].value);
 
-  const loadCurrentScenarioData = useCallback(async () => {
-    if (!user?.id) return;
-    
-    const { data: profileCtx } = await supabase
-      .from('profiles')
-      .select(`
-        id,
-        language,
-        current_scenario_id,
-        current_scenario_slug,
-        current_scenario:scenarios!profiles_current_scenario_fkey (
-          id,
-          slug,
-          base_currency
-        )
-      `)
-      .eq('id', user.id)
-      .maybeSingle();
-    
-    if (profileCtx) {
-      queryClient.setQueryData(['profile'], profileCtx);
-      
-      const currentScenarioData = Array.isArray(profileCtx.current_scenario)
-        ? profileCtx.current_scenario[0] ?? null
-        : profileCtx.current_scenario ?? null;
-      
-      queryClient.setQueryData(['currentScenario'], {
-        id: profileCtx.current_scenario_id ?? null,
-        slug: profileCtx.current_scenario_slug ?? null,
-        baseCurrency: currentScenarioData?.base_currency ?? null,
-      });
-    }
-  }, [user?.id, queryClient]);
-  
   useEffect(() => {
-    if (open && currentScenarioId && user?.id) {
-      const loadCurrentScenario = async () => {
-        const userId = user.id;
-        if (!userId) return;
-        const data = await loadScenarioData(currentScenarioId, userId);
-        
-        if (data) {
-          setScenarioName(`${data.name} (${t('scenarioForm.copy')})`);
-          const validCurrency = currencyOptions.find(opt => opt.value === data.base_currency);
-          if (validCurrency) {
-            setCurrency(validCurrency.value);
-          }
-        } else {
-          setScenarioName(t('scenarioForm.defaultName'));
-          setCurrency(currencyOptions[0].value);
-        }
-      };
-
-      loadCurrentScenario();
+    if (open && currentScenario) {
+      // When cloning, pre-fill form with current scenario data
+      setScenarioName(`${currentScenario.name} (${t('scenarioForm.copy')})`);
+      const validCurrency = currencyOptions.find(opt => opt.value === currentScenario.baseCurrency);
+      if (validCurrency) {
+        setCurrency(validCurrency.value);
+      } else {
+        setCurrency(currencyOptions[0].value);
+      }
     } else if (open) {
       setScenarioName(t('scenarioForm.defaultName'));
       setCurrency(currencyOptions[0].value);
     }
-  }, [open, currentScenarioId, user, t]);
+  }, [open, currentScenario, t]);
 
   const handleAddScenario = () => {
     setOpen(true);
@@ -141,13 +94,10 @@ export default function ScenarioSwitch({ mobile = false, onMenuClose }: Scenario
         throw new Error('Failed to create scenario');
       }
 
-      queryClient.setQueryData(['currentScenario'], {
-        id: result.scenarioId,
-        slug: result.slug,
-        baseCurrency: currency,
-      });
-      
-      await loadCurrentScenarioData();
+      // Invalidate caches to refetch with new current scenario
+      queryClient.invalidateQueries({ queryKey: ['scenarios', 'current'] });
+      queryClient.invalidateQueries({ queryKey: ['scenarios', 'list'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
 
       handleClose();
       

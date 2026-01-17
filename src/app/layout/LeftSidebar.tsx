@@ -2,7 +2,6 @@ import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from '@/shared/i18n';
 import Logo from '@/shared/ui/Logo';
 import FinancialSummary from "@/shared/ui/FinancialSummary";
-import { useFinancialSummary } from "@/shared/hooks/useFinancialSummary";
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
@@ -13,14 +12,6 @@ function LeftSidebar(){
     const currentSlug = scenarioSlug;
     const queryClient = useQueryClient();
     const navigate = useNavigate();
-
-    const {
-        totalIncome,
-        totalExpenses,
-        totalSavings,
-        totalGoals,
-        remainder,
-    } = useFinancialSummary();
 
     const signOut = async () => {
         const user = queryClient.getQueryData(['user']) as { id?: string } | null;
@@ -78,11 +69,11 @@ function LeftSidebar(){
                     </li>
                 </ul>
                 <FinancialSummary
-                    totalIncome={totalIncome}
-                    totalExpenses={totalExpenses}
-                    totalSavings={totalSavings}
-                    totalGoals={totalGoals}
-                    remainder={remainder}
+                    totalIncome={0}
+                    totalExpenses={0}
+                    totalSavings={0}
+                    totalGoals={0}
+                    remainder={0}
                     t={t}
                 />
                 <ul className="w-full px-4 flex flex-col gap-2 text-base leading-loose pt-2">

@@ -1,63 +1,28 @@
-import { useState, useEffect, useMemo} from 'react';
+import { useMemo } from 'react';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
-import { loadUserScenarios, updateCurrentScenario, type Scenario } from '@/shared/utils/scenarios';
-
-
-function getPlaceNameFromScenario(
-  scenarios: Scenario[],
-  currentScenarioId: string | null
-): string {
-  const currentScenario = scenarios.find(s => s.id === currentScenarioId);
-  return currentScenario?.name || '';
-}
+import { updateCurrentScenario } from '@/shared/utils/scenarios';
+import { useUser } from '@/shared/hooks/useUser';
+import { useScenario } from '@/shared/hooks/useScenario';
 
 export default function PlaceName() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
-  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
-    id?: string | null; 
-    slug?: string | null; 
-    baseCurrency?: string | null;
-  } | null;
+  const { user } = useUser();
+  const { currentScenario, allScenarios, loading } = useScenario();
+  
+  const placeName = currentScenario?.name || '';
   const currentScenarioId = currentScenario?.id ?? null;
-  const currentScenarioSlug = currentScenario?.slug ?? null;
-  const setCurrentScenarioId = (scenarioId: string) => {
-    queryClient.setQueryData(['currentScenario'], {
-      id: scenarioId,
-      slug: currentScenarioSlug,
-      baseCurrency: currentScenario?.baseCurrency ?? null,
-    });
-  };
-  const [placeName, setPlaceName] = useState('');
-  const [scenarios, setScenarios] = useState<Scenario[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const scenarioOptions = useMemo(() => {
-    return scenarios.map(scenario => ({
+    return allScenarios.map(scenario => ({
       label: scenario.name,
       value: scenario.id,
     }));
-  }, [scenarios]);
-
-  useEffect(() => {
-    async function loadScenarios() {
-      if (!user?.id) return;
-      const allScenarios = await loadUserScenarios(user.id) || [];
-
-      setScenarios(allScenarios);
-      const placeNameFromScenario = getPlaceNameFromScenario(allScenarios, currentScenarioId);
-      setPlaceName(placeNameFromScenario);
-
-      setLoading(false);
-    }
-
-    loadScenarios();
-  }, [user, currentScenarioId, currentScenarioSlug]);
+  }, [allScenarios]);
 
 
   const handleScenarioChange = async (scenarioId: string) => {
@@ -68,16 +33,18 @@ export default function PlaceName() {
       const success = await updateCurrentScenario(user.id, scenarioId);
       if (!success) throw new Error('Failed to update current scenario');
 
-      setCurrentScenarioId(scenarioId);
-
-      const selectedScenario = scenarios.find(s => s.id === scenarioId);
+      // Invalidate scenario caches to refetch with new current scenario
+      queryClient.invalidateQueries({ queryKey: ['scenarios', 'current'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      
+      // Navigate to the selected scenario's URL
+      const selectedScenario = allScenarios.find(s => s.id === scenarioId);
       if (selectedScenario) {
-        const slug = selectedScenario.slug;
         const currentPath = window.location.pathname;
         const pathWithoutSlug = currentPath.replace(/^\/[^/]+/, '') || '/income';
-        navigate(`/${slug}${pathWithoutSlug}`, { replace: true });
+        navigate(`/${selectedScenario.slug}${pathWithoutSlug}`, { replace: true });
       }
-
+      
       window.dispatchEvent(new Event('scenarioChanged'));
     } catch (err) {
       await reportErrorToTelegram({
@@ -89,7 +56,7 @@ export default function PlaceName() {
     }
   };
 
-  const hasMultipleScenarios = scenarios.length > 1;
+  const hasMultipleScenarios = allScenarios.length > 1;
 
   if (loading) {
     return (

@@ -10,6 +10,9 @@ import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import { type CurrencyCode, DEFAULT_CURRENCY } from '@/shared/constants/currencies';
 import FirstScenarioCurrencyForm from '@/features/scenarios/FirstScenarioCurrencyForm';
+import { fetchUser } from '@/shared/hooks/useUser';
+import { fetchProfile, type Profile } from '@/shared/hooks/useProfile';
+import type { CurrentScenario } from '../hooks/useScenario';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -67,17 +70,16 @@ export default function AuthCallback() {
   
           window.history.replaceState({}, document.title, '/auth-callback');
         } else {
-          const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-          if (sessionError) {
+          user = await fetchUser();
+          if (!user) {
             await reportErrorToTelegram({
               action: "authCodeExchangeError",
-              error: sessionError ?? new Error("getSession returned no user"),
+              error: new Error("getSession returned no user"),
               context: { pathname: location.pathname, search: location.search },
             });
             navigate("/auth", { replace: true });
             return;
           }
-          user = sessionData.session?.user;
           queryClient.setQueryData(['user'], user);
         }
 
@@ -89,39 +91,26 @@ export default function AuthCallback() {
           }
   
           // 1) One request: profile + current scenario (join)
-          const { data: profileCtx, error: profileCtxError } = await supabase
-            .from('profiles')
-            .select(`
-              id,
-              language,
-              created_at,
-              current_scenario_id,
-              current_scenario_slug,
-              current_scenario:scenarios!profiles_current_scenario_fkey (
-                id,
-                slug,
-                base_currency
-              )
-            `)
-            .eq('id', user?.id)
-            .maybeSingle();
+          const profileCtx = await queryClient.fetchQuery({
+            queryKey: ['profile'],
+            queryFn: fetchProfile,
+            staleTime: 0,
+          });
   
-          if (profileCtxError) {
+          if (!profileCtx) {
             await reportErrorToTelegram({
               action: 'readProfileContextAfterOAuth',
-              error: profileCtxError,
+              error: new Error('Failed to fetch profile'),
               userId: user.id,
             });
             navigate('/auth', { replace: true, state: { error: 'profile_read_failed' } });
             return;
           }
-
-          queryClient.setQueryData(['profile'], profileCtx);
   
           // 2) Language: from profile or browser + save to profile
           let normalizedLang: 'ru' | 'en';
   
-          if (profileCtx?.language) {
+          if (profileCtx.language) {
             normalizedLang = profileCtx.language.toLowerCase() === 'ru' ? 'ru' : 'en';
           } else {
             normalizedLang = detectInterfaceLanguage(rawLocale);
@@ -129,7 +118,6 @@ export default function AuthCallback() {
             const { error: profileLangError } = await supabase
               .from('profiles')
               .update({ language: normalizedLang })
-              .eq('id', user.id);
   
             if (profileLangError) {
               await reportErrorToTelegram({
@@ -146,25 +134,16 @@ export default function AuthCallback() {
                   language: normalizedLang,
                 };
               });
+              // Also invalidate the language hook cache
+              queryClient.invalidateQueries({ queryKey: ['language'] });
             }
           }
   
           changeLanguage(normalizedLang);
-          localStorage.setItem('user_language', normalizedLang);
-  
-          // 3) Scenario: get from join if already exists
-          const currentScenario =
-            Array.isArray(profileCtx?.current_scenario)
-              ? profileCtx.current_scenario[0] ?? null
-              : profileCtx?.current_scenario ?? null;
 
-          let currentScenarioId = profileCtx?.current_scenario_id ?? null;
-          let currentScenarioSlug = profileCtx?.current_scenario_slug ?? null;
-          let currentScenarioBaseCurrency = currentScenario?.base_currency ?? null;
-          queryClient.setQueryData(['currentScenario'], {id: currentScenarioId, slug: currentScenarioSlug, baseCurrency: currentScenarioBaseCurrency});
   
           // 4) NEW USER / FIRST SCENARIO checks
-          const isNewUser = profileCtx?.created_at
+          const isNewUser = profileCtx.created_at
             ? new Date(profileCtx.created_at).getTime() > Date.now() - 5 * 60 * 1000
             : false;
   
@@ -187,15 +166,15 @@ export default function AuthCallback() {
               localeLower.includes('it')
             ) suggestedCurrency = 'EUR';
   
-            setPendingScenarioId(currentScenarioId);
-            setPendingScenarioSlug(currentScenarioSlug);
+            setPendingScenarioId(profileCtx.current_scenario_id);
+            setPendingScenarioSlug(profileCtx.current_scenario_slug);
             setPendingUserId(user.id);
             setSelectedCurrency(suggestedCurrency);
             setShowCurrencyModal(true);
             return;
           }
   
-          navigate(`/${currentScenarioSlug}/income`, { replace: true });
+          navigate(`/${profileCtx.current_scenario_slug}/income`, { replace: true });
         } catch (error) {
           await reportErrorToTelegram({
             action: 'unexpectedError',
@@ -224,6 +203,25 @@ export default function AuthCallback() {
           error: error,
           userId: pendingUserId || '',
           context: { scenarioId: pendingScenarioId, currency: selectedCurrency },
+        });
+      } else {
+        queryClient.setQueryData(['profile'], (old: Profile | undefined) => {
+          if (!old || !old.current_scenario) return old;
+          return {
+            ...old,
+            current_scenario: {
+              ...old.current_scenario,
+              base_currency: selectedCurrency,
+            },
+          };
+        });
+        
+        queryClient.setQueryData(['scenarios', 'current'], (old: CurrentScenario | undefined) => {
+          if (!old) return old;
+          return {
+            ...old,
+            baseCurrency: selectedCurrency,
+          };
         });
       }
       setShowCurrencyModal(false);

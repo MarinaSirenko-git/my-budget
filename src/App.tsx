@@ -10,25 +10,28 @@ import GoalsPage from "./pages/goals/GoalsPage";
 import SavingsPage from "./pages/savings/SavingsPage";
 import DocsPage from "./pages/docs/DocsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useTheme } from './shared/store/theme';
 import AuthCallback from './shared/router/AuthCallback';
 import Feedback from './shared/ui/Feedback';
 import NotFoundPage from './pages/404/NotFoundPage';
 import { loadLanguageFromProfile } from './shared/i18n';
-import { useQueryClient } from '@tanstack/react-query';
+import { useLanguage } from './shared/hooks/useLanguage';
+import { useScenario } from './shared/hooks/useScenario';
 
 function App() {
   const initTheme = useTheme(s => s.init);
+  const { language } = useLanguage();
+
   useEffect(() => {
     initTheme();
   }, []);
 
-  const queryClient = useQueryClient();
-
-  const profile = queryClient.getQueryData(['profile']) as { language?: string } | null;
-  const language = profile?.language;
-  if (language) loadLanguageFromProfile(language);
+  useEffect(() => {
+    if (language) {
+      loadLanguageFromProfile(language);
+    }
+  }, [language]);
   
   return (
     <>
@@ -58,26 +61,9 @@ function App() {
 }
 
 function ScenarioIndexRedirect() {
-  const queryClient = useQueryClient();
-  const [loading, setLoading] = useState(true);
-  const [targetPath, setTargetPath] = useState<string | null>(null);
+  const { currentScenario, loading } = useScenario();
 
-  useEffect(() => {
-    const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
-      id?: string | null; 
-      slug?: string | null; 
-      baseCurrency?: string | null;
-    } | null;
-    
-    const slug = currentScenario?.slug;
-    
-    if (slug) {
-      setTargetPath(`/${slug}/income`);
-    }
-    setLoading(false);
-  }, [queryClient]);
-
-  if (loading || !targetPath) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg:white dark:bg-black">
         <div className="text-textColor dark:text-textColor">Loading scenarios...</div>
@@ -85,7 +71,15 @@ function ScenarioIndexRedirect() {
     );
   }
 
-  return <Navigate to={targetPath} replace />;
+  if (currentScenario?.slug) {
+    return <Navigate to={`/${currentScenario.slug}/income`} replace />;
+  }
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg:white dark:bg-black">
+      <div className="text-textColor dark:text-textColor">No scenario found</div>
+    </div>
+  );
 }
 
 export default App

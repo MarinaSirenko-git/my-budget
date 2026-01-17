@@ -11,7 +11,6 @@ import ScenarioSwitch from './ScenarioSwitch';
 import FinancialSummary from './FinancialSummary';
 import { useTranslation } from '@/shared/i18n';
 import { useQueryClient } from '@tanstack/react-query';
-import { useFinancialSummary } from '@/shared/hooks/useFinancialSummary';
 import { supabase } from '@/lib/supabase';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 
@@ -41,13 +40,6 @@ export default function MobileMenu() {
     }
   };
   
-  const {
-    totalIncome,
-    totalExpenses,
-    totalSavings,
-    totalGoals,
-    remainder,
-  } = useFinancialSummary();
 
   const navLinkClass = ({ isActive }: { isActive: boolean }) => 
     `flex items-center pb-1 border-b-2 transition-colors font-light text-base ${
@@ -130,11 +122,11 @@ export default function MobileMenu() {
                     </ul>
                     <div className="border border-black dark:border-white">
                       <FinancialSummary
-                        totalIncome={totalIncome}
-                        totalExpenses={totalExpenses}
-                        totalSavings={totalSavings}
-                        totalGoals={totalGoals}
-                        remainder={remainder}
+                        totalIncome={0}
+                        totalExpenses={0}
+                        totalSavings={0}
+                        totalGoals={0}
+                        remainder={0}
                         t={t}
                         variant="mobile"
                       />
