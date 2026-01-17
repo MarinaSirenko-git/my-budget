@@ -1,15 +1,18 @@
-import { NavLink, useParams } from "react-router-dom";
-import { useAuth } from '@/shared/store/auth';
+import { NavLink, useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from '@/shared/i18n';
 import Logo from '@/shared/ui/Logo';
 import FinancialSummary from "@/shared/ui/FinancialSummary";
 import { useFinancialSummary } from "@/shared/hooks/useFinancialSummary";
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabase';
+import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 
 function LeftSidebar(){
     const { t } = useTranslation('components');
     const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
     const currentSlug = scenarioSlug;
-    const signOut = useAuth(s => s.signOut);
+    const queryClient = useQueryClient();
+    const navigate = useNavigate();
 
     const {
         totalIncome,
@@ -18,6 +21,24 @@ function LeftSidebar(){
         totalGoals,
         remainder,
     } = useFinancialSummary();
+
+    const signOut = async () => {
+        const user = queryClient.getQueryData(['user']) as { id?: string } | null;
+        const userId = user?.id;
+        
+        try {
+          await supabase.auth.signOut();
+          queryClient.clear();
+          navigate('/auth', { replace: true });
+        } catch (error) {
+          await reportErrorToTelegram({
+            action: 'signOut',
+            error: error instanceof Error ? error : new Error(String(error)),
+            userId: userId,
+          });
+          navigate('/auth', { replace: true });
+        }
+      }
 
     const navLinkClass = ({ isActive }: { isActive: boolean }) => 
         `flex items-center pb-1 border-b-2 transition-colors font-light ${

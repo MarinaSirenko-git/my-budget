@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from '@/shared/i18n';
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import { currencyOptions } from '@/shared/constants/currencies';
@@ -8,6 +8,7 @@ import { loadScenarioData, createScenario } from '@/shared/utils/scenarios';
 import ScenarioForm from '@/features/scenarios/ScenarioForm';
 import { sanitizeName } from '@/shared/utils/sanitize';
 import AddButton from '@/shared/ui/atoms/AddButton';
+import { supabase } from '@/lib/supabase';
 
 interface ScenarioSwitchProps {
   mobile?: boolean;
@@ -17,17 +18,61 @@ interface ScenarioSwitchProps {
 export default function ScenarioSwitch({ mobile = false, onMenuClose }: ScenarioSwitchProps) {
   const { t } = useTranslation('components');
   const navigate = useNavigate();
-  const { user, currentScenarioId, loadCurrentScenarioData, setCurrentScenarioId } = useAuth();
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
+  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
+    id?: string | null; 
+    slug?: string | null; 
+    baseCurrency?: string | null;
+  } | null;
+  const currentScenarioId = currentScenario?.id ?? null;
+  
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [scenarioName, setScenarioName] = useState('');
   const [currency, setCurrency] = useState(currencyOptions[0].value);
+
+  const loadCurrentScenarioData = useCallback(async () => {
+    if (!user?.id) return;
+    
+    const { data: profileCtx } = await supabase
+      .from('profiles')
+      .select(`
+        id,
+        language,
+        current_scenario_id,
+        current_scenario_slug,
+        current_scenario:scenarios!profiles_current_scenario_fkey (
+          id,
+          slug,
+          base_currency
+        )
+      `)
+      .eq('id', user.id)
+      .maybeSingle();
+    
+    if (profileCtx) {
+      queryClient.setQueryData(['profile'], profileCtx);
+      
+      const currentScenarioData = Array.isArray(profileCtx.current_scenario)
+        ? profileCtx.current_scenario[0] ?? null
+        : profileCtx.current_scenario ?? null;
+      
+      queryClient.setQueryData(['currentScenario'], {
+        id: profileCtx.current_scenario_id ?? null,
+        slug: profileCtx.current_scenario_slug ?? null,
+        baseCurrency: currentScenarioData?.base_currency ?? null,
+      });
+    }
+  }, [user?.id, queryClient]);
   
   useEffect(() => {
-    if (open && currentScenarioId) {
+    if (open && currentScenarioId && user?.id) {
       const loadCurrentScenario = async () => {
-        const data = await loadScenarioData(currentScenarioId, user!.id);
+        const userId = user.id;
+        if (!userId) return;
+        const data = await loadScenarioData(currentScenarioId, userId);
         
         if (data) {
           setScenarioName(`${data.name} (${t('scenarioForm.copy')})`);
@@ -82,15 +127,26 @@ export default function ScenarioSwitch({ mobile = false, onMenuClose }: Scenario
     setCreating(true);
     setError(null);
 
+    if (!user?.id) {
+      setError(t('scenarioForm.errorMessage'));
+      setCreating(false);
+      return;
+    }
+
     try {
       const scenarioNameToSave = sanitizeName(scenarioName ?? '') || t('scenarioForm.defaultName');
-      const result = await createScenario(user!.id, scenarioNameToSave, currency, isClone);
+      const result = await createScenario(user.id, scenarioNameToSave, currency, isClone);
 
       if (!result) {
         throw new Error('Failed to create scenario');
       }
 
-      setCurrentScenarioId(result.scenarioId);
+      queryClient.setQueryData(['currentScenario'], {
+        id: result.scenarioId,
+        slug: result.slug,
+        baseCurrency: currency,
+      });
+      
       await loadCurrentScenarioData();
 
       handleClose();

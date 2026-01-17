@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import { useTranslation } from '@/shared/i18n';
 import { supabase } from '@/lib/supabase';
@@ -10,7 +10,8 @@ import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 export default function ExportButton() {
   const { t } = useTranslation('components');
   const { t: tPages } = useTranslation('pages');
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
   const { scenarioId } = useScenarioRoute();
   const [loading, setLoading] = useState(false);
 

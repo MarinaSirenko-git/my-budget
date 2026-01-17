@@ -1,15 +1,21 @@
 import { Outlet, useParams, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { validateScenarioBySlug } from '@/shared/utils/scenarios';
 import { useTranslation } from '@/shared/i18n';
 
 export default function ScenarioRouteGuard() {
   const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
   const navigate = useNavigate();
-  const loading = useAuth(s => s.loading);
-  const user = useAuth(s => s.user);
-  const currentScenarioSlug = useAuth(s => s.currentScenarioSlug);
+  const queryClient = useQueryClient();
+  const loading = false;
+  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
+  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
+    id?: string | null; 
+    slug?: string | null; 
+    baseCurrency?: string | null;
+  } | null;
+  const currentScenarioSlug = currentScenario?.slug ?? null;
   const [validating, setValidating] = useState(false);
   const { t } = useTranslation('components');
 
@@ -20,7 +26,6 @@ export default function ScenarioRouteGuard() {
   };
 
   useEffect(() => {
-    if (loading) return;
 
     if (!scenarioSlug) {
       if (currentScenarioSlug) {
@@ -32,7 +37,7 @@ export default function ScenarioRouteGuard() {
     }
 
     if (!currentScenarioSlug) return;
-    if (!user) return;
+    if (!user?.id) return;
 
     const slug = scenarioSlug;
     const userId = user.id;
@@ -61,7 +66,7 @@ export default function ScenarioRouteGuard() {
     }
 
     validateScenario();
-  }, [loading, scenarioSlug, user, currentScenarioSlug, navigate]);
+  }, [scenarioSlug, user, currentScenarioSlug, navigate]);
 
   if (loading) {
     return (

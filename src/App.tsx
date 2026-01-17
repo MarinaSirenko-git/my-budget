@@ -12,29 +12,24 @@ import DocsPage from "./pages/docs/DocsPage";
 import SettingsPage from "./pages/settings/SettingsPage";
 import { useEffect, useState } from 'react';
 import { useTheme } from './shared/store/theme';
-import { useAuth } from './shared/store/auth'
 import AuthCallback from './shared/router/AuthCallback';
 import Feedback from './shared/ui/Feedback';
 import NotFoundPage from './pages/404/NotFoundPage';
 import { loadLanguageFromProfile } from './shared/i18n';
+import { useQueryClient } from '@tanstack/react-query';
 
 function App() {
   const initTheme = useTheme(s => s.init);
-  const initAuth = useAuth(s => s.init);
-  const user = useAuth( s => s.user );
-  
   useEffect(() => {
     initTheme();
   }, []);
-  
-  useEffect(() => {
-    initAuth();
-  }, []);
-  
-  useEffect(() => {
-    if (user?.id) loadLanguageFromProfile(user.id);
-  }, [user?.id]);
 
+  const queryClient = useQueryClient();
+
+  const profile = queryClient.getQueryData(['profile']) as { language?: string } | null;
+  const language = profile?.language;
+  if (language) loadLanguageFromProfile(language);
+  
   return (
     <>
       <Routes>
@@ -63,25 +58,24 @@ function App() {
 }
 
 function ScenarioIndexRedirect() {
-  const { loadCurrentScenarioData } = useAuth();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [targetPath, setTargetPath] = useState<string | null>(null);
 
   useEffect(() => {
-    async function redirectToScenario() {
-      await loadCurrentScenarioData();
-      
-      const authState = useAuth.getState();
-      const slug = authState.currentScenarioSlug;
-      
-      if (slug) {
-        setTargetPath(`/${slug}/income`);
-      } 
-      setLoading(false);
+    const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
+      id?: string | null; 
+      slug?: string | null; 
+      baseCurrency?: string | null;
+    } | null;
+    
+    const slug = currentScenario?.slug;
+    
+    if (slug) {
+      setTargetPath(`/${slug}/income`);
     }
-
-    redirectToScenario();
-  }, [loadCurrentScenarioData]);
+    setLoading(false);
+  }, [queryClient]);
 
   if (loading || !targetPath) {
     return (

@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { currencyOptions, DEFAULT_CURRENCY, type CurrencyCode } from '@/shared/constants/currencies';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 
@@ -16,7 +16,14 @@ function validateCurrency(currency: string | null): CurrencyCode | null {
 
 
 export function useCurrency() {
-  const { user, currentScenarioId } = useAuth();
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
+  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
+    id?: string | null; 
+    slug?: string | null; 
+    baseCurrency?: string | null;
+  } | null;
+  const currentScenarioId = currentScenario?.id ?? null;
   const [currency, setCurrency] = useState<CurrencyCode | null>(null);
   const [loading, setLoading] = useState(true);
 

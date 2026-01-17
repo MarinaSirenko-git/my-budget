@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import FeedbackForm from '@/features/feedback/FeedbackForm';
@@ -8,14 +8,14 @@ import { useTranslation } from '@/shared/i18n';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 
 interface FeedbackProps {
-  /** Additional className for the button */
   className?: string;
 }
 
 export default function Feedback({ 
   className = '' 
 }: FeedbackProps) {
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
   const { t } = useTranslation('components');
   const [open, setOpen] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -36,7 +36,6 @@ export default function Feedback({
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Защита от множественных запросов
     if (submitting) {
       console.warn('Submit already in progress, ignoring duplicate request');
       return;
@@ -90,18 +89,16 @@ export default function Feedback({
           className="
             w-14 h-14
             rounded-full
-            bg-accentRed dark:bg-accentRed
             text-white
-            shadow-lg
-            hover:bg-accentRed/90 dark:hover:bg-accentRed/90
-            active:bg-accentRed/80 dark:active:bg-accentRed/80
+            shadow-md
             transition-all
+            bg-white
             flex items-center justify-center
-            focus-visible:ring-2 focus-visible:ring-accentRed focus-visible:ring-offset-2
+            focus-visible:ring-2 focus-visible:ring-offset-2
             focus:outline-none
           "
         >
-          <ChatBubbleLeftRightIcon className="w-6 h-6" />
+          <ChatBubbleLeftRightIcon className="w-6 h-6 text-black" />
         </button>
       </div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { useCurrency, useCurrencyConversion } from '@/shared/hooks';
 import { fetchIncomes } from '@/shared/utils/income';
 import { fetchExpenses } from '@/shared/utils/expenses';
@@ -16,9 +16,14 @@ interface UseFinancialSummaryReturn {
 }
 
 export function useFinancialSummary(): UseFinancialSummaryReturn {
-  const user = useAuth(s => s.user);
-  const scenarioId = useAuth(s => s.currentScenarioId);
-
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
+  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
+    id?: string | null; 
+    slug?: string | null; 
+    baseCurrency?: string | null;
+  } | null;
+  const scenarioId = currentScenario?.id ?? null;
   const { currency: settingsCurrency } = useCurrency();
   const { convertAmount } = useCurrencyConversion();
   
@@ -28,7 +33,7 @@ export function useFinancialSummary(): UseFinancialSummaryReturn {
   const [totalGoals, setTotalGoals] = useState(0);
 
   const calculateTotalIncome = useCallback(async () => {
-    if (!user || !scenarioId || !settingsCurrency) {
+    if (!user?.id || !scenarioId || !settingsCurrency) {
       setTotalIncome(0);
       return;
     }
@@ -68,7 +73,7 @@ export function useFinancialSummary(): UseFinancialSummaryReturn {
   }, [user, scenarioId, settingsCurrency, convertAmount]);
 
   const calculateTotalSavings = useCallback(async () => {
-    if (!user || !scenarioId || !settingsCurrency) {
+    if (!user?.id || !scenarioId || !settingsCurrency) {
       setTotalSavings(0);
       return;
     }
@@ -99,7 +104,7 @@ export function useFinancialSummary(): UseFinancialSummaryReturn {
   }, [user, scenarioId, settingsCurrency, convertAmount]);
 
   const calculateTotalExpenses = useCallback(async () => {
-    if (!user || !scenarioId || !settingsCurrency) {
+    if (!user?.id || !scenarioId || !settingsCurrency) {
       setTotalExpenses(0);
       return;
     }
@@ -135,7 +140,7 @@ export function useFinancialSummary(): UseFinancialSummaryReturn {
   }, [user, scenarioId, settingsCurrency, convertAmount]);
 
   const calculateTotalGoals = useCallback(async () => {
-    if (!user || !scenarioId || !settingsCurrency) {
+    if (!user?.id || !scenarioId || !settingsCurrency) {
       setTotalGoals(0);
       return;
     }
@@ -230,7 +235,7 @@ export function useFinancialSummary(): UseFinancialSummaryReturn {
   }, [user, scenarioId, settingsCurrency, convertAmount]);
 
   const refreshSummary = useCallback(async () => {
-    if (!user || !scenarioId) {
+    if (!user?.id || !scenarioId) {
       setTotalIncome(0);
       setTotalExpenses(0);
       setTotalSavings(0);

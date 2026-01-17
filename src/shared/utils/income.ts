@@ -4,7 +4,6 @@ import type { CurrencyCode } from '@/shared/constants/currencies';
 
 export interface UpdateIncomeParams {
   incomeId: string;
-  userId: string;
   type: string;
   amount: number;
   currency: CurrencyCode;
@@ -22,14 +21,13 @@ export interface CreateIncomeParams {
 }
 
 export interface FetchIncomesParams {
-  userId: string;
   scenarioId: string | null;
   settingsCurrency?: CurrencyCode | null;
   convertAmount: (amount: number, fromCurrency: string, toCurrency?: string) => Promise<number | null>;
 }
 
 export async function updateIncome(params: UpdateIncomeParams): Promise<void> {
-  const { incomeId, userId, type, amount, currency, frequency } = params;
+  const { incomeId, type, amount, currency, frequency } = params;
 
   const { error } = await supabase
     .from('incomes')
@@ -40,7 +38,6 @@ export async function updateIncome(params: UpdateIncomeParams): Promise<void> {
       frequency,
     })
     .eq('id', incomeId)
-    .eq('user_id', userId);
 
   if (error) {
     throw error;
@@ -74,13 +71,13 @@ export async function createIncome(params: CreateIncomeParams): Promise<void> {
 }
 
 export async function fetchIncomes(params: FetchIncomesParams): Promise<Income[]> {
-  const { userId, scenarioId, settingsCurrency, convertAmount } = params;
+  const { scenarioId, settingsCurrency, convertAmount } = params;
   const { data, error } = await supabase
-    .from('incomes_decrypted')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('scenario_id', scenarioId)
-    .order('created_at', { ascending: false });
+  .from('incomes')
+  .select('id, created_at, amount, currency, type, frequency, payment_day, scenario_id')
+  .eq('scenario_id', scenarioId)
+  .order('created_at', { ascending: false })
+  .order('id', { ascending: false });
 
   if (error) throw error;
   if (!data) return [];
@@ -111,17 +108,15 @@ export async function fetchIncomes(params: FetchIncomesParams): Promise<Income[]
 
 export interface DeleteIncomeParams {
   incomeId: string;
-  userId: string;
 }
 
 export async function deleteIncome(params: DeleteIncomeParams): Promise<void> {
-  const { incomeId, userId } = params;
+  const { incomeId } = params;
 
   const { error } = await supabase
     .from('incomes')
     .delete()
     .eq('id', incomeId)
-    .eq('user_id', userId);
 
   if (error) {
     throw error;

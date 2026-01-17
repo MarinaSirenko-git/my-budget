@@ -7,6 +7,12 @@ export interface Scenario {
   slug: string;
 }
 
+export interface CurrentScenario {
+  id: string | null;
+  slug: string | null;
+  baseCurrency: string | null;
+}
+
 export interface ScenarioData {
   name: string;
   base_currency: string;

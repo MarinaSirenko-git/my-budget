@@ -1,5 +1,5 @@
 import React, { Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
+import { Dialog, DialogTitle, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 interface ModalWindowProps {
@@ -25,16 +25,16 @@ const ModalWindow = React.forwardRef<HTMLDivElement, ModalWindowProps>(({ open, 
             as={Fragment}
             enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100"
             leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
-            <Dialog.Panel ref={ref} className={`bg-cardColor dark:bg-cardColor rounded-xl shadow-xl p-2 lg:p-6 max-w-md w-full relative ${className}`}>
+            <Dialog.Panel ref={ref} className={`bg-white dark:bg-black rounded-xl shadow-xl p-2 lg:p-6 max-w-md w-full relative ${className}`}>
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 text-textColor dark:text-textColor hover:text-mainTextColor dark:hover:text-mainTextColor transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full p-1"
+                className="absolute top-2 right-2 lg:top-4 lg:right-4 text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black border border-black dark:border-white bg-white dark:bg-black transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-black dark:focus-visible:ring-white rounded-full p-1.5 lg:p-1 z-10"
                 aria-label="Закрыть"
                 title="Закрыть"
               >
-                <XMarkIcon className="w-5 h-5" />
+                <XMarkIcon className="w-5 h-5 lg:w-5 lg:h-5" />
               </button>
-              {title && <Dialog.Title className="text-lg font-medium mb-3 pr-8">{title}</Dialog.Title>}
+              {title && <DialogTitle className="text-lg font-medium mb-3 pr-8">{title}</DialogTitle>}
               {children}
             </Dialog.Panel>
           </Transition.Child>

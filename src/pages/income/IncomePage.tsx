@@ -1,52 +1,7 @@
-// Business problem: 
-// users need to organize their incomes
-// This page allows users to enter incomes into the system, have a list of incomes at hand, view incomes in the form of a chart, edit and delete incomes.
-// This page calculates income per month, per year, shows a convertible equivalent of income.
-
-// Test cases:
-// 1. User can add income
-// 2. User can edit income
-// 3. User can delete income
-// 4. User can see income in the form of a chart
-// 5. User can see income in the form of a table
-// 6. User can enter income in any currency from the list and get a convertible equivalent of income in an additional column in the table.
-// 7. User can see monthly and annual income in the selected currency in the settings.
-// 8. User can recalculate amounts in any currency from the list.
-
-// UI interface:
-// 1. EmptyState component for showing empty state
-// 2. Tag component for showing income categories
-// 3. ModalWindow component for showing modal window
-// 4. AddIncomeForm component for showing add income form
-// 5. Tabs component for showing table and chart
-// 6. Table component for showing table
-// 7. PieChart component for showing pie chart
-// 8. LoadingState component for showing loading state
-// 9. ErrorState component for showing error state
-
-// Event handlers
-// 1. On click income tag button
-// 2. On click add income button
-// 3. On click submit button in add income form
-// 4. On click edit income button
-// 5. On click delete income button
-// 6. On change currency in add income form
-
-// List of potential vulnerabilities and performance issues
-// 1. Excessive currency conversion requests, missing debounce
-// 2. Heavy logic, poor readability
-// 3. No error monitoring, errors exposed to browser console
-// 4. Insecure passing of IDs to the DB
-// 5. Missing sanitization of user input for categories
-// 6. Infinite loops during component render (useIncomeCurrencyConversion, tableColumns)
-// 7. Redundant requests during navigation, missing caching
-
-
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import type { FormEvent } from 'react';
 // reusable global components
 import EmptyState from '@/shared/ui/atoms/EmptyState';
-import LoadingState from '@/shared/ui/atoms/LoadingState';
-import ErrorState from '@/shared/ui/atoms/ErrorState';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import Tag from '@/shared/ui/atoms/Tag';
@@ -54,183 +9,288 @@ import AddButton from '@/shared/ui/atoms/AddButton';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
+import IconButton from '@/shared/ui/atoms/IconButton';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 // reusable local components
 import AddIncomeForm from '@/features/income/AddIncomeForm';
 // custom hooks
-import { useAuth } from '@/shared/store/auth';
-import { 
-  useCurrency,
-  useIncomeForm,
-  useIncomes,
-  useIncomeCurrencyConversion,
-  useIncomeCalculations,
-} from '@/shared/hooks';
-import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import { useTranslation } from '@/shared/i18n';
+import { useCurrency } from '@/shared/hooks';
 // constants
-import { currencyOptions } from '@/shared/constants/currencies';
+import { currencyOptions, type CurrencyCode } from '@/shared/constants/currencies';
 import { getIncomeCategories, getIncomeFrequencyOptions } from '@/shared/utils/categories';
 // data types
 import type { IncomeType, Income } from '@/mocks/pages/income.mock';
+import type { TableColumn } from '@/shared/ui/molecules/Table';
 
 export default function IncomePage() {
   const { t } = useTranslation('components');
-  const { user } = useAuth();
-  const { scenarioId} = useScenarioRoute();
   const { currency: settingsCurrency } = useCurrency();
+  
+  // Incomes data - empty array
+  const incomes: Income[] = [];
   
   // Modal state
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-
+  
+  // Form state
+  const [incomeTypeId, setIncomeTypeId] = useState('');
+  const [customCategoryText, setCustomCategoryText] = useState('');
+  const [amount, setAmount] = useState<string | undefined>(undefined);
+  const [currency, setCurrency] = useState<CurrencyCode>(currencyOptions[0].value);
+  const [frequency, setFrequency] = useState<string>('monthly');
+  const [isTagSelected, setIsTagSelected] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  
+  // Data placeholders
+  const submitting = false;
+  const deletingId: string | null = null;
+  const monthlyTotal = 0;
+  const annualTotal = 0;
+  const pieChartData: Array<{ name: string; value: number }> = [];
+  const selectedConversionCurrency: CurrencyCode | null = null;
+  
   // Types and options
   const incomeTypes = getIncomeCategories(t);
   const frequencyOptions = getIncomeFrequencyOptions(t);
-  const incomeTypeOptions = incomeTypes.map(type => ({
+  const incomeTypeOptions = useMemo(() => incomeTypes.map(type => ({
     label: type.label,
     value: type.id,
-  }));
+  })), [incomeTypes]);
 
-  // Custom hooks
-  const incomeForm = useIncomeForm({
-    incomeTypes,
-    settingsCurrency,
-  });
+  // Initialize incomeTypeId when incomeTypes are available
+  useEffect(() => {
+    if (incomeTypes.length > 0 && !incomeTypeId) {
+      setIncomeTypeId(incomeTypes[0].id);
+    }
+  }, [incomeTypes, incomeTypeId]);
 
-  const {
-    incomes,
-    loading,
-    error,
-    submitting,
-    deletingId,
-    formError,
-    handleCreateIncome,
-    handleUpdateIncome,
-    handleDeleteIncome,
-    setFormError,
-  } = useIncomes({
-    userId: user?.id,
-    scenarioId,
-    settingsCurrency,
-  });
+  // Set default currency from settings when loaded
+  useEffect(() => {
+    if (settingsCurrency) {
+      const validCurrency = currencyOptions.find(opt => opt.value === settingsCurrency);
+      if (validCurrency) {
+        setCurrency(validCurrency.value);
+      }
+    }
+  }, [settingsCurrency]);
 
+  // Form validation
+  const isFormValid = useMemo(() => {
+    const hasValidCategory = (incomeTypeId === 'custom' || isTagSelected)
+      ? customCategoryText.trim().length > 0
+      : incomeTypeId;
 
+    return !!(
+      hasValidCategory &&
+      amount &&
+      parseFloat(amount) > 0 &&
+      currency &&
+      frequency
+    );
+  }, [incomeTypeId, isTagSelected, customCategoryText, amount, currency, frequency]);
 
-  const {
-    selectedConversionCurrency,
-    convertedAmountsCache,
-    convertingIds,
-    handleConversionCurrencyChange,
-  } = useIncomeCurrencyConversion({
-    incomes,
-    settingsCurrency,
-    userId: user?.id,
-    scenarioId,
-  });
+  const hasChanges = true; // Always true for now since we don't track original values
 
-  const {
-    monthlyTotal,
-    annualTotal,
-    pieChartData,
-    tableColumns,
-  } = useIncomeCalculations({
-    incomes,
-    incomeTypes,
-    selectedConversionCurrency,
-    settingsCurrency,
-    convertedAmountsCache,
-    convertingIds,
-    t,
-    onEdit: handleEditIncome,
-    onDelete: handleDeleteIncomeClick,
-    deletingId,
-  });
+  // Table columns
+  const tableColumns = useMemo<TableColumn<Income>[]>(() => {
+    const columns: TableColumn<Income>[] = [
+      { 
+        key: 'type', 
+        label: t('incomeForm.tableColumns.category'),
+        render: (value: string) => {
+          const type = incomeTypes.find(typeItem => typeItem.id === value);
+          return type?.label || value;
+        }
+      },
+      { 
+        key: 'amount', 
+        label: t('incomeForm.tableColumns.amount'),
+        align: 'left' as const,
+        render: (value: number, row: Income) => `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.currency}`
+      },
+    ];
+
+    if (settingsCurrency) {
+      const hasDifferentCurrency = incomes.some(income => income.currency !== settingsCurrency);
+      if (hasDifferentCurrency) {
+        const targetCurrency = selectedConversionCurrency || settingsCurrency;
+
+        columns.push({
+          key: 'amountInSettingsCurrency',
+          label: t('incomeForm.tableColumns.amountInSettingsCurrency'),
+          align: 'left' as const,
+          render: (_value: any, row: Income) => {
+            if (row.currency === targetCurrency) {
+              return '-';
+            }
+
+            const displayAmount = row.amountInDefaultCurrency !== undefined 
+              ? row.amountInDefaultCurrency 
+              : row.amount;
+
+            return (
+              <span className="text-sm">
+                {displayAmount !== null ? (
+                  `${displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${targetCurrency}`
+                ) : (
+                  `... ${targetCurrency}`
+                )}
+              </span>
+            );
+          }
+        });
+      }
+    }
+
+    columns.push(
+      { key: 'frequency', label: t('incomeForm.tableColumns.frequency'), align: 'left' as const },
+      {
+        key: 'actions',
+        label: t('incomeForm.tableColumns.actions'),
+        align: 'left' as const,
+        render: (_value: any, row: Income) => (
+          <div className="flex gap-2 items-center justify-start" onClick={(e) => e.stopPropagation()}>
+            <IconButton 
+              aria-label={t('incomeForm.actions.editAriaLabel')} 
+              title={t('incomeForm.actions.edit')} 
+              onClick={() => handleEditIncome(row)}
+            >
+              <PencilIcon className="w-4 h-4" />
+            </IconButton>
+            <IconButton 
+              aria-label={t('incomeForm.actions.deleteAriaLabel')} 
+              title={t('incomeForm.actions.delete')} 
+              onClick={() => handleDeleteIncomeClick(row.id)}
+              disabled={deletingId === row.id}
+            >
+              <TrashIcon className="w-4 h-4" />
+            </IconButton>
+          </div>
+        )
+      }
+    );
+
+    return columns;
+  }, [t, incomeTypes, settingsCurrency, incomes, deletingId, selectedConversionCurrency]);
 
   // Event handlers
   function handleTagClick(type: IncomeType) {
-    incomeForm.initializeForTag(type);
+    setIncomeTypeId('custom');
+    setCustomCategoryText(type.label);
+    setIsTagSelected(true);
     setFormError(null);
     setEditingId(null);
     setOpen(true);
   }
 
   function handleAddIncomeClick() {
-    incomeForm.initializeForCreate();
+    setIncomeTypeId(incomeTypes[0]?.id || '');
+    setCustomCategoryText('');
+    setIsTagSelected(false);
+    setAmount(undefined);
+    const defaultCurrencyValue = settingsCurrency || currencyOptions[0].value;
+    const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setFrequency('monthly');
     setFormError(null);
     setEditingId(null);
     setOpen(true);
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (submitting) {
-      console.warn('Submit already in progress, ignoring duplicate request');
-      return;
-    }
-    if (!user || !incomeForm.isFormValid) return;
-    
-    try {
-      const finalType = incomeForm.getFinalType();
-      const incomeAmount = parseFloat(incomeForm.amount!);
-
-      if (editingId) {
-        await handleUpdateIncome({
-          incomeId: editingId,
-          type: finalType,
-          amount: incomeAmount,
-          currency: incomeForm.currency,
-          frequency: incomeForm.frequency,
-        });
-      } else {
-        await handleCreateIncome({
-          type: finalType,
-          amount: incomeAmount,
-          currency: incomeForm.currency,
-          frequency: incomeForm.frequency,
-        });
-      }
-
-      handleModalClose();
-    } catch (err) {
-      const errorKey = editingId ? 'incomeForm.updateErrorMessage' : 'incomeForm.errorMessage';
-      setFormError(err instanceof Error ? err.message : t(errorKey));
-    }
+    // Empty stub - no business logic
   }
 
   function handleEditIncome(income: Income) {
     setEditingId(income.id);
-    incomeForm.initializeForEdit(income);
+    setIncomeTypeId('custom');
+    setCustomCategoryText(income.type);
+    setIsTagSelected(true);
+    setAmount(income.amount.toString());
+    const validCurrency = currencyOptions.find(opt => opt.value === income.currency);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setFrequency(income.frequency);
     setFormError(null);
     setOpen(true);
   }
 
-  async function handleDeleteIncomeClick(incomeId: string) {
-    const confirmMessage = t('incomeForm.deleteConfirm') ?? 'Are you sure you want to delete this income?';
-    try {
-      await handleDeleteIncome(incomeId, confirmMessage);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : (t('incomeForm.deleteError') ?? 'Error deleting income');
-      alert(errorMessage);
-    }
+  function handleDeleteIncomeClick(_incomeId: string) {
+    // Empty stub - no business logic
+  }
+
+  function handleConversionCurrencyChange(_newCurrency: string) {
+    // Empty stub - no business logic
   }
 
   function handleModalClose() {
     setOpen(false);
     setEditingId(null);
-    incomeForm.resetForm();
+    setIncomeTypeId(incomeTypes[0]?.id || '');
+    setCustomCategoryText('');
+    setIsTagSelected(false);
+    setAmount(undefined);
+    const defaultCurrencyValue = settingsCurrency || currencyOptions[0].value;
+    const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setFrequency('monthly');
     setFormError(null);
   }
 
-  // Render states
-  if (loading) {
-    return <LoadingState message={t('incomeForm.loading')} />;
+  function handleCurrencyChange(newCurrency: string) {
+    const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
+    if (validCurrency) {
+      setCurrency(validCurrency.value);
+    }
   }
-  
-  if (error) {
-    return <ErrorState message={`${t('incomeForm.errorPrefix')} ${error}`} />;
+
+  function handleIncomeTypeChange(newTypeId: string) {
+    setIncomeTypeId(newTypeId);
+    if (newTypeId === 'custom') {
+      setCustomCategoryText('');
+    } else {
+      const selectedType = incomeTypes.find(type => type.id === newTypeId);
+      if (selectedType) {
+        setCustomCategoryText(selectedType.label);
+        setIncomeTypeId('custom');
+        setIsTagSelected(true);
+      } else {
+        setCustomCategoryText('');
+      }
+    }
   }
-  
-  if (!incomes || incomes.length === 0) {
+
+  const modal = (
+    <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('incomeForm.editTitle') : t('incomeForm.title')}>
+      <AddIncomeForm
+        handleSubmit={handleSubmit}
+        handleCurrencyChange={handleCurrencyChange}
+        isFormValid={isFormValid}
+        hasChanges={hasChanges}
+        formError={formError}
+        incomeTypeId={incomeTypeId}
+        isTagSelected={isTagSelected}
+        customCategoryText={customCategoryText}
+        setCustomCategoryText={setCustomCategoryText}
+        incomeTypeOptions={incomeTypeOptions}
+        handleIncomeTypeChange={handleIncomeTypeChange}
+        amount={amount}
+        setAmount={setAmount}
+        currency={currency}
+        frequency={frequency}
+        setFrequency={setFrequency}
+        frequencyOptions={frequencyOptions}
+        submitting={submitting}
+        editingId={editingId}
+        t={t} 
+      />
+    </ModalWindow>
+  );
+
+  // Render states - incomes is always empty, so show empty state
+  if (incomes.length === 0) {
     return (
       <div className="flex h-full items-center justify-center pt-12 lg:pt-0 lg:min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6 text-mainTextColor dark:text-mainTextColor">
@@ -247,34 +307,13 @@ export default function IncomePage() {
               />
             ))}
           </div>
-          <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('incomeForm.editTitle') : t('incomeForm.title')}>
-            <AddIncomeForm
-              handleSubmit={handleSubmit}
-              handleCurrencyChange={incomeForm.handleCurrencyChange}
-              isFormValid={incomeForm.isFormValid}
-              hasChanges={incomeForm.hasChanges}
-              formError={formError}
-              incomeTypeId={incomeForm.incomeTypeId}
-              isTagSelected={incomeForm.isTagSelected}
-              customCategoryText={incomeForm.customCategoryText}
-              setCustomCategoryText={incomeForm.setCustomCategoryText}
-              incomeTypeOptions={incomeTypeOptions}
-              handleIncomeTypeChange={incomeForm.handleIncomeTypeChange}
-              amount={incomeForm.amount}
-              setAmount={incomeForm.setAmount}
-              currency={incomeForm.currency}
-              frequency={incomeForm.frequency}
-              setFrequency={incomeForm.setFrequency}
-              frequencyOptions={frequencyOptions}
-              submitting={submitting}
-              editingId={editingId}
-              t={t} 
-            />
-          </ModalWindow>
+          {modal}
         </div>
       </div>
     );
   }
+
+  const totalCurrency = selectedConversionCurrency || settingsCurrency || 'USD';
 
   return (
     <div className="flex flex-col gap-6 lg:min-h-[calc(100vh-100px)]">
@@ -297,8 +336,8 @@ export default function IncomePage() {
               <div className="lg:space-y-2 lg:px-2">
                 <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor mb-4 lg:mb-0">
                   <div className="flex flex-wrap gap-3">
-                    <span>{t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
-                    <span>{t('incomeForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong></span>
+                    <span>{t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
+                    <span>{t('incomeForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
                   </div>
                   {settingsCurrency && incomes.length > 0 && (
                     <div className="flex items-center gap-2">
@@ -322,7 +361,7 @@ export default function IncomePage() {
             content: (
               <div className="lg:space-y-2 lg:px-2">
                 <div className="text-sm text-textColor dark:text-textColor text-right">
-                  {t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedConversionCurrency || settingsCurrency || 'USD'}</strong>
+                  {t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong>
                 </div>
                 <PieChart 
                   data={pieChartData}
@@ -334,30 +373,7 @@ export default function IncomePage() {
         ]}
       />
 
-      <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('incomeForm.editTitle') : t('incomeForm.title')}>
-        <AddIncomeForm
-          handleSubmit={handleSubmit}
-          handleCurrencyChange={incomeForm.handleCurrencyChange}
-          isFormValid={incomeForm.isFormValid}
-          hasChanges={incomeForm.hasChanges}
-          formError={formError}
-          incomeTypeId={incomeForm.incomeTypeId}
-          isTagSelected={incomeForm.isTagSelected}
-          customCategoryText={incomeForm.customCategoryText}
-          setCustomCategoryText={incomeForm.setCustomCategoryText}
-          incomeTypeOptions={incomeTypeOptions}
-          handleIncomeTypeChange={incomeForm.handleIncomeTypeChange}
-          amount={incomeForm.amount}
-          setAmount={incomeForm.setAmount}
-          currency={incomeForm.currency}
-          frequency={incomeForm.frequency}
-          setFrequency={incomeForm.setFrequency}
-          frequencyOptions={frequencyOptions}
-          submitting={submitting}
-          editingId={editingId}
-          t={t}
-        />
-      </ModalWindow>
+      {modal}
     </div>
   );
 }

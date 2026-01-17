@@ -1,12 +1,18 @@
-import { useParams } from 'react-router-dom';
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 
 
 export function useScenarioRoute() {
-  const { scenarioSlug } = useParams<{ scenarioSlug: string }>();
-  const currentScenarioId = useAuth(s => s.currentScenarioId);
+  const queryClient = useQueryClient();
+  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
+    id?: string | null; 
+    slug?: string | null; 
+    baseCurrency?: string | null;
+  } | null;
+  const slug = currentScenario?.slug ?? null;
+  const currentScenarioId = currentScenario?.id ?? null;
+  
   return {
-    scenarioSlug: scenarioSlug || null,
+    scenarioSlug: slug,
     scenarioId: currentScenarioId,
     loading: false,
     error: null,

@@ -1,41 +1,3 @@
-// Business problem: 
-// users need to organize their goals
-// This page allows users to enter goals into the system, have a list of goals at hand, view goals progress, edit and delete goals.
-// This page calculates saved amount based on months passed since goal creation, shows months left until target date.
-
-// Test cases:
-// 1. User can add goal
-// 2. User can edit goal
-// 3. User can delete goal
-// 4. User can see goal progress in the form of cards
-// 5. User can see saved amount calculated based on time passed
-// 6. User can enter goal in any currency from the list
-// 7. User can set target date and see months left
-// 8. User can see progress bar for each goal
-
-// UI interface:
-// 1. EmptyState component for showing empty state
-// 2. ModalWindow component for showing modal window
-// 3. AddGoalForm component for showing add goal form
-// 4. GoalCard component for showing goal cards with progress
-// 5. LoadingState component for showing loading state
-// 6. ErrorState component for showing error state
-
-// Event handlers
-// 1. On click add goal button
-// 2. On click submit button in add goal form
-// 3. On click edit goal button
-// 4. On click delete goal button
-// 5. On change currency in add goal form
-
-// List of potential vulnerabilities and performance issues
-// 1. Heavy logic, poor readability
-// 2. No error monitoring, errors exposed to browser console
-// 3. Insecure passing of IDs to the DB
-// 4. Missing sanitization of user input for goal name
-// 5. Redundant requests during navigation, missing caching
-// 6. Date calculations may have timezone issues
-
 import { useState } from 'react';
 // reusable global components
 import EmptyState from '@/shared/ui/atoms/EmptyState';
@@ -47,7 +9,7 @@ import ModalWindow from '@/shared/ui/ModalWindow';
 // reusable local components
 import AddGoalForm from '@/features/goals/AddGoalForm';
 // custom hooks
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import { useTranslation } from '@/shared/i18n';
 import { useCurrency } from '@/shared/hooks';
@@ -59,7 +21,8 @@ import {
 import type { Goal } from '@/shared/utils/goals';
 
 export default function GoalsPage() {
-  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
   const { scenarioId } = useScenarioRoute();
   const { t } = useTranslation('components');
   const { currency: settingsCurrency } = useCurrency();

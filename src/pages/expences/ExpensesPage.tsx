@@ -1,87 +1,56 @@
-// Business problem: 
-// users need to organize their expenses
-// This page allows users to enter expenses into the system, have a list of expenses at hand, view expenses in the form of a chart, edit and delete expenses.
-// This page calculates expenses per month, per year, one-time expenses, shows a convertible equivalent of expenses.
-
-// Test cases:
-// 1. User can add expense
-// 2. User can edit expense
-// 3. User can delete expense
-// 4. User can see expenses in the form of a chart
-// 5. User can see expenses in the form of a table
-// 6. User can enter expense in any currency from the list and get a convertible equivalent of expense in an additional column in the table.
-// 7. User can see monthly, annual and one-time expenses in the selected currency in the settings.
-// 8. User can recalculate amounts in any currency from the list.
-
-// UI interface:
-// 1. EmptyState component for showing empty state
-// 2. Tag component for showing expense categories
-// 3. ModalWindow component for showing modal window
-// 4. AddExpenseForm component for showing add expense form
-// 5. Tabs component for showing table and chart
-// 6. Table component for showing table
-// 7. PieChart component for showing pie chart
-// 8. LoadingState component for showing loading state
-// 9. ErrorState component for showing error state
-
-// Event handlers
-// 1. On click expense tag button
-// 2. On click add expense button
-// 3. On click submit button in add expense form
-// 4. On click edit expense button
-// 5. On click delete expense button
-// 6. On change currency in add expense form
-
-// List of potential vulnerabilities and performance issues
-// 1. Excessive currency conversion requests, missing debounce
-// 2. Heavy logic, poor readability
-// 3. No error monitoring, errors exposed to browser console
-// 4. Insecure passing of IDs to the DB
-// 5. Missing sanitization of user input for categories
-// 6. Infinite loops during component render (useExpenseCurrencyConversion, tableColumns)
-// 7. Redundant requests during navigation, missing caching
-
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 // reusable global components
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import Tag from '@/shared/ui/atoms/Tag';
-import LoadingState from '@/shared/ui/atoms/LoadingState';
-import ErrorState from '@/shared/ui/atoms/ErrorState';
 import ModalWindow from '@/shared/ui/ModalWindow';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import AddButton from '@/shared/ui/atoms/AddButton';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
 import PieChart from '@/shared/ui/molecules/PieChart';
+import IconButton from '@/shared/ui/atoms/IconButton';
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 // reusable local components
 import AddExpenseForm from '@/features/expenses/AddExpenseForm';
 // custom hooks
-import { useAuth } from '@/shared/store/auth';
-import { useScenarioRoute } from '@/shared/router/useScenarioRoute';
 import { useTranslation } from '@/shared/i18n';
-import {
-  useCurrency,
-  useExpenseForm,
-  useExpenses,
-  useExpenseCurrencyConversion,
-  useExpenseCalculations,
-} from '@/shared/hooks';
+import { useCurrency } from '@/shared/hooks';
 // constants
-import { currencyOptions } from '@/shared/constants/currencies';
+import { currencyOptions, type CurrencyCode } from '@/shared/constants/currencies';
 import { getExpenseCategories } from '@/shared/utils/categories';
 // types
 import type { Expense, ExpenseCategory } from '@/mocks/pages/expenses.mock';
+import type { TableColumn } from '@/shared/ui/molecules/Table';
 
 export default function ExpensesPage() {
+  
   const { t } = useTranslation('components');
-  const { user } = useAuth();
-  const { scenarioId } = useScenarioRoute();
   const { currency: settingsCurrency } = useCurrency();
+  
+  // Expenses data - empty array
+  const expenses: Expense[] = [];
   
   // Modal state
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  
+  // Form state
+  const [categoryId, setCategoryId] = useState('');
+  const [customCategoryText, setCustomCategoryText] = useState('');
+  const [amount, setAmount] = useState<string | undefined>(undefined);
+  const [currency, setCurrency] = useState<CurrencyCode>(currencyOptions[0].value);
+  const [frequency, setFrequency] = useState<Expense['frequency']>('monthly');
+  const [isTagSelected, setIsTagSelected] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  
+  // Data placeholders
+  const submitting = false;
+  const deletingId: string | null = null;
+  const monthlyTotal = 0;
+  const annualTotal = 0;
+  const pieChartData: Array<{ name: string; value: number }> = [];
+  const selectedConversionCurrency: CurrencyCode | null = null;
   
   // Types and options
   const expenseCategories = useMemo(() => getExpenseCategories(t), [t]);
@@ -94,154 +63,212 @@ export default function ExpensesPage() {
     { label: t('expensesForm.monthly'), value: 'monthly' as const },
     { label: t('expensesForm.annual'), value: 'annual' as const },
   ], [t]);
-  
-  // Custom hooks
-  const expenseForm = useExpenseForm({
-    expenseCategories,
-    settingsCurrency,
-  });
 
-  const {
-    expenses,
-    loading,
-    error,
-    submitting,
-    deletingId,
-    formError,
-    handleCreateExpense,
-    handleUpdateExpense,
-    handleDeleteExpense,
-    setFormError,
-  } = useExpenses({
-    userId: user?.id,
-    scenarioId,
-    settingsCurrency,
-  });
+  // Form validation
+  const isFormValid = useMemo(() => {
+    const hasValidCategory = (categoryId === 'custom' || isTagSelected)
+      ? customCategoryText.trim().length > 0
+      : categoryId;
 
-  const {
-    selectedConversionCurrency,
-    convertedAmountsCache,
-    convertingIds,
-    handleConversionCurrencyChange,
-  } = useExpenseCurrencyConversion({
-    expenses,
-    settingsCurrency,
-    userId: user?.id,
-    scenarioId,
-  });
+    return !!(
+      hasValidCategory &&
+      amount &&
+      parseFloat(amount) > 0 &&
+      currency &&
+      frequency
+    );
+  }, [categoryId, isTagSelected, customCategoryText, amount, currency, frequency]);
 
-  const {
-    monthlyTotal,
-    annualTotal,
-    pieChartData,
-    tableColumns,
-  } = useExpenseCalculations({
-    expenses,
-    expenseCategories,
-    selectedConversionCurrency,
-    settingsCurrency,
-    convertedAmountsCache,
-    convertingIds,
-    t,
-    onEdit: handleEditExpense,
-    onDelete: handleDeleteExpenseClick,
-    deletingId,
-  });
+  const hasChanges = true; // Always true for now since we don't track original values
+
+  // Table columns
+  const tableColumns = useMemo<TableColumn<Expense>[]>(() => {
+    const columns: TableColumn<Expense>[] = [
+      { 
+        key: 'type', 
+        label: t('expensesForm.tableColumns.category'),
+        render: (value: string) => {
+          const category = expenseCategories.find(cat => cat.id === value);
+          return category?.label || value;
+        }
+      },
+      { 
+        key: 'amount', 
+        label: t('expensesForm.tableColumns.amount'),
+        align: 'left' as const,
+        render: (value: number, row: Expense) => `${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${row.currency}`
+      },
+    ];
+
+    if (settingsCurrency) {
+      const hasDifferentCurrency = expenses.some(expense => expense.currency !== settingsCurrency);
+      if (hasDifferentCurrency) {
+        const targetCurrency = selectedConversionCurrency || settingsCurrency;
+
+        columns.push({
+          key: 'amountInSettingsCurrency',
+          label: t('expensesForm.tableColumns.amountInSettingsCurrency'),
+          align: 'left' as const,
+          render: (_value: any, row: Expense) => {
+            if (row.currency === targetCurrency) {
+              return '-';
+            }
+
+            const displayAmount = row.amountInDefaultCurrency !== undefined 
+              ? row.amountInDefaultCurrency 
+              : row.amount;
+
+            return (
+              <span className="text-sm">
+                {displayAmount !== null ? (
+                  `${displayAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${targetCurrency}`
+                ) : (
+                  `... ${targetCurrency}`
+                )}
+              </span>
+            );
+          }
+        });
+      }
+    }
+
+    columns.push(
+      { key: 'frequency', label: t('expensesForm.tableColumns.frequency'), align: 'left' as const },
+      {
+        key: 'actions',
+        label: t('expensesForm.tableColumns.actions'),
+        align: 'left' as const,
+        render: (_value: any, row: Expense) => (
+          <div className="flex gap-2 items-center justify-start" onClick={(e) => e.stopPropagation()}>
+            <IconButton 
+              aria-label={t('expensesForm.actions.editAriaLabel')} 
+              title={t('expensesForm.actions.edit')} 
+              onClick={() => handleEditExpense(row)}
+            >
+              <PencilIcon className="w-4 h-4" />
+            </IconButton>
+            <IconButton 
+              aria-label={t('expensesForm.actions.deleteAriaLabel')} 
+              title={t('expensesForm.actions.delete')} 
+              onClick={() => handleDeleteExpenseClick(row.id)}
+              disabled={deletingId === row.id}
+            >
+              <TrashIcon className="w-4 h-4" />
+            </IconButton>
+          </div>
+        )
+      }
+    );
+
+    return columns;
+  }, [t, expenseCategories, settingsCurrency, expenses, deletingId, selectedConversionCurrency]);
 
   // Event handlers
   function handleTagClick(category: ExpenseCategory) {
-    expenseForm.initializeForTag(category);
+    setCategoryId('custom');
+    setCustomCategoryText(category.label);
+    setIsTagSelected(true);
     setFormError(null);
     setEditingId(null);
     setOpen(true);
   }
 
   function handleAddExpenseClick() {
-    expenseForm.initializeForCreate();
+    setCategoryId(expenseCategories[0]?.id || '');
+    setCustomCategoryText('');
+    setIsTagSelected(false);
+    setAmount(undefined);
+    const defaultCurrencyValue = settingsCurrency || currencyOptions[0].value;
+    const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setFrequency('monthly');
     setFormError(null);
     setEditingId(null);
     setOpen(true);
   }
 
-  async function handleSubmit(e: FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (submitting) {
-      console.warn('Submit already in progress, ignoring duplicate request');
-      return;
-    }
-    if (!user || !expenseForm.isFormValid || !expenseForm.amount) return;
-
-    try {
-      const finalType = expenseForm.getFinalCategory();
-      const expenseAmount = parseFloat(expenseForm.amount);
-      
-      if (editingId) {
-        await handleUpdateExpense({
-          expenseId: editingId,
-            type: finalType,
-            amount: expenseAmount,
-          currency: expenseForm.currency,
-          frequency: expenseForm.frequency,
-        });
-      } else {
-        await handleCreateExpense({
-            type: finalType,
-            amount: expenseAmount,
-          currency: expenseForm.currency,
-          frequency: expenseForm.frequency,
-        });
-      }
-
-      handleModalClose();
-    } catch (err) {
-      const errorKey = editingId ? 'expensesForm.updateErrorMessage' : 'expensesForm.errorMessage';
-      setFormError(err instanceof Error ? err.message : t(errorKey));
-    }
+    // Empty stub - no business logic
   }
 
   function handleEditExpense(expense: Expense) {
     setEditingId(expense.id);
-    expenseForm.initializeForEdit(expense);
+    setCategoryId('custom');
+    setCustomCategoryText(expense.type);
+    setIsTagSelected(true);
+    setAmount(expense.amount.toString());
+    const validCurrency = currencyOptions.find(opt => opt.value === expense.currency);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setFrequency(expense.frequency);
     setFormError(null);
     setOpen(true);
   }
 
-  async function handleDeleteExpenseClick(expenseId: string) {
-    const confirmMessage = t('expensesForm.deleteConfirm') ?? 'Are you sure you want to delete this expense?';
-    try {
-      await handleDeleteExpense(expenseId, confirmMessage);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : (t('expensesForm.deleteError') ?? 'Error deleting expense');
-      alert(errorMessage);
-    }
+  function handleDeleteExpenseClick(_expenseId: string) {
+    // Empty stub - no business logic
+  }
+
+  function handleConversionCurrencyChange(_newCurrency: string) {
+    // Empty stub - no business logic
   }
 
   function handleModalClose() {
     setOpen(false);
     setEditingId(null);
-    expenseForm.resetForm();
+    setCategoryId(expenseCategories[0]?.id || '');
+    setCustomCategoryText('');
+    setIsTagSelected(false);
+    setAmount(undefined);
+    const defaultCurrencyValue = settingsCurrency || currencyOptions[0].value;
+    const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
+    setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setFrequency('monthly');
     setFormError(null);
-        }
+  }
+
+  function handleCurrencyChange(newCurrency: string) {
+    const validCurrency = currencyOptions.find(opt => opt.value === newCurrency);
+    if (validCurrency) {
+      setCurrency(validCurrency.value);
+    }
+  }
+
+  function handleCategoryChange(newCategoryId: string) {
+    setCategoryId(newCategoryId);
+    if (newCategoryId === 'custom') {
+      setCustomCategoryText('');
+    } else {
+      const selectedCategory = expenseCategories.find(category => category.id === newCategoryId);
+      if (selectedCategory) {
+        setCustomCategoryText(selectedCategory.label);
+        setCategoryId('custom');
+        setIsTagSelected(true);
+      } else {
+        setCustomCategoryText('');
+      }
+    }
+  }
         
   const modal = (
     <ModalWindow open={open} onClose={handleModalClose} title={editingId ? t('expensesForm.editTitle') : t('expensesForm.title')}>
       <AddExpenseForm
         handleSubmit={handleSubmit}
-        handleCurrencyChange={expenseForm.handleCurrencyChange}
-        isFormValid={expenseForm.isFormValid}
-        hasChanges={expenseForm.hasChanges}
+        handleCurrencyChange={handleCurrencyChange}
+        isFormValid={isFormValid}
+        hasChanges={hasChanges}
         formError={formError}
-        categoryId={expenseForm.categoryId}
-        isTagSelected={expenseForm.isTagSelected}
-        customCategoryText={expenseForm.customCategoryText}
-        setCustomCategoryText={expenseForm.setCustomCategoryText}
+        categoryId={categoryId}
+        isTagSelected={isTagSelected}
+        customCategoryText={customCategoryText}
+        setCustomCategoryText={setCustomCategoryText}
         expenseCategoryOptions={expenseCategoryOptions}
-        handleCategoryChange={expenseForm.handleCategoryChange}
-        amount={expenseForm.amount}
-        setAmount={expenseForm.setAmount}
-        currency={expenseForm.currency}
-        frequency={expenseForm.frequency}
-        setFrequency={expenseForm.setFrequency}
+        handleCategoryChange={handleCategoryChange}
+        amount={amount}
+        setAmount={setAmount}
+        currency={currency}
+        frequency={frequency}
+        setFrequency={setFrequency}
         frequencyOptions={frequencyOptions}
         submitting={submitting}
         editingId={editingId}
@@ -250,16 +277,8 @@ export default function ExpensesPage() {
     </ModalWindow>
   );
 
-  // Render states
-  if (loading) {
-    return <LoadingState message={t('expensesForm.loading')} />;
-  }
-
-  if (error) {
-    return <ErrorState message={`${t('expensesForm.errorPrefix')} ${error}`} />;
-  }
-
-  if (!expenses || expenses.length === 0) {
+  // Render states - expenses is always empty, so show empty state
+  if (expenses.length === 0) {
     return (
       <div className="flex h-full items-center justify-center lg:min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6">

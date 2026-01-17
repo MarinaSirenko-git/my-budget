@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo} from 'react';
 import { MapPinIcon } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/shared/store/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import SelectInput from '@/shared/ui/form/SelectInput';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 import { loadUserScenarios, updateCurrentScenario, type Scenario } from '@/shared/utils/scenarios';
@@ -17,7 +17,22 @@ function getPlaceNameFromScenario(
 
 export default function PlaceName() {
   const navigate = useNavigate();
-  const { user, currentScenarioId, currentScenarioSlug, setCurrentScenarioId } = useAuth();
+  const queryClient = useQueryClient();
+  const user = queryClient.getQueryData(['user']) as { id?: string; email?: string } | null;
+  const currentScenario = queryClient.getQueryData(['currentScenario']) as { 
+    id?: string | null; 
+    slug?: string | null; 
+    baseCurrency?: string | null;
+  } | null;
+  const currentScenarioId = currentScenario?.id ?? null;
+  const currentScenarioSlug = currentScenario?.slug ?? null;
+  const setCurrentScenarioId = (scenarioId: string) => {
+    queryClient.setQueryData(['currentScenario'], {
+      id: scenarioId,
+      slug: currentScenarioSlug,
+      baseCurrency: currentScenario?.baseCurrency ?? null,
+    });
+  };
   const [placeName, setPlaceName] = useState('');
   const [scenarios, setScenarios] = useState<Scenario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,7 +46,7 @@ export default function PlaceName() {
 
   useEffect(() => {
     async function loadScenarios() {
-      if (!user) return;
+      if (!user?.id) return;
       const allScenarios = await loadUserScenarios(user.id) || [];
 
       setScenarios(allScenarios);
@@ -47,9 +62,10 @@ export default function PlaceName() {
 
   const handleScenarioChange = async (scenarioId: string) => {
     if (scenarioId === currentScenarioId) return;
+    if (!user?.id) return;
 
     try {
-      const success = await updateCurrentScenario(user!.id, scenarioId);
+      const success = await updateCurrentScenario(user.id, scenarioId);
       if (!success) throw new Error('Failed to update current scenario');
 
       setCurrentScenarioId(scenarioId);
@@ -67,7 +83,7 @@ export default function PlaceName() {
       await reportErrorToTelegram({
         action: 'handleScenarioChange',
         error: err,
-        userId: user!.id,
+        userId: user.id,
         context: { scenarioId },
       });
     }
