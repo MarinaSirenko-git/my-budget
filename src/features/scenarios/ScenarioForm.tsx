@@ -73,7 +73,7 @@ export default function ScenarioForm({
         <TextButton
           onClick={() => handleCreateScenario(false)}
           disabled={!isFormValid || creating}
-          variant="yellow"
+          variant="default"
           className="flex-1"
           aria-label={t('scenarioForm.createFromScratchAria')}
         >

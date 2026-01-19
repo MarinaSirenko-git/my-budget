@@ -1,5 +1,11 @@
-import type { IncomeType } from '@/mocks/pages/income.mock';
 import type { ExpenseCategory } from '@/mocks/pages/expenses.mock';
+
+export interface IncomeType {
+  id: string;
+  value: string;
+  isCustom: boolean;
+  label: string;
+}
 
 export const INCOME_CATEGORY_IDS: Omit<IncomeType, 'label'>[] = [
   {

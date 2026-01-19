@@ -36,8 +36,8 @@ export interface Income {
   id: string;
   type: string;
   amount: number;
-  currency: CurrencyCode;
-  frequency: 'monthly' | 'yearly';
+  currency: string;
+  frequency: 'monthly' | 'annual';
   date: string;
   createdAt: string;
   amountInDefaultCurrency?: number;
@@ -90,7 +90,7 @@ export default function IncomePage() {
       let monthlyAmount = 0;
       if (income.frequency === 'monthly') {
         monthlyAmount = amount;
-      } else if (income.frequency === 'yearly') {
+      } else if (income.frequency === 'annual') {
         monthlyAmount = amount / 12;
       }
       

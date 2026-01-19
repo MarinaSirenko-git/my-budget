@@ -4,7 +4,17 @@ import { useIncomes } from './useIncomes';
 import { useCurrency } from './useCurrency';
 import { useCurrencyConversion } from './useCurrencyConversion';
 import { useScenario } from './useScenario';
-import type { Income } from '@/mocks/pages/income.mock';
+
+interface Income {
+  id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  frequency: 'monthly' | 'annual';
+  date: string;
+  createdAt: string;
+  amountInDefaultCurrency?: number;
+}
 
 interface IncomeTotals {
     monthlyTotal: number;
