@@ -49,8 +49,44 @@ export default function IncomePage() {
   // Loading states
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const pieChartData: Array<{ name: string; value: number }> = [];
   const selectedConversionCurrency: CurrencyCode | null = null;
+
+  // Prepare pie chart data grouped by income category
+  const pieChartData = useMemo<Array<{ name: string; value: number }>>(() => {
+    if (!incomes || incomes.length === 0) {
+      return [];
+    }
+
+    const targetCurrency = selectedConversionCurrency || settingsCurrency;
+    
+    // Group incomes by category and calculate monthly totals
+    const categoryTotals = new Map<string, number>();
+    
+    incomes.forEach((income) => {
+      // Use converted amount if available, otherwise use original amount
+      const amount = targetCurrency && income.amountInDefaultCurrency !== undefined
+        ? income.amountInDefaultCurrency
+        : income.amount;
+      
+      // Calculate monthly amount based on frequency
+      let monthlyAmount = 0;
+      if (income.frequency === 'monthly') {
+        monthlyAmount = amount;
+      } else if (income.frequency === 'annual') {
+        monthlyAmount = amount / 12;
+      }
+      
+      // Add to category total
+      const categoryName = income.type;
+      const currentTotal = categoryTotals.get(categoryName) || 0;
+      categoryTotals.set(categoryName, currentTotal + monthlyAmount);
+    });
+    
+    // Convert map to array and sort by value (descending)
+    return Array.from(categoryTotals.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [incomes, settingsCurrency, selectedConversionCurrency]);
   
   // Types and options
   const incomeTypes = getIncomeCategories(t);
@@ -268,6 +304,22 @@ export default function IncomePage() {
           currency,
           frequency,
         });
+
+        // Manually update the cache with new data after successful update
+        // queryClient.setQueryData<Income[]>(
+        //   ['incomes', currentScenario.id],
+        //   (old) => old?.map(income => 
+        //     income.id === editingId
+        //       ? {
+        //           ...income,
+        //           type: incomeType,
+        //           amount: amountValue,
+        //           currency,
+        //           frequency: frequency as 'monthly' | 'annual',
+        //         }
+        //       : income
+        //   ) ?? []
+        // );
       } else {
         // Create new income
         await createIncome({
@@ -279,10 +331,9 @@ export default function IncomePage() {
           frequency,
           settingsCurrency: settingsCurrency || undefined,
         });
+        // Invalidate React Query cache to refetch incomes
+        queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario.id] });
       }
-
-      // Invalidate React Query cache to refetch incomes
-      queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario.id] });
 
       // Close modal and reset form
       handleModalClose();
