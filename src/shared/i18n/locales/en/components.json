@@ -134,7 +134,8 @@
     },
     "totals": {
       "monthly": "Monthly total:",
-      "annual": "Annual total:"
+      "annual": "Annual total:",
+      "count": "Incomes:"
     },
     "chartTitle": "Income by type"
   },

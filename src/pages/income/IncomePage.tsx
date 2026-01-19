@@ -1,9 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { FormEvent } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 // reusable global components
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import ModalWindow from '@/shared/ui/ModalWindow';
-import SelectInput from '@/shared/ui/form/SelectInput';
 import Tag from '@/shared/ui/atoms/Tag';
 import AddButton from '@/shared/ui/atoms/AddButton';
 import Tabs from '@/shared/ui/molecules/Tabs';
@@ -15,20 +15,23 @@ import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import AddIncomeForm from '@/features/income/AddIncomeForm';
 // custom hooks
 import { useTranslation } from '@/shared/i18n';
-import { useCurrency } from '@/shared/hooks';
+import { useCurrency, useConvertedIncomes, useUser, useScenario } from '@/shared/hooks';
 // constants
 import { currencyOptions, type CurrencyCode } from '@/shared/constants/currencies';
 import { getIncomeCategories, getIncomeFrequencyOptions } from '@/shared/utils/categories';
+// utils
+import { createIncome, updateIncome, deleteIncome } from '@/shared/utils/income';
 // data types
 import type { IncomeType, Income } from '@/mocks/pages/income.mock';
 import type { TableColumn } from '@/shared/ui/molecules/Table';
 
 export default function IncomePage() {
   const { t } = useTranslation('components');
+  const queryClient = useQueryClient();
   const { currency: settingsCurrency } = useCurrency();
-  
-  // Incomes data - empty array
-  const incomes: Income[] = [];
+  const { convertedIncomes: incomes, monthlyTotal, annualTotal, incomeTotal, loading: incomesLoading } = useConvertedIncomes();
+  const { user } = useUser();
+  const { currentScenario } = useScenario();
   
   // Modal state
   const [open, setOpen] = useState(false);
@@ -43,11 +46,9 @@ export default function IncomePage() {
   const [isTagSelected, setIsTagSelected] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   
-  // Data placeholders
-  const submitting = false;
-  const deletingId: string | null = null;
-  const monthlyTotal = 0;
-  const annualTotal = 0;
+  // Loading states
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const pieChartData: Array<{ name: string; value: number }> = [];
   const selectedConversionCurrency: CurrencyCode | null = null;
   
@@ -92,6 +93,35 @@ export default function IncomePage() {
   }, [incomeTypeId, isTagSelected, customCategoryText, amount, currency, frequency]);
 
   const hasChanges = true; // Always true for now since we don't track original values
+
+  // Delete income mutation with optimistic updates
+  const deleteIncomeMutation = useMutation({
+    mutationFn: (incomeId: string) => deleteIncome({ incomeId }),
+    
+    onMutate: async (incomeId) => {
+      await queryClient.cancelQueries({ queryKey: ['incomes', currentScenario?.id] });
+      const previousIncomes = queryClient.getQueryData<Income[]>(['incomes', currentScenario?.id]);
+      queryClient.setQueryData<Income[]>(
+        ['incomes', currentScenario?.id],
+        (old) => old?.filter(income => income.id !== incomeId) ?? []
+      );
+      setDeletingId(incomeId);
+      return { previousIncomes };
+    },
+    
+    onError: (error, _incomeId, context) => {
+      if (context?.previousIncomes) {
+        queryClient.setQueryData(['incomes', currentScenario?.id], context.previousIncomes);
+      }
+      setDeletingId(null);
+      console.error('Failed to delete income:', error);
+    },
+    
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario?.id] });
+      setDeletingId(null);
+    },
+  });
 
   // Table columns
   const tableColumns = useMemo<TableColumn<Income>[]>(() => {
@@ -199,9 +229,72 @@ export default function IncomePage() {
     setOpen(true);
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    // Empty stub - no business logic
+    
+    if (!isFormValid || submitting) {
+      return;
+    }
+
+    if (!user?.id) {
+      setFormError(t('incomeForm.errorMessage') || 'User not found');
+      return;
+    }
+
+    if (!currentScenario?.id) {
+      setFormError(t('incomeForm.errorMessage') || 'Scenario not found');
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError(null);
+
+    try {
+      const amountValue = parseFloat(amount || '0');
+      if (isNaN(amountValue) || amountValue <= 0) {
+        throw new Error(t('incomeForm.invalidAmount') || 'Invalid amount');
+      }
+
+      const incomeType = (incomeTypeId === 'custom' || isTagSelected)
+        ? customCategoryText.trim()
+        : incomeTypes.find(type => type.id === incomeTypeId)?.label || incomeTypeId;
+
+      if (editingId) {
+        // Update existing income
+        await updateIncome({
+          incomeId: editingId,
+          type: incomeType,
+          amount: amountValue,
+          currency,
+          frequency,
+        });
+      } else {
+        // Create new income
+        await createIncome({
+          userId: user.id,
+          scenarioId: currentScenario.id,
+          type: incomeType,
+          amount: amountValue,
+          currency,
+          frequency,
+          settingsCurrency: settingsCurrency || undefined,
+        });
+      }
+
+      // Invalidate React Query cache to refetch incomes
+      queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario.id] });
+
+      // Close modal and reset form
+      handleModalClose();
+    } catch (error) {
+      setFormError(
+        error instanceof Error 
+          ? error.message 
+          : (t('incomeForm.errorMessage') || 'Failed to save income')
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleEditIncome(income: Income) {
@@ -217,12 +310,8 @@ export default function IncomePage() {
     setOpen(true);
   }
 
-  function handleDeleteIncomeClick(_incomeId: string) {
-    // Empty stub - no business logic
-  }
-
-  function handleConversionCurrencyChange(_newCurrency: string) {
-    // Empty stub - no business logic
+  function handleDeleteIncomeClick(incomeId: string) {
+    deleteIncomeMutation.mutate(incomeId);
   }
 
   function handleModalClose() {
@@ -289,8 +378,8 @@ export default function IncomePage() {
     </ModalWindow>
   );
 
-  // Render states - incomes is always empty, so show empty state
-  if (incomes.length === 0) {
+  // Render states - show empty state if no incomes
+  if(!incomesLoading && !deleteIncomeMutation.isPending && incomes.length === 0) {
     return (
       <div className="flex h-full items-center justify-center pt-12 lg:pt-0 lg:min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6 text-mainTextColor dark:text-mainTextColor">
@@ -338,17 +427,8 @@ export default function IncomePage() {
                   <div className="flex flex-wrap gap-3">
                     <span>{t('incomeForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
                     <span>{t('incomeForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
+                    <span>{t('incomeForm.totals.count')} <strong className="text-mainTextColor dark:text-mainTextColor">{incomeTotal}</strong></span>
                   </div>
-                  {settingsCurrency && incomes.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <SelectInput
-                        value={selectedConversionCurrency || settingsCurrency}
-                        options={currencyOptions}
-                        onChange={handleConversionCurrencyChange}
-                        className="w-30"
-                      />
-                    </div>
-                  )}
                  
                 </div>
                 <Table columns={tableColumns} data={incomes} />
