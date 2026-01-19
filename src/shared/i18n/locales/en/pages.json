@@ -55,19 +55,11 @@
       },
       "item3": {
         "title": "Automatic calculation",
-        "description": "The app automatically calculates your savings, even if you top them up in different currencies and with different frequencies. Just add the information, and we'll do the calculations for you."
+        "description": "The app will show your savings, even if they are in different currencies. Just add the information."
       },
       "item4": {
         "title": "Progress toward goals",
         "description": "Set a goal to save for a vacation or a new car? The app will show how much you've already saved and how much is left. You'll always see how close you are to your goal."
-      },
-      "item5": {
-        "title": "Your data is secure",
-        "description": "All information about your finances is encrypted before saving. Your data is protected and accessible only to you — no one else will see it."
-      },
-      "item6": {
-        "title": "Share with family",
-        "description": "Need to show your spouse the current budget status? Take a screenshot and send it so everyone is aware of the family's financial situation."
       }
     }
   },

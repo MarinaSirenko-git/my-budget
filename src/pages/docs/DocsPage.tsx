@@ -34,12 +34,6 @@ export default function DocsPage() {
           <li className="before:content-['—'] before:mr-2">
             <strong className="font-bold">{t('docs.whatAppDoes.item4.title')}</strong> {t('docs.whatAppDoes.item4.description')}
           </li>
-          <li className="before:content-['—'] before:mr-2">
-            <strong className="font-bold">{t('docs.whatAppDoes.item5.title')}</strong> {t('docs.whatAppDoes.item5.description')}
-          </li>
-          <li className="before:content-['—'] before:mr-2">
-            <strong className="font-bold">{t('docs.whatAppDoes.item6.title')}</strong> {t('docs.whatAppDoes.item6.description')}
-          </li>
         </ul>
       </section>
     </div>

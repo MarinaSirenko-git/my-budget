@@ -29,14 +29,14 @@ function LeftSidebar(){
         
         try {
           await supabase.auth.signOut();
-          queryClient.clear();
-          navigate('/auth', { replace: true });
         } catch (error) {
           await reportErrorToTelegram({
             action: 'signOut',
             error: error instanceof Error ? error : new Error(String(error)),
             userId: userId,
           });
+        } finally {
+          queryClient.clear();
           navigate('/auth', { replace: true });
         }
       }
