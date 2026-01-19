@@ -16,12 +16,13 @@ import AuthCallback from './shared/router/AuthCallback';
 import Feedback from './shared/ui/Feedback';
 import NotFoundPage from './pages/404/NotFoundPage';
 import { loadLanguageFromProfile } from './shared/i18n';
-import { useLanguage } from './shared/hooks/useLanguage';
+import { useProfile } from './shared/hooks/useProfile';
 import { useScenario } from './shared/hooks/useScenario';
 
 function App() {
   const initTheme = useTheme(s => s.init);
-  const { language } = useLanguage();
+  const { profile } = useProfile();
+  const language = profile?.language ? (profile.language.toLowerCase() === 'ru' ? 'ru' : 'en') : null;
 
   useEffect(() => {
     initTheme();

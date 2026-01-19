@@ -135,10 +135,14 @@ export default function IncomePage() {
     mutationFn: (incomeId: string) => deleteIncome({ incomeId }),
     
     onMutate: async (incomeId) => {
-      await queryClient.cancelQueries({ queryKey: ['incomes', currentScenario?.id] });
-      const previousIncomes = queryClient.getQueryData<Income[]>(['incomes', currentScenario?.id]);
+      if (!currentScenario?.id) {
+        return { previousIncomes: null };
+      }
+      
+      await queryClient.cancelQueries({ queryKey: ['incomes', currentScenario.id] });
+      const previousIncomes = queryClient.getQueryData<Income[]>(['incomes', currentScenario.id]);
       queryClient.setQueryData<Income[]>(
-        ['incomes', currentScenario?.id],
+        ['incomes', currentScenario.id],
         (old) => old?.filter(income => income.id !== incomeId) ?? []
       );
       setDeletingId(incomeId);
@@ -146,15 +150,17 @@ export default function IncomePage() {
     },
     
     onError: (error, _incomeId, context) => {
-      if (context?.previousIncomes) {
-        queryClient.setQueryData(['incomes', currentScenario?.id], context.previousIncomes);
+      if (context?.previousIncomes && currentScenario?.id) {
+        queryClient.setQueryData(['incomes', currentScenario.id], context.previousIncomes);
       }
       setDeletingId(null);
       console.error('Failed to delete income:', error);
     },
     
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario?.id] });
+      if (currentScenario?.id) {
+        queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario.id] });
+      }
       setDeletingId(null);
     },
   });
@@ -305,21 +311,8 @@ export default function IncomePage() {
           frequency,
         });
 
-        // Manually update the cache with new data after successful update
-        // queryClient.setQueryData<Income[]>(
-        //   ['incomes', currentScenario.id],
-        //   (old) => old?.map(income => 
-        //     income.id === editingId
-        //       ? {
-        //           ...income,
-        //           type: incomeType,
-        //           amount: amountValue,
-        //           currency,
-        //           frequency: frequency as 'monthly' | 'annual',
-        //         }
-        //       : income
-        //   ) ?? []
-        // );
+        // Invalidate React Query cache to refetch incomes
+        queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario.id] });
       } else {
         // Create new income
         await createIncome({
