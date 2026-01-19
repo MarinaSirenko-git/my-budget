@@ -204,8 +204,10 @@
     "namePlaceholder": "Car purchase",
     "amountLabel": "Amount",
     "currencyLabel": "Currency",
-    "targetDateLabel": "When is the purchase planned",
-    "targetDatePlaceholder": "Target date",
+    "targetDateLabel": "When is the purchase planned?",
+    "targetDatePlaceholder": "Date of the last deposit",
+    "startDateLabel": "When are you ready to make the first deposit?",
+    "startDatePlaceholder": "Date of the first deposit",
     "createButton": "+ Create goal",
     "creatingButton": "Creating...",
     "saveButton": "Save",
@@ -218,7 +220,8 @@
     "loadingError": "Error loading goals",
     "loading": "Goals are loading...",
     "errorPrefix": "Error:",
-    "emptyStateMessage": "What are we saving for and when? <br /> Add your first financial goal."
+    "emptyStateMessage": "What are we saving for and when? <br /> Add your first financial goal.",
+    "perMonth": "per month"
   },
   "savingsForm": {
     "createTitle": "Add Savings",

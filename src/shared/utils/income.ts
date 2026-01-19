@@ -1,6 +1,16 @@
 import { supabase } from '@/lib/supabase';
-import type { Income } from '@/mocks/pages/income.mock';
 import type { CurrencyCode } from '@/shared/constants/currencies';
+
+export interface Income {
+  id: string;
+  type: string;
+  amount: number;
+  currency: CurrencyCode;
+  frequency: 'monthly' | 'annual';
+  date: string;
+  createdAt: string;
+  amountInDefaultCurrency?: number;
+}
 
 export interface UpdateIncomeParams {
   incomeId: string;

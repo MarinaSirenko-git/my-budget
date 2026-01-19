@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import type { FormEvent } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 // reusable global components
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import AddButton from '@/shared/ui/atoms/AddButton';
@@ -9,18 +10,21 @@ import ModalWindow from '@/shared/ui/ModalWindow';
 import AddGoalForm from '@/features/goals/AddGoalForm';
 // custom hooks
 import { useTranslation } from '@/shared/i18n';
-import { useCurrency } from '@/shared/hooks';
+import { useCurrency, useConvertedGoals, useUser, useScenario } from '@/shared/hooks';
 // constants
 import { currencyOptions, type CurrencyCode } from '@/shared/constants/currencies';
+// utils
+import { createGoal, updateGoal, deleteGoal } from '@/shared/utils/goals';
 // types
 import type { Goal } from '@/shared/utils/goals';
 
 export default function GoalsPage() {
   const { t } = useTranslation('components');
+  const queryClient = useQueryClient();
   const { currency: settingsCurrency } = useCurrency();
-  
-  // Goals data - empty array
-  const goals: Goal[] = [];
+  const { convertedGoals: goals, loading: goalsLoading } = useConvertedGoals();
+  const { user } = useUser();
+  const { currentScenario } = useScenario();
   
   // Modal state
   const [open, setOpen] = useState(false);
@@ -30,11 +34,11 @@ export default function GoalsPage() {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState<string | undefined>(undefined);
   const [currency, setCurrency] = useState<CurrencyCode>(currencyOptions[0].value);
+  const [startDate, setStartDate] = useState<string | undefined>(undefined);
   const [targetDate, setTargetDate] = useState<string | undefined>(undefined);
   const [formError, setFormError] = useState<string | null>(null);
-  
-  // Data placeholders
-  const submitting = false;
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Set default currency from settings when loaded
   useEffect(() => {
@@ -59,6 +63,46 @@ export default function GoalsPage() {
 
   const hasChanges = true; // Always true for now since we don't track original values
 
+  // Delete goal mutation with optimistic updates
+  const deleteGoalMutation = useMutation({
+    mutationFn: (goalId: string) => {
+      if (!user?.id) {
+        throw new Error('User not found');
+      }
+      return deleteGoal(goalId, user.id);
+    },
+    
+    onMutate: async (goalId) => {
+      if (!currentScenario?.id) {
+        return { previousGoals: null };
+      }
+      
+      await queryClient.cancelQueries({ queryKey: ['goals', currentScenario.id] });
+      const previousGoals = queryClient.getQueryData<Goal[]>(['goals', currentScenario.id, user?.id]);
+      queryClient.setQueryData<Goal[]>(
+        ['goals', currentScenario.id, user?.id],
+        (old) => old?.filter(goal => goal.id !== goalId) ?? []
+      );
+      setDeletingId(goalId);
+      return { previousGoals };
+    },
+    
+    onError: (error, _goalId, context) => {
+      if (context?.previousGoals && currentScenario?.id && user?.id) {
+        queryClient.setQueryData(['goals', currentScenario.id, user.id], context.previousGoals);
+      }
+      setDeletingId(null);
+      console.error('Failed to delete goal:', error);
+    },
+    
+    onSettled: () => {
+      if (currentScenario?.id) {
+        queryClient.invalidateQueries({ queryKey: ['goals', currentScenario.id] });
+      }
+      setDeletingId(null);
+    },
+  });
+
   // Event handlers
   function handleCreateGoalClick() {
     setName('');
@@ -66,15 +110,93 @@ export default function GoalsPage() {
     const defaultCurrencyValue = settingsCurrency || currencyOptions[0].value;
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setStartDate(undefined);
     setTargetDate(undefined);
     setFormError(null);
     setEditingId(null);
     setOpen(true);
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    // Empty stub - no business logic
+    
+    if (!isFormValid || submitting) {
+      return;
+    }
+
+    if (!user?.id) {
+      setFormError(t('goalsForm.errorMessage') || 'User not found');
+      return;
+    }
+
+    if (!currentScenario?.id) {
+      setFormError(t('goalsForm.errorMessage') || 'Scenario not found');
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError(null);
+
+    try {
+      const targetAmountValue = parseFloat(amount || '0');
+      if (isNaN(targetAmountValue) || targetAmountValue <= 0) {
+        throw new Error(t('goalsForm.errorMessage') || 'Invalid amount');
+      }
+
+      if (!startDate) {
+        throw new Error(t('goalsForm.errorMessage') || 'Start date is required');
+      }
+
+      if (!targetDate) {
+        throw new Error(t('goalsForm.errorMessage') || 'Target date is required');
+      }
+
+      if (editingId) {
+        // Update existing goal
+        const currentGoal = goals.find(g => g.id === editingId);
+        const currentAmount = currentGoal?.saved ?? 0;
+
+        await updateGoal({
+          goalId: editingId,
+          userId: user.id,
+          name: name.trim(),
+          targetAmount: targetAmountValue,
+          currentAmount: currentAmount,
+          startDate: startDate,
+          targetDate: targetDate,
+          currency,
+        });
+
+        // Invalidate React Query cache to refetch goals
+        queryClient.invalidateQueries({ queryKey: ['goals', currentScenario.id] });
+      } else {
+        // Create new goal
+        await createGoal({
+          userId: user.id,
+          scenarioId: currentScenario.id,
+          name: name.trim(),
+          targetAmount: targetAmountValue,
+          currentAmount: 0, // New goals start with 0 saved
+          startDate: startDate,
+          targetDate: targetDate,
+          currency,
+        });
+        
+        // Invalidate React Query cache to refetch goals
+        queryClient.invalidateQueries({ queryKey: ['goals', currentScenario.id] });
+      }
+
+      // Close modal and reset form
+      handleModalClose();
+    } catch (error) {
+      setFormError(
+        error instanceof Error 
+          ? error.message 
+          : (t('goalsForm.errorMessage') || 'Failed to save goal')
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleEditGoal(goal: Goal) {
@@ -83,13 +205,14 @@ export default function GoalsPage() {
     setAmount(goal.amount.toString());
     const validCurrency = currencyOptions.find(opt => opt.value === goal.currency);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setStartDate(goal.startDate);
     setTargetDate(goal.targetDate);
     setFormError(null);
     setOpen(true);
   }
 
-  function handleDeleteGoalClick(_goal: Goal) {
-    // Empty stub - no business logic
+  function handleDeleteGoalClick(goal: Goal) {
+    deleteGoalMutation.mutate(goal.id);
   }
 
   function handleModalClose() {
@@ -100,6 +223,7 @@ export default function GoalsPage() {
     const defaultCurrencyValue = settingsCurrency || currencyOptions[0].value;
     const validCurrency = currencyOptions.find(opt => opt.value === defaultCurrencyValue);
     setCurrency(validCurrency ? validCurrency.value : currencyOptions[0].value);
+    setStartDate(undefined);
     setTargetDate(undefined);
     setFormError(null);
   }
@@ -124,6 +248,8 @@ export default function GoalsPage() {
         amount={amount}
         setAmount={setAmount}
         currency={currency}
+        startDate={startDate}
+        setStartDate={setStartDate}
         targetDate={targetDate}
         setTargetDate={setTargetDate}
         submitting={submitting}
@@ -133,8 +259,8 @@ export default function GoalsPage() {
     </ModalWindow>
   );
 
-  // Render states - goals is always empty, so show empty state
-  if (goals.length === 0) {
+  // Render states - show empty state if no goals and not loading
+  if (!goalsLoading && goals.length === 0) {
     const emptyMessage = t('goalsForm.emptyStateMessage');
     const safeMessage = emptyMessage.replace(/<br\s*\/?>/gi, '\n');
 
@@ -179,8 +305,11 @@ export default function GoalsPage() {
               target={goal.amount}
               currency={goal.currency}
               monthsLeft={goal.monthsLeft}
+              monthlyPayment={goal.monthlyPayment}
+              monthlyPaymentInDefaultCurrency={goal.monthlyPaymentInDefaultCurrency}
               onEdit={() => handleEditGoal(goal)}
               onDelete={() => handleDeleteGoalClick(goal)}
+              deleting={deletingId === goal.id}
             />
           );
         })}

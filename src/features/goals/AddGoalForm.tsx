@@ -18,6 +18,8 @@ interface AddGoalFormProps {
   amount: string | undefined;
   setAmount: (value: string | undefined) => void;
   currency: CurrencyCode;
+  startDate: string | undefined;
+  setStartDate: (value: string | undefined) => void;
   targetDate: string | undefined;
   setTargetDate: (value: string | undefined) => void;
   submitting: boolean;
@@ -36,6 +38,8 @@ export default function AddGoalForm({
   amount,
   setAmount,
   currency,
+  startDate,
+  setStartDate,
   targetDate,
   setTargetDate,
   submitting,
@@ -67,6 +71,12 @@ export default function AddGoalForm({
         options={currencyOptions} 
         onChange={handleCurrencyChange} 
         label={t('goalsForm.currencyLabel')} 
+      />
+      <DateInput 
+        value={startDate}
+        onChange={setStartDate}
+        label={t('goalsForm.startDateLabel')}
+        placeholder={t('goalsForm.startDatePlaceholder')} 
       />
       <DateInput 
         value={targetDate}

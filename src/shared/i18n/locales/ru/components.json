@@ -199,8 +199,10 @@
     "namePlaceholder": "Покупка машины",
     "amountLabel": "Сумма",
     "currencyLabel": "Валюта",
-    "targetDateLabel": "Когда планируется покупка",
-    "targetDatePlaceholder": "Дата достижения",
+    "targetDateLabel": "Когда планируется покупка?",
+    "targetDatePlaceholder": "Дата последнего взноса",
+    "startDateLabel": "Когда готовы сделать первый взнос?",
+    "startDatePlaceholder": "Дата первого взноса",
     "createButton": "Создать",
     "creatingButton": "Создание...",
     "saveButton": "Сохранить",
@@ -213,7 +215,8 @@
     "loadingError": "Ошибка загрузки целей",
     "loading": "Загрузка...",
     "errorPrefix": "Ошибка:",
-    "emptyStateMessage": "На что копим и когда? <br /> Добавь свою первую финансовую цель."
+    "emptyStateMessage": "На что копим и когда? <br /> Добавь свою первую финансовую цель.",
+    "perMonth": "в месяц"
   },
   "savingsForm": {
     "createTitle": "Добавить накопления",

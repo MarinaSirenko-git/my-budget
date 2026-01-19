@@ -6,9 +6,14 @@ export interface Goal {
   name: string;
   amount: number;
   currency: string;
+  startDate: string;
   targetDate: string;
   saved?: number;
   monthsLeft?: number;
+  amountInDefaultCurrency?: number;
+  savedInDefaultCurrency?: number;
+  monthlyPayment?: number;
+  monthlyPaymentInDefaultCurrency?: number;
 }
 
 export interface UpdateGoalParams {
@@ -17,6 +22,7 @@ export interface UpdateGoalParams {
   name: string;
   targetAmount: number;
   currentAmount: number;
+  startDate: string;
   targetDate: string;
   currency: CurrencyCode;
 }
@@ -27,6 +33,7 @@ export interface CreateGoalParams {
   name: string;
   targetAmount: number;
   currentAmount: number;
+  startDate: string;
   targetDate: string;
   currency: CurrencyCode;
 }
@@ -75,14 +82,14 @@ export function calculateSaved(targetAmount: number, targetDate: string, created
 /**
  * Calculates months left until target date
  */
-export function calculateMonthsLeft(targetDate: string): number | undefined {
+export function calculateMonthsLeft(startDate: string, targetDate: string): number | undefined {
   if (!targetDate) {
     return undefined;
   }
   
-  const today = new Date();
+  const start = new Date(startDate);
   const target = new Date(targetDate);
-  const diffTime = target.getTime() - today.getTime();
+  const diffTime = target.getTime() - start.getTime();
   
   if (diffTime > 0) {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -96,6 +103,7 @@ export function calculateMonthsLeft(targetDate: string): number | undefined {
  * Maps Supabase data to Goal interface
  */
 export function mapGoalFromDb(item: any): Goal {
+  const startDate = item.start_date || item.startDate;
   const targetAmount = item.target_amount || item.amount || 0;
   const targetDate = item.target_date || item.targetDate;
   const createdAt = item.created_at;
@@ -108,7 +116,7 @@ export function mapGoalFromDb(item: any): Goal {
   // Calculate months left if not provided
   let monthsLeft = item.months_left;
   if (!monthsLeft && targetDate) {
-    monthsLeft = calculateMonthsLeft(targetDate);
+    monthsLeft = calculateMonthsLeft(startDate,targetDate);
   }
   
   return {
@@ -116,6 +124,7 @@ export function mapGoalFromDb(item: any): Goal {
     name: item.name,
     amount: targetAmount,
     currency: item.currency,
+    startDate: item.start_date,
     targetDate: targetDate,
     saved: saved,
     monthsLeft: monthsLeft,
@@ -126,12 +135,11 @@ export function mapGoalFromDb(item: any): Goal {
  * Fetches goals from Supabase
  */
 export async function fetchGoals(params: FetchGoalsParams): Promise<Goal[]> {
-  const { userId, scenarioId } = params;
+  const { scenarioId } = params;
 
   let query = supabase
-    .from('goals_decrypted')
+    .from('goals')
     .select('*')
-    .eq('user_id', userId);
   
   if (scenarioId) {
     query = query.eq('scenario_id', scenarioId);
@@ -154,7 +162,7 @@ export async function fetchGoals(params: FetchGoalsParams): Promise<Goal[]> {
  * Creates a new goal
  */
 export async function createGoal(params: CreateGoalParams): Promise<void> {
-  const { userId, scenarioId, name, targetAmount, currentAmount, targetDate, currency } = params;
+  const { userId, scenarioId, name, targetAmount, currentAmount, startDate, targetDate, currency } = params;
 
   const { error } = await supabase
     .from('goals')
@@ -163,6 +171,7 @@ export async function createGoal(params: CreateGoalParams): Promise<void> {
       name: name.trim(),
       target_amount: targetAmount,
       current_amount: currentAmount,
+      start_date: startDate,
       target_date: targetDate,
       currency: currency,
       scenario_id: scenarioId,
@@ -177,7 +186,7 @@ export async function createGoal(params: CreateGoalParams): Promise<void> {
  * Updates an existing goal
  */
 export async function updateGoal(params: UpdateGoalParams): Promise<void> {
-  const { goalId, userId, name, targetAmount, currentAmount, targetDate, currency } = params;
+  const { goalId, userId, name, targetAmount, currentAmount, startDate, targetDate, currency } = params;
 
   const { error } = await supabase
     .from('goals')
@@ -185,6 +194,7 @@ export async function updateGoal(params: UpdateGoalParams): Promise<void> {
       name: name.trim(),
       target_amount: targetAmount,
       current_amount: currentAmount,
+      start_date: startDate,
       target_date: targetDate,
       currency: currency,
     })

@@ -8,6 +8,7 @@ export { useConvertedExpenses } from './useConvertedExpenses';
 export { useSavings } from './useSavings';
 export { useConvertedSavings } from './useConvertedSavings';
 export { useGoals } from './useGoals';
+export { useConvertedGoals } from './useConvertedGoals';
 export { useScenario } from './useScenario';
 export { useProfile, fetchProfile } from './useProfile';
 

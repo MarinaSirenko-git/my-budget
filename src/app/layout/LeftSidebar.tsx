@@ -8,6 +8,7 @@ import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 import { useConvertedIncomes } from '@/shared/hooks/useConvertedIncomes';
 import { useConvertedExpenses } from '@/shared/hooks/useConvertedExpenses';
 import { useConvertedSavings } from '@/shared/hooks/useConvertedSavings';
+import { useConvertedGoals } from '@/shared/hooks/useConvertedGoals';
 
 function LeftSidebar(){
     const { t } = useTranslation('components');
@@ -18,6 +19,9 @@ function LeftSidebar(){
     const { monthlyTotal: totalIncome } = useConvertedIncomes();
     const { monthlyTotal: totalExpenses } = useConvertedExpenses();
     const { totalInBaseCurrency: totalSavings } = useConvertedSavings();
+    const { totalMonthlyPayment: totalGoals } = useConvertedGoals();
+    
+    const remainder = totalIncome - totalExpenses - totalGoals;
 
     const signOut = async () => {
         const user = queryClient.getQueryData(['user']) as { id?: string } | null;
@@ -78,8 +82,8 @@ function LeftSidebar(){
                     totalIncome={totalIncome}
                     totalExpenses={totalExpenses}
                     totalSavings={totalSavings}
-                    totalGoals={0}
-                    remainder={0}
+                    totalGoals={totalGoals}
+                    remainder={remainder}
                     t={t}
                 />
                 <ul className="w-full px-4 flex flex-col gap-2 text-base leading-loose pt-2">

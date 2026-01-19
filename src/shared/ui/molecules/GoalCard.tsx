@@ -3,6 +3,7 @@ import IconButton from '../atoms/IconButton';
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import { useCurrency } from '@/shared/hooks/useCurrency';
 import { useCurrencyConversion } from '@/shared/hooks/useCurrencyConversion';
+import { useTranslation } from '@/shared/i18n';
 import { DEFAULT_CURRENCY } from '@/shared/constants/currencies';
 
 interface GoalCardProps {
@@ -11,14 +12,18 @@ interface GoalCardProps {
   target: number;
   currency?: string;
   monthsLeft?: number;
+  monthlyPayment?: number;
+  monthlyPaymentInDefaultCurrency?: number;
   onEdit?: () => void;
   onDelete?: () => void;
+  deleting?: boolean;
 }
 
 const formatMoney = (value: number, currency: string) => 
   value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + currency;
 
-const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = DEFAULT_CURRENCY, monthsLeft, onEdit, onDelete }) => {
+const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = DEFAULT_CURRENCY, monthsLeft, monthlyPayment, monthlyPaymentInDefaultCurrency, onEdit, onDelete, deleting = false }) => {
+  const { t } = useTranslation('components');
   const { currency: baseCurrency, loading: currencyLoading } = useCurrency();
   const { convertAmount } = useCurrencyConversion();
   const [convertedSaved, setConvertedSaved] = useState<number | null>(null);
@@ -94,7 +99,7 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = DE
         <IconButton aria-label="Edit goal" title="Edit goal" onClick={handleEdit}>
           <PencilIcon className="w-4 h-4 lg:w-5 lg:h-5" />
         </IconButton>
-        <IconButton aria-label="Delete goal" title="Delete goal" onClick={handleDelete}>
+        <IconButton aria-label="Delete goal" title="Delete goal" onClick={handleDelete} disabled={deleting}>
           <TrashIcon className="w-4 h-4 lg:w-5 lg:h-5" />
         </IconButton>
       </div>
@@ -102,6 +107,11 @@ const GoalCard: React.FC<GoalCardProps> = ({ title, saved, target, currency = DE
       {/* Title */}
       <div className="text-lg lg:text-lg font-bold text-black dark:text-white uppercase tracking-tight truncate pr-16">
         {title}
+        {monthlyPayment !== undefined && monthlyPayment > 0 && (
+          <span className="font-normal normal-case ml-2 text-sm">
+            ({formatMoney(monthlyPaymentInDefaultCurrency ?? monthlyPayment, baseCurrency && monthlyPaymentInDefaultCurrency !== undefined ? baseCurrency : currency)} {t('goalsForm.perMonth')})
+          </span>
+        )}
       </div>
       
       {/* Amount */}
