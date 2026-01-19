@@ -34,15 +34,20 @@ async function fetchIncomesData(scenarioId: string | null): Promise<Income[]> {
     return [];
   }
 
-  return data.map((item: SupabaseIncomeRow): Income => ({
-    id: item.id,
-    type: item.type,
-    amount: item.amount,
-    currency: item.currency,
-    frequency: (item.frequency as 'monthly' | 'annual') || 'monthly',
-    date: item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
-    createdAt: item.created_at,
-  }));
+  return data.map((item: SupabaseIncomeRow): Income => {
+    // Map 'yearly' back to 'annual' for frontend consistency
+    const frontendFrequency = item.frequency === 'yearly' ? 'annual' : (item.frequency || 'monthly');
+    
+    return {
+      id: item.id,
+      type: item.type,
+      amount: item.amount,
+      currency: item.currency,
+      frequency: frontendFrequency as 'monthly' | 'annual',
+      date: item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
+      createdAt: item.created_at,
+    };
+  });
 }
 
 export function useIncomes() {

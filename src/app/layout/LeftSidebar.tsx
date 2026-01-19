@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 import { useConvertedIncomes } from '@/shared/hooks/useConvertedIncomes';
+import { useConvertedExpenses } from '@/shared/hooks/useConvertedExpenses';
 
 function LeftSidebar(){
     const { t } = useTranslation('components');
@@ -14,6 +15,7 @@ function LeftSidebar(){
     const queryClient = useQueryClient();
     const navigate = useNavigate();
     const { monthlyTotal: totalIncome } = useConvertedIncomes();
+    const { monthlyTotal: totalExpenses } = useConvertedExpenses();
 
     const signOut = async () => {
         const user = queryClient.getQueryData(['user']) as { id?: string } | null;
@@ -72,7 +74,7 @@ function LeftSidebar(){
                 </ul>
                 <FinancialSummary
                     totalIncome={totalIncome}
-                    totalExpenses={0}
+                    totalExpenses={totalExpenses}
                     totalSavings={0}
                     totalGoals={0}
                     remainder={0}

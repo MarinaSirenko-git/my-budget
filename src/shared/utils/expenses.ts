@@ -4,7 +4,6 @@ import type { CurrencyCode } from '@/shared/constants/currencies';
 
 export interface UpdateExpenseParams {
   expenseId: string;
-  userId: string;
   type: string;
   amount: number;
   currency: CurrencyCode;
@@ -12,7 +11,6 @@ export interface UpdateExpenseParams {
 }
 
 export interface CreateExpenseParams {
-  userId: string;
   scenarioId: string | null;
   type: string;
   amount: number;
@@ -22,14 +20,16 @@ export interface CreateExpenseParams {
 }
 
 export interface FetchExpensesParams {
-  userId: string;
   scenarioId: string | null;
   settingsCurrency?: CurrencyCode | null;
   convertAmount: (amount: number, fromCurrency: string, toCurrency?: string) => Promise<number | null>;
 }
 
 export async function updateExpense(params: UpdateExpenseParams): Promise<void> {
-  const { expenseId, userId, type, amount, currency, frequency } = params;
+  const { expenseId, type, amount, currency, frequency } = params;
+
+  // Map 'annual' to 'yearly' for database constraint
+  const dbFrequency = frequency === 'annual' ? 'yearly' : frequency;
 
   const { error } = await supabase
     .from('expenses')
@@ -37,10 +37,9 @@ export async function updateExpense(params: UpdateExpenseParams): Promise<void> 
       type,
       amount,
       currency,
-      frequency,
+      frequency: dbFrequency,
     })
-    .eq('id', expenseId)
-    .eq('user_id', userId);
+    .eq('id', expenseId);
 
   if (error) {
     throw error;
@@ -58,13 +57,16 @@ export async function createExpense(params: CreateExpenseParams): Promise<void> 
     });
   }
 
+  // Map 'annual' to 'yearly' for database constraint
+  const dbFrequency = frequency === 'annual' ? 'yearly' : frequency;
+
   const { error } = await supabase
     .from('expenses')
     .insert({
       type,
       amount,
       currency,
-      frequency,
+      frequency: dbFrequency,
       scenario_id: scenarioId,
     });
 
@@ -74,35 +76,28 @@ export async function createExpense(params: CreateExpenseParams): Promise<void> 
 }
 
 export async function fetchExpenses(params: FetchExpensesParams): Promise<Expense[]> {
-  const { userId, scenarioId, settingsCurrency, convertAmount } = params;
+  const { scenarioId, settingsCurrency, convertAmount } = params;
+  const { data, error } = await supabase
+    .from('expenses')
+    .select('id, created_at, amount, currency, type, frequency, scenario_id')
+    .eq('scenario_id', scenarioId)
+    .order('created_at', { ascending: false })
+    .order('id', { ascending: false });
 
-  let query = supabase
-    .from('expenses_decrypted')
-    .select('*')
-    .eq('user_id', userId);
+  if (error) throw error;
+  if (!data) return [];
 
-  if (scenarioId) {
-    query = query.eq('scenario_id', scenarioId);
-  }
-
-  const { data, error } = await query.order('created_at', { ascending: false });
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    return [];
-  }
-
-   const mappedExpensesPromises = data.map(async (item: any) => {
+  const mappedExpensesPromises = data.map(async (item: any) => {
+    // Map 'yearly' back to 'annual' for frontend consistency
+    const frontendFrequency = item.frequency === 'yearly' ? 'annual' : (item.frequency || 'monthly');
+    
     const expense: Expense = {
       id: item.id,
       type: item.type,
       category: item.type,
       amount: item.amount,
       currency: item.currency,
-      frequency: item.frequency || 'monthly',
+      frequency: frontendFrequency as 'monthly' | 'annual',
       date: item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
       createdAt: item.created_at,
     };
@@ -122,17 +117,15 @@ export async function fetchExpenses(params: FetchExpensesParams): Promise<Expens
 
 export interface DeleteExpenseParams {
   expenseId: string;
-  userId: string;
 }
 
 export async function deleteExpense(params: DeleteExpenseParams): Promise<void> {
-  const { expenseId, userId } = params;
+  const { expenseId } = params;
 
   const { error } = await supabase
     .from('expenses')
     .delete()
-    .eq('id', expenseId)
-    .eq('user_id', userId);
+    .eq('id', expenseId);
 
   if (error) {
     throw error;

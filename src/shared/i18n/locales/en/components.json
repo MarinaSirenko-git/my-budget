@@ -192,6 +192,7 @@
     "totals": {
       "monthly": "Monthly total:",
       "annual": "Annual total:",
+      "count": "Expenses:",
       "oneTime": "One-time amount:"
     },
     "chartTitle": "Expenses by category"

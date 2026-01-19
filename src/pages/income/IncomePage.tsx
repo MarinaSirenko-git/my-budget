@@ -22,8 +22,26 @@ import { getIncomeCategories, getIncomeFrequencyOptions } from '@/shared/utils/c
 // utils
 import { createIncome, updateIncome, deleteIncome } from '@/shared/utils/income';
 // data types
-import type { IncomeType, Income } from '@/mocks/pages/income.mock';
 import type { TableColumn } from '@/shared/ui/molecules/Table';
+
+// Types
+export interface IncomeType {
+  id: string;
+  value: string;
+  isCustom: boolean;
+  label: string;
+}
+
+export interface Income {
+  id: string;
+  type: string;
+  amount: number;
+  currency: CurrencyCode;
+  frequency: 'monthly' | 'yearly';
+  date: string;
+  createdAt: string;
+  amountInDefaultCurrency?: number;
+}
 
 export default function IncomePage() {
   const { t } = useTranslation('components');
@@ -72,7 +90,7 @@ export default function IncomePage() {
       let monthlyAmount = 0;
       if (income.frequency === 'monthly') {
         monthlyAmount = amount;
-      } else if (income.frequency === 'annual') {
+      } else if (income.frequency === 'yearly') {
         monthlyAmount = amount / 12;
       }
       

@@ -1,10 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { FormEvent } from 'react';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 // reusable global components
 import EmptyState from '@/shared/ui/atoms/EmptyState';
 import Tag from '@/shared/ui/atoms/Tag';
 import ModalWindow from '@/shared/ui/ModalWindow';
-import SelectInput from '@/shared/ui/form/SelectInput';
 import AddButton from '@/shared/ui/atoms/AddButton';
 import Tabs from '@/shared/ui/molecules/Tabs';
 import Table from '@/shared/ui/molecules/Table';
@@ -15,10 +15,12 @@ import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import AddExpenseForm from '@/features/expenses/AddExpenseForm';
 // custom hooks
 import { useTranslation } from '@/shared/i18n';
-import { useCurrency } from '@/shared/hooks';
+import { useCurrency, useConvertedExpenses, useUser, useScenario } from '@/shared/hooks';
 // constants
 import { currencyOptions, type CurrencyCode } from '@/shared/constants/currencies';
 import { getExpenseCategories } from '@/shared/utils/categories';
+// utils
+import { createExpense, updateExpense, deleteExpense } from '@/shared/utils/expenses';
 // types
 import type { Expense, ExpenseCategory } from '@/mocks/pages/expenses.mock';
 import type { TableColumn } from '@/shared/ui/molecules/Table';
@@ -26,10 +28,11 @@ import type { TableColumn } from '@/shared/ui/molecules/Table';
 export default function ExpensesPage() {
   
   const { t } = useTranslation('components');
+  const queryClient = useQueryClient();
   const { currency: settingsCurrency } = useCurrency();
-  
-  // Expenses data - empty array
-  const expenses: Expense[] = [];
+  const { convertedExpenses: expenses, monthlyTotal, annualTotal, expenseTotal, loading: expensesLoading } = useConvertedExpenses();
+  const { user } = useUser();
+  const { currentScenario } = useScenario();
   
   // Modal state
   const [open, setOpen] = useState(false);
@@ -44,13 +47,6 @@ export default function ExpensesPage() {
   const [isTagSelected, setIsTagSelected] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   
-  // Data placeholders
-  const submitting = false;
-  const deletingId: string | null = null;
-  const monthlyTotal = 0;
-  const annualTotal = 0;
-  const pieChartData: Array<{ name: string; value: number }> = [];
-  const selectedConversionCurrency: CurrencyCode | null = null;
   
   // Types and options
   const expenseCategories = useMemo(() => getExpenseCategories(t), [t]);
@@ -63,6 +59,23 @@ export default function ExpensesPage() {
     { label: t('expensesForm.monthly'), value: 'monthly' as const },
     { label: t('expensesForm.annual'), value: 'annual' as const },
   ], [t]);
+
+  // Initialize categoryId when expenseCategories are available
+  useEffect(() => {
+    if (expenseCategories.length > 0 && !categoryId) {
+      setCategoryId(expenseCategories[0].id);
+    }
+  }, [expenseCategories, categoryId]);
+
+  // Set default currency from settings when loaded
+  useEffect(() => {
+    if (settingsCurrency) {
+      const validCurrency = currencyOptions.find(opt => opt.value === settingsCurrency);
+      if (validCurrency) {
+        setCurrency(validCurrency.value);
+      }
+    }
+  }, [settingsCurrency]);
 
   // Form validation
   const isFormValid = useMemo(() => {
@@ -80,6 +93,84 @@ export default function ExpensesPage() {
   }, [categoryId, isTagSelected, customCategoryText, amount, currency, frequency]);
 
   const hasChanges = true; // Always true for now since we don't track original values
+
+  const selectedConversionCurrency: CurrencyCode | null = null;
+
+  // Prepare pie chart data grouped by expense category
+  const pieChartData = useMemo<Array<{ name: string; value: number }>>(() => {
+    if (!expenses || expenses.length === 0) {
+      return [];
+    }
+
+    const targetCurrency = selectedConversionCurrency || settingsCurrency;
+    
+    // Group expenses by category and calculate monthly totals
+    const categoryTotals = new Map<string, number>();
+    
+    expenses.forEach((expense) => {
+      // Use converted amount if available, otherwise use original amount
+      const amount = targetCurrency && expense.amountInDefaultCurrency !== undefined
+        ? expense.amountInDefaultCurrency
+        : expense.amount;
+      
+      // Calculate monthly amount based on frequency
+      let monthlyAmount = 0;
+      if (expense.frequency === 'monthly') {
+        monthlyAmount = amount;
+      } else if (expense.frequency === 'annual') {
+        monthlyAmount = amount / 12;
+      }
+      
+      // Add to category total
+      const categoryName = expense.type;
+      const currentTotal = categoryTotals.get(categoryName) || 0;
+      categoryTotals.set(categoryName, currentTotal + monthlyAmount);
+    });
+    
+    // Convert map to array and sort by value (descending)
+    return Array.from(categoryTotals.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value);
+  }, [expenses, settingsCurrency, selectedConversionCurrency]);
+
+  // Loading states
+  const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Delete expense mutation with optimistic updates
+  const deleteExpenseMutation = useMutation({
+    mutationFn: (expenseId: string) => deleteExpense({ expenseId }),
+    
+    onMutate: async (expenseId) => {
+      if (!currentScenario?.id) {
+        return { previousExpenses: null };
+      }
+      
+      await queryClient.cancelQueries({ queryKey: ['expenses', currentScenario.id] });
+      const previousExpenses = queryClient.getQueryData<Expense[]>(['expenses', currentScenario.id]);
+      queryClient.setQueryData<Expense[]>(
+        ['expenses', currentScenario.id],
+        (old) => old?.filter(expense => expense.id !== expenseId) ?? []
+      );
+      setDeletingId(expenseId);
+      return { previousExpenses };
+    },
+    
+    onError: (error, _expenseId, context) => {
+      if (context?.previousExpenses && currentScenario?.id) {
+        queryClient.setQueryData(['expenses', currentScenario.id], context.previousExpenses);
+      }
+      setDeletingId(null);
+      console.error('Failed to delete expense:', error);
+    },
+    
+    onSettled: () => {
+      if (currentScenario?.id) {
+        queryClient.invalidateQueries({ queryKey: ['expenses', currentScenario.id] });
+      }
+      setDeletingId(null);
+    },
+  });
 
   // Table columns
   const tableColumns = useMemo<TableColumn<Expense>[]>(() => {
@@ -187,9 +278,73 @@ export default function ExpensesPage() {
     setOpen(true);
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    // Empty stub - no business logic
+    
+    if (!isFormValid || submitting) {
+      return;
+    }
+
+    if (!user?.id) {
+      setFormError(t('expensesForm.errorMessage') || 'User not found');
+      return;
+    }
+
+    if (!currentScenario?.id) {
+      setFormError(t('expensesForm.errorMessage') || 'Scenario not found');
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError(null);
+
+    try {
+      const amountValue = parseFloat(amount || '0');
+      if (isNaN(amountValue) || amountValue <= 0) {
+        throw new Error(t('expensesForm.invalidAmount') || 'Invalid amount');
+      }
+
+      const expenseType = (categoryId === 'custom' || isTagSelected)
+        ? customCategoryText.trim()
+        : expenseCategories.find(category => category.id === categoryId)?.label || categoryId;
+
+      if (editingId) {
+        // Update existing expense
+        await updateExpense({
+          expenseId: editingId,
+          type: expenseType,
+          amount: amountValue,
+          currency,
+          frequency,
+        });
+
+        // Invalidate React Query cache to refetch expenses
+        queryClient.invalidateQueries({ queryKey: ['expenses', currentScenario.id] });
+      } else {
+        // Create new expense
+        await createExpense({
+          scenarioId: currentScenario.id,
+          type: expenseType,
+          amount: amountValue,
+          currency,
+          frequency,
+          settingsCurrency: settingsCurrency || undefined,
+        });
+        // Invalidate React Query cache to refetch expenses
+        queryClient.invalidateQueries({ queryKey: ['expenses', currentScenario.id] });
+      }
+
+      // Close modal and reset form
+      handleModalClose();
+    } catch (error) {
+      setFormError(
+        error instanceof Error 
+          ? error.message 
+          : (t('expensesForm.errorMessage') || 'Failed to save expense')
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleEditExpense(expense: Expense) {
@@ -205,12 +360,8 @@ export default function ExpensesPage() {
     setOpen(true);
   }
 
-  function handleDeleteExpenseClick(_expenseId: string) {
-    // Empty stub - no business logic
-  }
-
-  function handleConversionCurrencyChange(_newCurrency: string) {
-    // Empty stub - no business logic
+  function handleDeleteExpenseClick(expenseId: string) {
+    deleteExpenseMutation.mutate(expenseId);
   }
 
   function handleModalClose() {
@@ -277,8 +428,8 @@ export default function ExpensesPage() {
     </ModalWindow>
   );
 
-  // Render states - expenses is always empty, so show empty state
-  if (expenses.length === 0) {
+  // Render states - show empty state if no expenses
+  if(!expensesLoading && !deleteExpenseMutation.isPending && expenses.length === 0) {
     return (
       <div className="flex h-full items-center justify-center lg:min-h-[calc(100vh-150px)]">
         <div className="flex flex-col items-center justify-center gap-6">
@@ -322,22 +473,13 @@ export default function ExpensesPage() {
             id: 'table',
             label: t('expensesForm.tabs.table'),
             content: (
-              <div className="space-y-2 lg:px-2">
-                <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor">
+              <div className="lg:space-y-2 lg:px-2">
+                <div className="flex justify-between items-center text-sm text-textColor dark:text-textColor mb-4 lg:mb-0">
                   <div className="flex flex-wrap gap-3">
                     <span>{t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
                     <span>{t('expensesForm.totals.annual')} <strong className="text-mainTextColor dark:text-mainTextColor">{annualTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong></span>
+                    <span>{t('expensesForm.totals.count')} <strong className="text-mainTextColor dark:text-mainTextColor">{expenseTotal}</strong></span>
                   </div>
-                  {settingsCurrency && expenses.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <SelectInput
-                        value={selectedConversionCurrency || settingsCurrency}
-                        options={currencyOptions}
-                        onChange={handleConversionCurrencyChange}
-                        className="w-30"
-                      />
-                    </div>
-                  )}
                  
                 </div>
                 <Table columns={tableColumns} data={expenses} />
@@ -348,7 +490,7 @@ export default function ExpensesPage() {
             id: 'chart',
             label: t('expensesForm.tabs.chart'),
             content: (
-              <div className="space-y-2 lg:px-2">
+              <div className="lg:space-y-2 lg:px-2">
                 <div className="text-sm text-textColor dark:text-textColor text-right">
                   {t('expensesForm.totals.monthly')} <strong className="text-mainTextColor dark:text-mainTextColor">{monthlyTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {totalCurrency}</strong>
                 </div>

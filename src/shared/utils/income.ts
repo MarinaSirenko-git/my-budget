@@ -29,13 +29,16 @@ export interface FetchIncomesParams {
 export async function updateIncome(params: UpdateIncomeParams): Promise<void> {
   const { incomeId, type, amount, currency, frequency } = params;
 
+  // Map 'annual' to 'yearly' for database constraint
+  const dbFrequency = frequency === 'annual' ? 'yearly' : frequency;
+
   const { error } = await supabase
     .from('incomes')
     .update({
       type,
       amount,
       currency,
-      frequency,
+      frequency: dbFrequency,
     })
     .eq('id', incomeId)
 
@@ -55,13 +58,16 @@ export async function createIncome(params: CreateIncomeParams): Promise<void> {
     });
   }
 
+  // Map 'annual' to 'yearly' for database constraint
+  const dbFrequency = frequency === 'annual' ? 'yearly' : frequency;
+
   const { error } = await supabase
     .from('incomes')
     .insert({
       type,
       amount,
       currency,
-      frequency,
+      frequency: dbFrequency,
       scenario_id: scenarioId,
     });
 
@@ -83,12 +89,15 @@ export async function fetchIncomes(params: FetchIncomesParams): Promise<Income[]
   if (!data) return [];
 
   const mappedIncomesPromises = data.map(async (item: any) => {
+    // Map 'yearly' back to 'annual' for frontend consistency
+    const frontendFrequency = item.frequency === 'yearly' ? 'annual' : (item.frequency || 'monthly');
+    
     const income: Income = {
       id: item.id,
       type: item.type,
       amount: item.amount,
       currency: item.currency,
-      frequency: item.frequency || 'monthly',
+      frequency: frontendFrequency as 'monthly' | 'annual',
       date: item.date || item.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
       createdAt: item.created_at,
     };
