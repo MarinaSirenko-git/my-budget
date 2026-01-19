@@ -69,7 +69,7 @@ export default function GoalsPage() {
       if (!user?.id) {
         throw new Error('User not found');
       }
-      return deleteGoal(goalId, user.id);
+      return deleteGoal(goalId);
     },
     
     onMutate: async (goalId) => {

@@ -1,13 +1,5 @@
 import { supabase } from '@/lib/supabase';
 
-/**
- * Конвертирует сумму из одной валюты в другую через RPC
- * @param amount - Сумма для конвертации
- * @param fromCurrency - Исходная валюта
- * @param toCurrency - Целевая валюта
- * @throws Error если конвертация не удалась
- * @returns Конвертированная сумма
- */
 export async function convertCurrency(
   amount: number,
   fromCurrency: string,

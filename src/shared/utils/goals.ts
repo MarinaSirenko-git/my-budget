@@ -186,7 +186,7 @@ export async function createGoal(params: CreateGoalParams): Promise<void> {
  * Updates an existing goal
  */
 export async function updateGoal(params: UpdateGoalParams): Promise<void> {
-  const { goalId, userId, name, targetAmount, currentAmount, startDate, targetDate, currency } = params;
+  const { goalId, name, targetAmount, currentAmount, startDate, targetDate, currency } = params;
 
   const { error } = await supabase
     .from('goals')
@@ -199,7 +199,6 @@ export async function updateGoal(params: UpdateGoalParams): Promise<void> {
       currency: currency,
     })
     .eq('id', goalId)
-    .eq('user_id', userId);
 
   if (error) {
     throw error;
@@ -209,12 +208,11 @@ export async function updateGoal(params: UpdateGoalParams): Promise<void> {
 /**
  * Deletes a goal
  */
-export async function deleteGoal(goalId: string, userId: string): Promise<void> {
+export async function deleteGoal(goalId: string): Promise<void> {
   const { error } = await supabase
     .from('goals')
     .delete()
     .eq('id', goalId)
-    .eq('user_id', userId);
 
   if (error) {
     throw error;
