@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { reportErrorToTelegram } from '@/shared/utils/errorReporting';
 import { useConvertedIncomes } from '@/shared/hooks/useConvertedIncomes';
 import { useConvertedExpenses } from '@/shared/hooks/useConvertedExpenses';
+import { useConvertedSavings } from '@/shared/hooks/useConvertedSavings';
 
 function LeftSidebar(){
     const { t } = useTranslation('components');
@@ -16,6 +17,7 @@ function LeftSidebar(){
     const navigate = useNavigate();
     const { monthlyTotal: totalIncome } = useConvertedIncomes();
     const { monthlyTotal: totalExpenses } = useConvertedExpenses();
+    const { totalInBaseCurrency: totalSavings } = useConvertedSavings();
 
     const signOut = async () => {
         const user = queryClient.getQueryData(['user']) as { id?: string } | null;
@@ -57,11 +59,6 @@ function LeftSidebar(){
                         </NavLink>
                     </li>
                     <li> 
-                        <NavLink className={navLinkClass} to={`/${currentSlug}/savings`}>
-                            {t('sidebar.mySavings')}
-                        </NavLink>
-                    </li>
-                    <li> 
                         <NavLink className={navLinkClass} to={`/${currentSlug}/expenses`}>
                             {t('sidebar.myExpenses')}
                         </NavLink>
@@ -71,11 +68,16 @@ function LeftSidebar(){
                             {t('sidebar.myGoals')}
                         </NavLink>
                     </li>
+                    <li> 
+                        <NavLink className={navLinkClass} to={`/${currentSlug}/savings`}>
+                            {t('sidebar.mySavings')}
+                        </NavLink>
+                    </li>
                 </ul>
                 <FinancialSummary
                     totalIncome={totalIncome}
                     totalExpenses={totalExpenses}
-                    totalSavings={0}
+                    totalSavings={totalSavings}
                     totalGoals={0}
                     remainder={0}
                     t={t}

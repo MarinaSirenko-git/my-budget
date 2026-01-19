@@ -1,7 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { useScenario } from './useScenario';
-import type { Income } from '@/mocks/pages/income.mock';
+
+export interface Income {
+  id: string;
+  type: string;
+  amount: number;
+  currency: string;
+  frequency: 'monthly' | 'annual';
+  date: string;
+  createdAt: string;
+  amountInDefaultCurrency?: number;
+}
 
 interface SupabaseIncomeRow {
   id: string;
