@@ -95,7 +95,7 @@ function createSavingsHash(savings: Saving[]): string {
     }
     // Create a hash based on saving IDs, amounts, and currencies
     return savings
-        .map(sav => `${sav.id}:${sav.amount}:${sav.currency}`)
+        .map(sav => `${sav.id}:${sav.amount}:${sav.currency}:${sav.comment}`)
         .sort()
         .join('|');
 }

@@ -88,7 +88,7 @@ function createExpensesHash(expenses: Expense[]): string {
     }
     // Create a hash based on expense IDs, amounts, and currencies
     return expenses
-        .map(exp => `${exp.id}:${exp.amount}:${exp.currency}`)
+        .map(exp => `${exp.id}:${exp.amount}:${exp.currency}:${exp.type}:${exp.frequency}`)
         .sort()
         .join('|');
 }

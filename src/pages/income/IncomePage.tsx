@@ -329,8 +329,7 @@ export default function IncomePage() {
           frequency,
         });
 
-        // Invalidate React Query cache to refetch incomes
-        queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario.id] });
+        await queryClient.invalidateQueries({ queryKey: ['incomes', currentScenario.id] });
       } else {
         // Create new income
         await createIncome({

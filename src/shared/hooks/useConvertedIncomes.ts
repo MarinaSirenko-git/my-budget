@@ -51,6 +51,7 @@ async function convertIncomes(
     baseCurrency: string,
     convertAmountsBulk: (items: Array<{ amount: number; currency: string }>, toCurrency?: string) => Promise<Map<number, number> | null>
 ): Promise<Income[]> {
+    debugger
     if (!incomes || incomes.length === 0) {
         return [];
     }
@@ -98,7 +99,7 @@ function createIncomesHash(incomes: Income[]): string {
     }
     // Create a hash based on income IDs, amounts, and currencies
     return incomes
-        .map(inc => `${inc.id}:${inc.amount}:${inc.currency}`)
+        .map(inc => `${inc.id}:${inc.amount}:${inc.currency}:${inc.type}:${inc.frequency}`)
         .sort()
         .join('|');
 }

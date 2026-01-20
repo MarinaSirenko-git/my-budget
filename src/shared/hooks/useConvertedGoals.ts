@@ -189,7 +189,7 @@ function createGoalsHash(goals: Goal[]): string {
     }
     // Create a hash based on goal IDs, amounts, saved amounts, and currencies
     return goals
-        .map(goal => `${goal.id}:${goal.amount}:${goal.saved ?? 0}:${goal.currency}`)
+        .map(goal => `${goal.id}:${goal.amount}:${goal.saved ?? 0}:${goal.currency}:${goal.targetDate}:${goal.startDate}:${goal.name}`)
         .sort()
         .join('|');
 }
