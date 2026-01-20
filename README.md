@@ -100,6 +100,22 @@ The application uses the envelope method, where you allocate money to different 
 - `npm run preview` - Preview the production build locally
 - `npm run lint` - Run ESLint to check code quality
 
+### Data Flow
+
+[ DATABASE: Supabase ]
+      (Profiles, Incomes, Goals)
+                  |
+         [ RLS / Google Auth ]
+                  |
+        [ CLIENT: Supabase JS ]
+         /        |         \
+   [ READING ] [ CONVERSION ] [ WRITING ]
+   TanStack      Currency      Utility
+    Query        Helpers       Methods
+         \        |         /
+        [ UI: React Pages ]
+(Income, Expenses, Savings, Goals, Settings)
+
 ### Project Structure
 
 ```
@@ -275,6 +291,22 @@ This is a private project. For questions or suggestions, please contact the proj
 - `npm run build` - Собрать приложение для продакшена
 - `npm run preview` - Предпросмотр продакшен-сборки локально
 - `npm run lint` - Запустить ESLint для проверки качества кода
+
+### Поток данных
+
+[ БАЗА ДАННЫХ: Supabase ]
+      (Профили, Доходы, Цели)
+                  |
+         [ RLS / Google Auth ]
+                  |
+        [ КЛИЕНТ: Supabase JS ]
+         /        |         \
+   [ ЧТЕНИЕ ] [ КОНВЕРТАЦИЯ ] [ ЗАПИСЬ ]
+   TanStack      Конвертация    Утилиты
+    Query        валют          методов
+         \        |         /
+        [ UI: React Страницы ]
+(Доходы, Расходы, Накопления, Цели, Настройки)
 
 ### Структура проекта
 
