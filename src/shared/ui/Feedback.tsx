@@ -53,7 +53,7 @@ export default function Feedback({
       const userEmail = user?.email || t('feedbackForm.emailNotSpecified');
       const feedbackMessage = `${t('feedbackForm.telegramMessagePrefix')} ${userEmail}:\n\n${feedback.trim()}`;
       
-      const { error } = await supabase.functions.invoke('send-to-telegram', {
+      const { error } = await supabase.functions.invoke('send-message-to-telegram', {
         body: { message: feedbackMessage }
       });
 

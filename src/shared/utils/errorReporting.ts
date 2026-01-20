@@ -51,12 +51,13 @@ export async function reportErrorToTelegram(report: ErrorReport): Promise<void> 
     const sanitizedContext = sanitizeContext(report.context);
     const formattedMessage = formatErrorMessage(report, sanitizedError, sanitizedContext);
 
-    await supabase.functions.invoke('send-to-telegram', {
+    await supabase.functions.invoke('send-message-to-telegram', {
       body: { 
         message: formattedMessage
       }
     });
   } catch (err) {
+    debugger
     if (isDevelopment()) {
       console.error('Failed to send error to Telegram:', err);
     }
