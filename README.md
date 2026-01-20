@@ -6,7 +6,7 @@
 
 ## 🇬🇧 English
 
-This application is a simplified version of the Vue application ([my-budget-vue.pages.dev](https://my-budget-vue.pages.dev)) that I use for personal budget management. It was created as a sandbox for experimenting with React infrastructure and modern web development practices.
+This is a simplified React version of my budget tracking app ([my-budget-vue.pages.dev](https://my-budget-vue.pages.dev)). I built it as a playground to experiment with different web development tools and workflows. To speed up development, I used Cursor IDE. Data security is handled via RLS policies, and authentication is implemented through Google Auth. The project is hosted on Cloudflare Pages.
 
 ### About This Project
 
@@ -182,7 +182,7 @@ This is a private project. For questions or suggestions, please contact the proj
 
 ## 🇷🇺 Russian
 
-Это приложение является упрощенной версией Vue приложения ([my-budget-vue.pages.dev](https://my-budget-vue.pages.dev)), которое я использую для ведения своего бюджета. Оно было создано как песочница для экспериментов с React инфраструктурой и современными практиками веб-разработки.
+Это упрощенная React-версия моего приложения ([my-budget-vue.pages.dev](https://my-budget-vue.pages.dev)) для учета бюджета. Я создала её как полигон, чтобы потестировать инструменты и подходы в веб-разработке. Чтобы собрать проект быстрее, использовала Cursor IDE. За безопасность данных отвечают настроенные RLS-политики в базе, а вход реализован через Google Auth. Проект живет на Cloudflare Pages.
 
 ### О проекте
 
@@ -345,11 +345,3 @@ src/
 - Переводы хранятся в `src/shared/i18n/locales/`
 - Поддерживаемые языки: английский (`en`) и русский (`ru`)
 - Использовать хук `useTranslation` из `react-i18next` в компонентах
-
-### Лицензия
-
-Этот проект является частным и проприетарным.
-
-### Вклад в проект
-
-Это частный проект. По вопросам и предложениям обращайтесь к maintainer проекта.
