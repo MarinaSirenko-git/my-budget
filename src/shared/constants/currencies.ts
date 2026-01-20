@@ -72,4 +72,3 @@ export function isValidCurrency(currency: string | null | undefined): currency i
  * Дефолтная валюта
  */
 export const DEFAULT_CURRENCY: CurrencyCode = 'USD';
-
