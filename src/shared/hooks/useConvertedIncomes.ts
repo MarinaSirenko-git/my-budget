@@ -51,7 +51,6 @@ async function convertIncomes(
     baseCurrency: string,
     convertAmountsBulk: (items: Array<{ amount: number; currency: string }>, toCurrency?: string) => Promise<Map<number, number> | null>
 ): Promise<Income[]> {
-    debugger
     if (!incomes || incomes.length === 0) {
         return [];
     }
