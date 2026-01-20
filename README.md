@@ -102,6 +102,7 @@ The application uses the envelope method, where you allocate money to different 
 
 ### Data Flow
 
+```
 [ DATABASE: Supabase ]
       (Profiles, Incomes, Goals)
                   |
@@ -115,6 +116,8 @@ The application uses the envelope method, where you allocate money to different 
          \        |         /
         [ UI: React Pages ]
 (Income, Expenses, Savings, Goals, Settings)
+
+```
 
 ### Project Structure
 
@@ -294,6 +297,7 @@ This is a private project. For questions or suggestions, please contact the proj
 
 ### Поток данных
 
+```
 [ БАЗА ДАННЫХ: Supabase ]
       (Профили, Доходы, Цели)
                   |
@@ -307,6 +311,8 @@ This is a private project. For questions or suggestions, please contact the proj
          \        |         /
         [ UI: React Страницы ]
 (Доходы, Расходы, Накопления, Цели, Настройки)
+
+```
 
 ### Структура проекта
 
