@@ -127,6 +127,7 @@ export default function MobileMenu() {
                         totalSavings={0}
                         totalGoals={0}
                         remainder={0}
+                        currency=""
                         t={t}
                         variant="mobile"
                       />

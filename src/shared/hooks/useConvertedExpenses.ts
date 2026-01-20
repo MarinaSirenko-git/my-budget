@@ -129,7 +129,7 @@ export function useConvertedExpenses() {
         data: totals = { monthlyTotal: 0, annualTotal: 0, expenseTotal: 0 },
         isLoading: totalsLoading,
     } = useQuery<ExpenseTotals>({
-        queryKey: ['expenseTotals', currentScenario?.id, expensesHash],
+        queryKey: ['expenseTotals', currentScenario?.id, baseCurrency, expensesHash],
         queryFn: () => calculateExpenseTotals(convertedExpenses),
         
         staleTime: 1000 * 60 * 5, // 5 minutes

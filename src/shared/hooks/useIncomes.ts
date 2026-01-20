@@ -62,7 +62,6 @@ async function fetchIncomesData(scenarioId: string | null): Promise<Income[]> {
 
 export function useIncomes() {
   const { currentScenario } = useScenario();
-
   const { data: incomes = [], isLoading: loading, error } = useQuery<Income[]>({
     queryKey: ['incomes', currentScenario?.id],
     queryFn: () => fetchIncomesData(currentScenario?.id || null),

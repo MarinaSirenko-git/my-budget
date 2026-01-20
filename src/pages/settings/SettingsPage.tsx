@@ -104,8 +104,11 @@ export default function SettingsPage() {
         
         // Invalidate scenario and profile caches
         queryClient.invalidateQueries({ queryKey: ['scenarios', 'current'] });
-        queryClient.invalidateQueries({ queryKey: ['scenarios', 'list'] });
-        queryClient.invalidateQueries({ queryKey: ['profile'] });
+        // queryClient.invalidateQueries({ queryKey: ['scenarios', 'list'] });
+
+        if(currencyChanged){
+          queryClient.invalidateQueries({ queryKey: ['profile'] });
+        }
 
         if (currencyChanged && currentScenario.id) {
           queryClient.invalidateQueries({ queryKey: ['convertedIncomes', currentScenario.id] });

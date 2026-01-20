@@ -139,7 +139,7 @@ export function useConvertedIncomes() {
         data: totals = { monthlyTotal: 0, annualTotal: 0, incomeTotal: 0 },
         isLoading: totalsLoading,
     } = useQuery<IncomeTotals>({
-        queryKey: ['incomeTotals', currentScenario?.id, incomesHash],
+        queryKey: ['incomeTotals', currentScenario?.id, baseCurrency, incomesHash],
         queryFn: () => calculateIncomeTotals(convertedIncomes),
         
         staleTime: 1000 * 60 * 5, // 5 minutes

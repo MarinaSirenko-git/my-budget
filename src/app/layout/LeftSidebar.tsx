@@ -9,6 +9,7 @@ import { useConvertedIncomes } from '@/shared/hooks/useConvertedIncomes';
 import { useConvertedExpenses } from '@/shared/hooks/useConvertedExpenses';
 import { useConvertedSavings } from '@/shared/hooks/useConvertedSavings';
 import { useConvertedGoals } from '@/shared/hooks/useConvertedGoals';
+import { useCurrency } from '@/shared/hooks/useCurrency';
 
 function LeftSidebar(){
     const { t } = useTranslation('components');
@@ -20,6 +21,7 @@ function LeftSidebar(){
     const { monthlyTotal: totalExpenses } = useConvertedExpenses();
     const { totalInBaseCurrency: totalSavings } = useConvertedSavings();
     const { totalMonthlyPayment: totalGoals } = useConvertedGoals();
+    const { currency } = useCurrency();
     
     const remainder = totalIncome - totalExpenses - totalGoals;
 
@@ -84,6 +86,7 @@ function LeftSidebar(){
                     totalSavings={totalSavings}
                     totalGoals={totalGoals}
                     remainder={remainder}
+                    currency={currency || ''}
                     t={t}
                 />
                 <ul className="w-full px-4 flex flex-col gap-2 text-base leading-loose pt-2">

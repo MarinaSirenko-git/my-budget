@@ -4,6 +4,7 @@ interface FinancialSummaryProps {
   totalSavings: number;
   totalGoals: number;
   remainder: number;
+  currency: string;
   t: (key: string) => string;
   variant?: 'desktop' | 'mobile';
 }
@@ -14,6 +15,7 @@ export default function FinancialSummary({
   totalSavings,
   totalGoals,
   remainder,
+  currency,
   t,
   variant = 'desktop',
 }: FinancialSummaryProps) {
@@ -43,24 +45,24 @@ export default function FinancialSummary({
     <div className={containerClass}>
       <div className={`${baseCardClass} bg-white dark:bg-black`} title={t('summary.incomeTitle')}>
         <div className={`${labelTextClass} text-black dark:text-white font-light`}>{t('summary.income')}</div>
-        <div className={`${valueTextClass} font-bold text-black dark:text-white`}>{totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        <div className={`${valueTextClass} font-bold text-black dark:text-white`}>{totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</div>
       </div>
       <div className={`${baseCardClass} bg-white dark:bg-black`} title={t('summary.expensesTitle')}>
         <div className={`${labelTextClass} text-black dark:text-white font-light`}>{t('summary.expenses')}</div>
-        <div className={`${valueTextClass} font-bold text-black dark:text-white`}>{totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        <div className={`${valueTextClass} font-bold text-black dark:text-white`}>{totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</div>
       </div>
       <div className={`${baseCardClass} bg-white dark:bg-black`} title={t('summary.goalsTitle')}>
         <div className={`${labelTextClass} text-black dark:text-white font-light`}>{t('summary.goals')}</div>
-        <div className={`${valueTextClass} font-bold text-black dark:text-white`}>{totalGoals.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        <div className={`${valueTextClass} font-bold text-black dark:text-white`}>{totalGoals.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</div>
       </div>
       <div className={`${baseCardClass} bg-white dark:bg-black`} title={t('summary.savingsTitle')}>
         <div className={`${labelTextClass} text-black dark:text-white font-light`}>{t('summary.savings')}</div>
-        <div className={`${valueTextClass} font-bold text-black dark:text-white`}>{totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        <div className={`${valueTextClass} font-bold text-black dark:text-white`}>{totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</div>
       </div>
 
       <div className={`${baseCardClass} ${remainderBgClass}`} title={t('summary.remainderTitle')}>
         <div className={`${labelTextClass} ${remainderTextClass} font-light`}>{t('summary.remainder')}</div>
-        <div className={`${valueTextClass} font-bold ${remainderTextClass}`}>{remainder.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+        <div className={`${valueTextClass} font-bold ${remainderTextClass}`}>{remainder.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency}</div>
       </div>
     </div>
   );
