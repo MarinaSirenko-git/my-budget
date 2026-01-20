@@ -57,7 +57,6 @@ export async function reportErrorToTelegram(report: ErrorReport): Promise<void> 
       }
     });
   } catch (err) {
-    debugger
     if (isDevelopment()) {
       console.error('Failed to send error to Telegram:', err);
     }
