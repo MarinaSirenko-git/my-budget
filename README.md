@@ -1,5 +1,3 @@
-# My Budget
-
 **[EN](#-english) | [RU](#-russian)**
 
 ---
